@@ -1,0 +1,14 @@
+upstreams:
+  converge_summer_school:
+    repository: https://github.com/merimdzaferagic/CONVERGE-summer-school.git
+    branch: main
+    commit: b1d6d36334a44a0dfeaacd643b82948259355d7c
+    local_path: ~/upstream/CONVERGE-summer-school
+    role: primary-reference-deployment
+
+  ai_nn_controller:
+    repository: https://github.com/merimdzaferagic/ai_nn_controller.git
+    branch: main
+    commit: not-yet-pinned
+    local_path: not-yet-cloned
+    role: optional-analytics-integration

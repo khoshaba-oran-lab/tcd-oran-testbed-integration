@@ -1,0 +1,5 @@
+metrics-server
+5gc
+gnb
+influxdb
+grafana
