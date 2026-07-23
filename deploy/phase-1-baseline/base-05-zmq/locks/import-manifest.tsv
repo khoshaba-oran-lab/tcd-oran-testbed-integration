@@ -1,0 +1,6 @@
+destination_path	sha256	origin
+docker/Dockerfile.gnb-zmq	2db53ba5c1f2ca66e5bfbc796956ac6c982a0f11eb9776e49cfb9a3fc46234bf	local derivative of tracked CONVERGE srsRAN Dockerfile
+docker/Dockerfile.srsue-zmq	97306e10d86c1e24002553c00ea2431226c26b4f80aaa6655e08b98cfdc4843b	local pinned srsRAN_4G srsUE build recipe
+locks/srsue-zmq.source.lock	bc521d0a308f76655f5dd63e61ec5e9ef3e9e06ffedf023996b75b14f2058a7e	local srsUE source lock
+configs/gnb_zmq_base05.yaml	ed2d02f4a72942dbb2401769f1f501c1a717adf6a1a45c722d1b65162981231c	validated BASE-05 runtime configuration
+configs/ue_zmq_base05.conf	ceab877f0f8105966ee89f910a98ee51158550a8503e7a6eea6e41fc8ce1e47e	validated BASE-05 runtime configuration

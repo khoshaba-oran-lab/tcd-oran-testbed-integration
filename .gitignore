@@ -1,0 +1,58 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.token
+credentials/
+secrets/
+
+# VM and network information
+vm-inventory-*.txt
+*-private.*
+network-inventory*
+ssh-config*
+tailscale*
+
+# Experiment results
+results/*
+!results/README.md
+*.pcap
+*.pcapng
+*.parquet
+*.csv
+*.jsonl
+*.log
+
+# Large runtime data
+data/
+artifacts/
+captures/
+influxdb-data/
+grafana-data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+*~
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Temporary files
+tmp/
+.cache/
