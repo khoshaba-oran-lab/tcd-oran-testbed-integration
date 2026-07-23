@@ -16,10 +16,19 @@ validation stage.
 - InfluxDB
 - Grafana
 
-### Phase I-B — Optional Full Software UE Connectivity
+### Phase I-B — Full Software UE Connectivity
 
-This phase will be considered only if a separate software UE and virtual
-radio path are required for the research objectives.
+Validated software-only end-to-end 5G SA connectivity using:
+
+- Open5GS 5G Core;
+- srsRAN Project gNB;
+- ZeroMQ virtual RF transport;
+- pinned srsUE from srsRAN_4G;
+- operational PDU session and user-plane connectivity.
+
+Deployment files are maintained under:
+
+`deploy/phase-1-baseline/base-05-zmq`
 
 ### Phase II-A — FlexRIC E2/KPM Smoke Test
 

@@ -1,10 +1,20 @@
 upstreams:
   converge_summer_school:
     repository: https://github.com/merimdzaferagic/CONVERGE-summer-school.git
-    branch: main
-    commit: b1d6d36334a44a0dfeaacd643b82948259355d7c
+    reference_branch: main
+    reference_commit: b1d6d36334a44a0dfeaacd643b82948259355d7c
+    validated_branch: base-05-reproducible-baseline-zmq
+    validated_commit: eca587d0597ad9c39702f984d770465ec9aa2ed5
+    source_subdirectory: srsRAN
     local_path: ~/upstream/CONVERGE-summer-school
     role: primary-reference-deployment
+
+  srsran_4g:
+    repository: https://github.com/srsran/srsRAN_4G.git
+    tag: release_23_11
+    commit: eea87b1d893ae58e0b08bc381730c502024ae71f
+    version: "23.11"
+    role: pinned-srsue-source
 
   ai_nn_controller:
     repository: https://github.com/merimdzaferagic/ai_nn_controller.git

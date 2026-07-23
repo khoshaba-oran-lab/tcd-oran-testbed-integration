@@ -1,0 +1,88 @@
+# syntax=docker/dockerfile:1
+
+ARG UBUNTU_VERSION=22.04
+
+FROM ubuntu:${UBUNTU_VERSION} AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG SRSRAN_4G_REPOSITORY=https://github.com/srsran/srsRAN_4G.git
+ARG SRSRAN_4G_TAG=release_23_11
+ARG SRSRAN_4G_COMMIT=eea87b1d893ae58e0b08bc381730c502024ae71f
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        git \
+        pkg-config \
+        libboost-program-options-dev \
+        libconfig++-dev \
+        libfftw3-dev \
+        libmbedtls-dev \
+        libsctp-dev \
+        libzmq3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone \
+        --branch "${SRSRAN_4G_TAG}" \
+        --depth 1 \
+        "${SRSRAN_4G_REPOSITORY}" \
+        /src && \
+    test "$(git -C /src rev-parse HEAD)" = "${SRSRAN_4G_COMMIT}"
+
+WORKDIR /src/build
+
+RUN cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/opt/srsran4g \
+        -DENABLE_SRSUE=ON \
+        -DENABLE_SRSENB=OFF \
+        -DENABLE_SRSEPC=OFF \
+        -DENABLE_GUI=OFF \
+        -DENABLE_RF_PLUGINS=ON \
+        -DENABLE_ZEROMQ=ON \
+        -DENABLE_UHD=OFF \
+        -DENABLE_BLADERF=OFF \
+        -DENABLE_SOAPYSDR=OFF \
+        -DENABLE_SKIQ=OFF \
+        -DENABLE_HARDSIM=OFF \
+        -DENABLE_WERROR=OFF \
+        -DENABLE_ALL_TEST=OFF \
+        -DAUTO_DETECT_ISA=ON \
+        -DGCC_ARCH=x86-64 && \
+    cmake --build . --parallel "$(nproc)" && \
+    cmake --install .
+
+FROM ubuntu:${UBUNTU_VERSION} AS runtime
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG SRSRAN_4G_COMMIT=eea87b1d893ae58e0b08bc381730c502024ae71f
+
+LABEL org.opencontainers.image.title="srsUE ZeroMQ"
+LABEL org.opencontainers.image.version="23.11"
+LABEL org.opencontainers.image.revision="${SRSRAN_4G_COMMIT}"
+LABEL org.opencontainers.image.source="https://github.com/srsran/srsRAN_4G"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        iproute2 \
+        iputils-ping \
+        libboost-program-options1.74.0 \
+        libconfig++9v5 \
+        libfftw3-single3 \
+        libmbedtls14 \
+        libsctp1 \
+        libzmq5 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/srsran4g/ /usr/local/
+
+RUN ldconfig && \
+    test -x /usr/local/bin/srsue && \
+    test -n "$(find /usr/local/lib -type f \
+        -name 'libsrsran_rf_zmq.so*' -print -quit)"
+
+ENTRYPOINT ["/usr/local/bin/srsue"]
+CMD ["--help"]

@@ -1,0 +1,24 @@
+# Services
+5gc
+gnb
+influxdb
+metrics-server
+grafana
+
+# Images
+srsran/gnb
+srsran/metrics_server
+influxdb:2.7
+srsran/grafana
+converge-no-ric-5gc
+
+# Networks
+ran
+metrics
+
+# Volumes
+influxdb-storage
+grafana-storage
+gnb-storage
+
+# Configuration hashes
