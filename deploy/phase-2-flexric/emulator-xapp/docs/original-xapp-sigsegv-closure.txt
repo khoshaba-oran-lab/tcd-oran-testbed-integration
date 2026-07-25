@@ -1,0 +1,88 @@
+ORIGINAL DEFECT
+---------------
+Release xapp_oran_moni terminated with SIGSEGV while processing
+E2SM-KPM measurement records.
+
+ROOT CAUSE
+----------
+sm_cb_kpm() indexed meas_info_lst[z] when z was bounded only by the
+measurement-record length. Runtime evidence showed:
+
+  z = 2
+  meas_record_len = 4
+  meas_info_lst_len = 2
+
+The access was therefore outside meas_info_lst.
+
+CORRECTION
+----------
+The condition was changed from:
+
+  meas_info_lst_len > 0
+
+to:
+
+  z < meas_info_lst_len
+
+PATCHED SOURCE SHA256
+---------------------
+7c0cd3fa9895c80be889665f4dd2793584c57cc97e35715ec1d2b2b60262893d
+
+RELEASE IMAGE
+-------------
+Tag:      tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-b1d6d36-p2
+Image ID: sha256:9965de270d3eb0e4e39df245f3352330fe9f3d8489bfe303fb0ac36c65bf939b
+Revision: b1d6d36334a44a0dfeaacd643b82948259355d7c
+Tree:     bfd1a35b019f9ea7f48d5ee95e2751219e7ad578
+Patch 1:  787fe4e8f98f0417e0c5d5fa8f578b25b888754e48a1ac4c7780324abbee83f3
+Patch 2:  78280f4c58659ab1d41cf6e1d2bb5a750869fcf33e7311be27a0c6f1d376a757
+
+BINARY ISOLATION
+----------------
+Only usr/local/bin/flexric/xApp/c/xapp_oran_moni differs between p1
+and p2. nearRT-RIC, emu_agent_gnb_du, installed libraries, paths and
+metadata were proven unchanged.
+
+RUNTIME VALIDATION
+------------------
+Independent trial 1:
+  KPM indication markers: 11
+  RNTI callback markers:  24
+  explicit success:       yes
+  exit code:              0
+  SIGSEGV/core:            no
+
+Independent trial 2:
+  KPM indication markers: 11
+  RNTI callback markers:  8
+  explicit success:       yes
+  exit code:              0
+  SIGSEGV/core:            no
+
+Both trials completed:
+
+  E42 setup
+  KPM subscription
+  KPM indication callbacks
+  subscription deletion
+  graceful successful termination
+
+CLOSURE VERDICT
+---------------
+The original Release SIGSEGV is resolved and repeatably validated in
+the current FlexRIC emulator baseline using E2AP_V2 and KPM_V3_00.
+
+VALIDATION SCOPE
+----------------
+Confirmed:
+  memory-safety correction for the reproduced callback failure;
+  two independent complete emulator KPM lifecycles;
+  exact corrected Release binary;
+  unchanged RIC and E2 Agent infrastructure.
+
+Not yet claimed:
+  validation against a real E2-enabled gNB;
+  semantic correctness of all emulator measurement values;
+  support for every KPM indication format;
+  resolution of separate "Measurement Record not reliable" and
+  "unknown kpm ind format" observations.

@@ -1,0 +1,70 @@
+name: tcd-p2a-flexric
+
+services:
+  flexric:
+    image: tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-b1d6d36-p1
+    pull_policy: never
+    container_name: p2a_flexric_ric
+    command:
+      - /usr/local/bin/flexric/ric/nearRT-RIC
+      - -c
+      - /etc/flexric/ric.conf
+    volumes:
+      - ./configs/ric.conf:/etc/flexric/ric.conf:ro
+    networks:
+      e2:
+        ipv4_address: 10.54.0.10
+    init: true
+    stop_signal: SIGINT
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  e2-agent:
+    image: tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-b1d6d36-p1
+    pull_policy: never
+    container_name: p2a_flexric_e2_agent
+    command:
+      - /usr/local/bin/flexric/e2agent/emu_agent_gnb_du
+      - -c
+      - /etc/flexric/e2agent.conf
+    volumes:
+      - ./configs/e2agent.conf:/etc/flexric/e2agent.conf:ro
+    depends_on:
+      flexric:
+        condition: service_started
+    networks:
+      e2:
+        ipv4_address: 10.54.0.11
+    init: true
+    stop_signal: SIGINT
+
+  reference-xapp:
+    image: tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-b1d6d36-p2
+    pull_policy: never
+    container_name: p2a_flexric_reference_xapp
+    command:
+      - /usr/local/bin/flexric/xApp/c/xapp_oran_moni
+      - -c
+      - /etc/flexric/xapp-kpm.conf
+    volumes:
+      - ./configs/xapp-kpm.conf:/etc/flexric/xapp-kpm.conf:ro
+    depends_on:
+      flexric:
+        condition: service_started
+      e2-agent:
+        condition: service_started
+    networks:
+      e2:
+        ipv4_address: 10.54.0.12
+    init: true
+    stop_signal: SIGINT
+
+networks:
+  e2:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.54.0.0/24
