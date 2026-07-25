@@ -1,0 +1,13 @@
+diff --git a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+index 16126ac..2d3d555 100644
+--- a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
++++ b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+@@ -148,7 +148,7 @@ void sm_cb_kpm(sm_ag_if_rd_t const* rd, global_e2_node_id_t const* e2_node)
+         // UE Measurements per granularity period
+         for (size_t j = 0; j<msg_frm_1->meas_data_lst_len; j++) {
+           for (size_t z = 0; z<msg_frm_1->meas_data_lst[j].meas_record_len; z++) {
+-            if (msg_frm_1->meas_info_lst_len > 0) {
++            if (z < msg_frm_1->meas_info_lst_len) {
+               switch (msg_frm_1->meas_info_lst[z].meas_type.type) {
+                 case NAME_MEAS_TYPE:
+                 {

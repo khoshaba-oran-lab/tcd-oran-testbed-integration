@@ -1,0 +1,84 @@
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
+
+ARG SOURCE_REPOSITORY=https://github.com/merimdzaferagic/CONVERGE-summer-school.git
+ARG SOURCE_CONVERGE_COMMIT=b1d6d36334a44a0dfeaacd643b82948259355d7c
+ARG FLEXRIC_SUBTREE_PATH=srsRAN/docker/flexRIC/flexric
+ARG FLEXRIC_TREE=bfd1a35b019f9ea7f48d5ee95e2751219e7ad578
+ARG E2AP_VERSION=E2AP_V2
+ARG KPM_VERSION=KPM_V3_00
+ARG XAPP_DB=NONE_XAPP
+ARG BUILD_JOBS=2
+ARG XAPP_MUTEX_PATCH_SHA256=787fe4e8f98f0417e0c5d5fa8f578b25b888754e48a1ac4c7780324abbee83f3
+ARG XAPP_BOUNDS_PATCH_SHA256=78280f4c58659ab1d41cf6e1d2bb5a750869fcf33e7311be27a0c6f1d376a757
+
+LABEL org.opencontainers.image.source="${SOURCE_REPOSITORY}"
+LABEL org.opencontainers.image.revision="${SOURCE_CONVERGE_COMMIT}"
+LABEL io.tcd-oran.flexric.tree="${FLEXRIC_TREE}"
+LABEL io.tcd-oran.flexric.e2ap-version="${E2AP_VERSION}"
+LABEL io.tcd-oran.flexric.kpm-version="${KPM_VERSION}"
+LABEL io.tcd-oran.flexric.patch-0001-sha256="${XAPP_MUTEX_PATCH_SHA256}"
+LABEL io.tcd-oran.flexric.patch-0002-sha256="${XAPP_BOUNDS_PATCH_SHA256}"
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+COPY patches/0001-xapp-oran-moni-initialize-mutex.patch /tmp/0001-xapp-oran-moni-initialize-mutex.patch
+COPY patches/0002-xapp-oran-moni-bound-meas-info-index.patch /tmp/0002-xapp-oran-moni-bound-meas-info-index.patch
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        clang \
+        cmake \
+        gcc \
+        git \
+        libconfig++-dev \
+        libconfig-dev \
+        libsctp-dev \
+        pkg-config \
+        python3 \
+        python3-dev \
+        swig && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone "${SOURCE_REPOSITORY}" /tmp/converge && \
+    cd /tmp/converge && \
+    git checkout --detach "${SOURCE_CONVERGE_COMMIT}" && \
+    ACTUAL_TREE="$(git rev-parse "HEAD:${FLEXRIC_SUBTREE_PATH}")" && \
+    echo "Expected FlexRIC tree: ${FLEXRIC_TREE}" && \
+    echo "Actual FlexRIC tree:   ${ACTUAL_TREE}" && \
+    test "${ACTUAL_TREE}" = "${FLEXRIC_TREE}" && \
+    echo "${XAPP_MUTEX_PATCH_SHA256}  /tmp/0001-xapp-oran-moni-initialize-mutex.patch" | sha256sum -c - && \
+    git apply --check /tmp/0001-xapp-oran-moni-initialize-mutex.patch && \
+    git apply /tmp/0001-xapp-oran-moni-initialize-mutex.patch && \
+    echo "${XAPP_BOUNDS_PATCH_SHA256}  /tmp/0002-xapp-oran-moni-bound-meas-info-index.patch" | sha256sum -c - && \
+    git apply --check /tmp/0002-xapp-oran-moni-bound-meas-info-index.patch && \
+    git apply /tmp/0002-xapp-oran-moni-bound-meas-info-index.patch && \
+    git diff --check && \
+    grep -Fq "pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;" "${FLEXRIC_SUBTREE_PATH}/examples/xApp/c/monitor/xapp_oran_moni.c" && \
+    grep -Fq "if (z < msg_frm_1->meas_info_lst_len) {" "${FLEXRIC_SUBTREE_PATH}/examples/xApp/c/monitor/xapp_oran_moni.c" && \
+    FLEXRIC_DIR="/tmp/converge/${FLEXRIC_SUBTREE_PATH}" && \
+    cmake \
+        -S "${FLEXRIC_DIR}" \
+        -B "${FLEXRIC_DIR}/build" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DE2AP_VERSION="${E2AP_VERSION}" \
+        -DKPM_VERSION="${KPM_VERSION}" \
+        -DXAPP_DB="${XAPP_DB}" && \
+    cmake \
+        --build "${FLEXRIC_DIR}/build" \
+        --parallel "${BUILD_JOBS}" && \
+    cmake \
+        --install "${FLEXRIC_DIR}/build" && \
+    ldconfig && \
+    test -x /usr/local/bin/flexric/ric/nearRT-RIC && \
+    test -x /usr/local/bin/flexric/e2agent/emu_agent_gnb_du && \
+    test -x /usr/local/bin/flexric/xApp/c/xapp_oran_moni && \
+    rm -rf /tmp/converge /tmp/0001-xapp-oran-moni-initialize-mutex.patch /tmp/0002-xapp-oran-moni-bound-meas-info-index.patch
+
+WORKDIR /opt/flexric
+
+CMD ["/bin/bash"]

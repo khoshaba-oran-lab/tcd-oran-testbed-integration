@@ -1,0 +1,12 @@
+diff --git a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+--- a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
++++ b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+@@ -36,7 +36,7 @@
+ #include <pthread.h>
+ 
+ static
+-pthread_mutex_t mtx;
++pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+ 
+ ////////////
+ // Get RC Indication Messages -> begin
