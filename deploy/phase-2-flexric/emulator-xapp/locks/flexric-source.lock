@@ -10,3 +10,7 @@ E2_AGENT_TARGET=emu_agent_gnb_du
 REFERENCE_XAPP_TARGET=xapp_oran_moni
 PATCH_0001_PATH=docker/patches/0001-xapp-oran-moni-initialize-mutex.patch
 PATCH_0001_SHA256=787fe4e8f98f0417e0c5d5fa8f578b25b888754e48a1ac4c7780324abbee83f3
+PATCH_0002_PATH=docker/patches/0002-xapp-oran-moni-bound-meas-info-index.patch
+PATCH_0002_SHA256=78280f4c58659ab1d41cf6e1d2bb5a750869fcf33e7311be27a0c6f1d376a757
+REFERENCE_XAPP_SOURCE_PATH=srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+PATCHED_SOURCE_SHA256=7c0cd3fa9895c80be889665f4dd2793584c57cc97e35715ec1d2b2b60262893d
