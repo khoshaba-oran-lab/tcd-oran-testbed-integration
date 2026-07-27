@@ -1,0 +1,233 @@
+BASE-06G.2 — KPM STRUCTURAL TRACE AND SEMANTIC VALIDATION
+========================================================
+
+Status
+------
+
+Result: PASS
+
+Next activity: COLLECTOR-01 — minimal read-only telemetry collector.
+
+Purpose
+-------
+
+BASE-06G.2 added opt-in structural tracing to the validated FlexRIC
+xapp_oran_moni KPM callback and used it to inspect the relationship between
+measurement descriptors and measurement records before the original callback
+performed indexed access.
+
+The trace is enabled only when:
+
+    TCD_KPM_STRUCT_TRACE=1
+
+Trace output is JSON Lines written to stderr. The original collector output,
+KPM subscription configuration and validated callback bounds correction remain
+unchanged.
+
+Validated source
+----------------
+
+Upstream repository:
+
+    /home/ubuntu/upstream/CONVERGE-summer-school
+
+Upstream source path:
+
+    srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+
+Instrumented source SHA-256:
+
+    0fed2a1c62e28da1b3af02533176fadc943665248ddc8b640167ab7c16b1fd4e
+
+Repository patch:
+
+    deploy/phase-2-flexric/emulator-xapp/patches/0002-xapp-oran-moni-kpm-structural-trace.patch
+
+Patch SHA-256:
+
+    cca48a1d17cace3ea31e9c7c00bbb987709b45ceaefd3a7b1ffdc12f4136e1f9
+
+Action results
+--------------
+
+Action 1 — controlled precheck and source audit:
+
+    PASS
+
+Action 2 — minimal trace infrastructure:
+
+    PASS
+
+Action 3 — safe callback instrumentation:
+
+    PASS
+
+Action 4 — controlled build and static audit:
+
+    Required scope: PASS
+    Static invariant audit: PASS
+    Diagnostic build: PASS
+    ASan rebuild extension: DEFERRED TO TEST-01
+
+Action 5 — controlled runtime validation:
+
+    PASS
+
+Diagnostic build identity
+-------------------------
+
+Image:
+
+    tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-base06g2-0fed2a1c-trace
+
+Image ID:
+
+    sha256:9b4451db401abde70cb0cd1e1065d1636c6c5fff9911fe2e33b8c0a7656d070e
+
+Diagnostic binary SHA-256:
+
+    af50ee6b6a9ab4080cc325b0213c571b73d89a660a92f5b0e85b009eef33e45c
+
+The diagnostic binary was confirmed by SHA-256. The diagnostic image itself
+was not runtime-complete because libmysqlclient.so.21 was absent.
+
+The same diagnostic binary was therefore mounted read-only into the previously
+validated RelWithDebInfo runtime carrier, where all dynamic dependencies were
+available. No source rebuild was performed for the runtime experiment.
+
+Runtime contract
+----------------
+
+Near-RT RIC container:
+
+    p2a_flexric_ric
+
+Near-RT RIC address:
+
+    10.54.0.10
+
+E2 agent container:
+
+    p2a_flexric_e2_agent
+
+E2 agent address:
+
+    10.54.0.11
+
+Temporary xApp address:
+
+    10.54.0.12
+
+Docker network:
+
+    tcd-p2a-flexric_e2
+
+xApp configuration SHA-256:
+
+    c64b101f87825f181c0d7557ec7414831c87102bff9abf0cc96e6a980ad68916
+
+Configured KPM measurements:
+
+    DRB.UEThpDl
+    RRU.PrbTotDl
+
+Configured subscription period:
+
+    1000 ms
+
+Runtime result
+--------------
+
+The xApp completed its own finite execution cycle naturally before the
+30-second upper observation limit.
+
+Observed runtime:
+
+    Observed loop seconds: 13
+    Actual wall-clock duration: 15 seconds
+    Completion mode: natural_exit
+    Exit code: 0
+    OOM killed: false
+
+Trace validation:
+
+    Trace records: 490
+    Records containing indication_index: 490
+    Unique indication indices: 11
+    Indication indices monotonic: yes
+    Malformed trace records: 0
+    Incomplete records: 0
+    Crash markers: 0
+
+Semantic result
+---------------
+
+The runtime trace confirmed that the KPM message may contain measurement data
+and measurement descriptor lists of different lengths.
+
+A representative observed container contained:
+
+    meas_data_lst_len = 3
+    meas_info_lst_len = 2
+
+The trace classified:
+
+    mapping_status=length_mismatch records: 351
+    records where mapping_status was not applicable: 139
+
+The records without mapping_status correspond to structural events such as
+indication, UE-report and index events; they are not malformed records.
+
+This result is consistent with the previously closed SIGSEGV root cause:
+iteration over the longer measurement-record sequence could index the shorter
+measurement-information sequence without a corresponding bounds condition.
+
+Safety and immutability
+-----------------------
+
+During Action 5:
+
+    RIC restarted: no
+    E2 agent restarted: no
+    source changed: no
+    configuration changed: no
+    integration repository changed: no
+    temporary xApp container retained: no
+    temporary address retained: no
+
+Known packaging defect
+----------------------
+
+The diagnostic image is missing:
+
+    libmysqlclient.so.21
+
+This is classified as a packaging defect. It did not invalidate the diagnostic
+binary or the controlled runtime result because the exact binary was mounted
+read-only into a runtime carrier with all required libraries.
+
+The packaging correction and a new sanitizer-enabled image are deferred to:
+
+    TEST-01 — regression, fault-injection and soak testing
+
+Authoritative evidence
+----------------------
+
+The external evidence directories and their content digests are recorded in:
+
+    deploy/phase-2-flexric/emulator-xapp/locks/base-06g-2-evidence.lock
+
+Large runtime logs and JSONL files are intentionally not copied into this
+repository.
+
+Conclusion
+----------
+
+BASE-06G.2 is complete.
+
+The structural trace captured real KPM indications without a crash and
+confirmed the semantic length mismatch relevant to defensive KPM parsing.
+
+The project may now proceed to:
+
+    COLLECTOR-01 — minimal read-only telemetry collector

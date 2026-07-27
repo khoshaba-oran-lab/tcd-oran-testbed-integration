@@ -1,0 +1,1095 @@
+diff --git a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+index 16126ac..e2526ea 100644
+--- a/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
++++ b/srsRAN/docker/flexRIC/flexric/examples/xApp/c/monitor/xapp_oran_moni.c
+@@ -34,6 +34,11 @@
+ #include <unistd.h>
+ #include <signal.h>
+ #include <pthread.h>
++#include <inttypes.h>
++#include <stdatomic.h>
++#include <stdbool.h>
++#include <stdint.h>
++#include <string.h>
+ 
+ static
+ pthread_mutex_t mtx;
+@@ -76,6 +81,1044 @@ static void sm_cb_rc(sm_ag_if_rd_t const *rd, global_e2_node_id_t const* e2_node
+ // Get RC Indication Messages -> end
+ ////////////
+ 
++
++#define TCD_KPM_STRUCT_TRACE_ENV "TCD_KPM_STRUCT_TRACE"
++#define TCD_KPM_STRUCT_TRACE_TYPE "kpm_struct"
++#define TCD_KPM_STRUCT_TRACE_STRING_LIMIT 256U
++
++static atomic_uint_fast64_t tcd_kpm_struct_indication_counter =
++    ATOMIC_VAR_INIT(0);
++
++static atomic_int tcd_kpm_struct_trace_enabled_cache =
++    ATOMIC_VAR_INIT(-1);
++
++static pthread_mutex_t tcd_kpm_struct_trace_output_mutex =
++    PTHREAD_MUTEX_INITIALIZER;
++
++static
++bool tcd_kpm_struct_trace_enabled(void)
++{
++  int const cached = atomic_load_explicit(
++      &tcd_kpm_struct_trace_enabled_cache,
++      memory_order_acquire);
++
++  if(cached >= 0)
++    return cached == 1;
++
++  char const* const value = getenv(TCD_KPM_STRUCT_TRACE_ENV);
++  int const detected = value != NULL && strcmp(value, "1") == 0 ? 1 : 0;
++
++  int expected = -1;
++
++  (void)atomic_compare_exchange_strong_explicit(
++      &tcd_kpm_struct_trace_enabled_cache,
++      &expected,
++      detected,
++      memory_order_release,
++      memory_order_relaxed);
++
++  return atomic_load_explicit(
++      &tcd_kpm_struct_trace_enabled_cache,
++      memory_order_acquire) == 1;
++}
++
++static
++uint64_t tcd_kpm_struct_next_indication_index(void)
++{
++  return atomic_fetch_add_explicit(
++      &tcd_kpm_struct_indication_counter,
++      UINT64_C(1),
++      memory_order_relaxed) + UINT64_C(1);
++}
++
++static
++bool tcd_kpm_struct_realtime_ns(uint64_t* const timestamp_ns)
++{
++  if(timestamp_ns == NULL)
++    return false;
++
++  struct timespec timestamp = {0};
++
++  if(clock_gettime(CLOCK_REALTIME, &timestamp) != 0)
++    return false;
++
++  if(timestamp.tv_nsec < 0 || timestamp.tv_nsec >= 1000000000L)
++    return false;
++
++  *timestamp_ns =
++      (uint64_t)timestamp.tv_sec * UINT64_C(1000000000) +
++      (uint64_t)timestamp.tv_nsec;
++
++  return true;
++}
++
++static
++bool tcd_kpm_struct_write_json_string(
++    FILE* const stream,
++    uint8_t const* const buffer,
++    size_t const length)
++{
++  if(stream == NULL)
++    return false;
++
++  if(buffer == NULL) {
++    fputs("null", stream);
++    return false;
++  }
++
++  size_t const emitted_length =
++      length < TCD_KPM_STRUCT_TRACE_STRING_LIMIT
++          ? length
++          : TCD_KPM_STRUCT_TRACE_STRING_LIMIT;
++
++  fputc('"', stream);
++
++  for(size_t i = 0; i < emitted_length; ++i) {
++    uint8_t const value = buffer[i];
++
++    switch(value) {
++      case '"':
++        fputs("\\\"", stream);
++        break;
++
++      case '\\':
++        fputs("\\\\", stream);
++        break;
++
++      case '\b':
++        fputs("\\b", stream);
++        break;
++
++      case '\f':
++        fputs("\\f", stream);
++        break;
++
++      case '\n':
++        fputs("\\n", stream);
++        break;
++
++      case '\r':
++        fputs("\\r", stream);
++        break;
++
++      case '\t':
++        fputs("\\t", stream);
++        break;
++
++      default:
++        if(value >= 0x20U && value <= 0x7eU)
++          fputc((int)value, stream);
++        else
++          fprintf(stream, "\\u%04x", (unsigned int)value);
++        break;
++    }
++  }
++
++  fputc('"', stream);
++
++  return emitted_length != length;
++}
++
++static
++void tcd_kpm_struct_trace_begin(
++    char const* const event,
++    uint64_t const indication_index)
++{
++  int const rc = pthread_mutex_lock(
++      &tcd_kpm_struct_trace_output_mutex);
++
++  if(rc != 0) {
++    fprintf(
++        stderr,
++        "TCD KPM structural trace mutex lock failed: %d\\n",
++        rc);
++
++    abort();
++  }
++
++  fputs(
++      "{\"trace_type\":\"" TCD_KPM_STRUCT_TRACE_TYPE "\","
++      "\"event\":",
++      stderr);
++
++  if(event != NULL) {
++    (void)tcd_kpm_struct_write_json_string(
++        stderr,
++        (uint8_t const*)event,
++        strlen(event));
++  } else {
++    fputs("null", stderr);
++  }
++
++  fprintf(
++      stderr,
++      ",\"indication_index\":%" PRIu64,
++      indication_index);
++}
++
++static
++void tcd_kpm_struct_trace_end(void)
++{
++  fputs("}\n", stderr);
++  fflush(stderr);
++
++  int const rc = pthread_mutex_unlock(
++      &tcd_kpm_struct_trace_output_mutex);
++
++  if(rc != 0) {
++    fprintf(
++        stderr,
++        "TCD KPM structural trace mutex unlock failed: %d\\n",
++        rc);
++
++    abort();
++  }
++}
++
++
++/* TCD_KPM_STRUCT_TRACE_ACTION_3_BEGIN */
++
++static
++void tcd_kpm_struct_trace_error(
++    uint64_t const indication_index,
++    char const* const component,
++    char const* const status)
++{
++  tcd_kpm_struct_trace_begin(
++      "structural_error",
++      indication_index);
++
++  fputs(",\"component\":", stderr);
++
++  if(component != NULL) {
++    (void)tcd_kpm_struct_write_json_string(
++        stderr,
++        (uint8_t const*)component,
++        strlen(component));
++  } else {
++    fputs("null", stderr);
++  }
++
++  fputs(",\"status\":", stderr);
++
++  if(status != NULL) {
++    (void)tcd_kpm_struct_write_json_string(
++        stderr,
++        (uint8_t const*)status,
++        strlen(status));
++  } else {
++    fputs("null", stderr);
++  }
++
++  tcd_kpm_struct_trace_end();
++}
++
++static
++void tcd_kpm_struct_trace_descriptor_index(
++    uint64_t const indication_index,
++    int const message_format,
++    bool const ue_report_present,
++    size_t const ue_report_index,
++    size_t const meas_info_index,
++    size_t const meas_info_len)
++{
++  tcd_kpm_struct_trace_begin(
++      "measurement_descriptor_index",
++      indication_index);
++
++  fprintf(
++      stderr,
++      ",\"message_format\":%d",
++      message_format);
++
++  if(ue_report_present)
++    fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++  else
++    fputs(",\"ue_report_index\":null", stderr);
++
++  fprintf(
++      stderr,
++      ",\"meas_info_index\":%zu,"
++      "\"meas_info_lst_len\":%zu",
++      meas_info_index,
++      meas_info_len);
++
++  tcd_kpm_struct_trace_end();
++}
++
++static
++void tcd_kpm_struct_trace_record_index(
++    uint64_t const indication_index,
++    int const message_format,
++    bool const ue_report_present,
++    size_t const ue_report_index,
++    size_t const meas_data_index,
++    size_t const meas_record_index,
++    size_t const meas_record_len,
++    size_t const meas_info_len)
++{
++  char const* const mapping_status =
++      meas_record_len == meas_info_len
++          ? "ok"
++          : "length_mismatch";
++
++  tcd_kpm_struct_trace_begin(
++      "measurement_record_index",
++      indication_index);
++
++  fprintf(
++      stderr,
++      ",\"message_format\":%d",
++      message_format);
++
++  if(ue_report_present)
++    fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++  else
++    fputs(",\"ue_report_index\":null", stderr);
++
++  fprintf(
++      stderr,
++      ",\"meas_data_index\":%zu,"
++      "\"meas_record_index\":%zu,"
++      "\"meas_record_len\":%zu,"
++      "\"meas_info_lst_len\":%zu,"
++      "\"mapping_status\":\"%s\"",
++      meas_data_index,
++      meas_record_index,
++      meas_record_len,
++      meas_info_len,
++      mapping_status);
++
++  tcd_kpm_struct_trace_end();
++}
++
++static
++void tcd_kpm_struct_trace_format_1(
++    kpm_ind_msg_format_1_t const* const msg_frm_1,
++    uint64_t const indication_index,
++    int const message_format,
++    bool const ue_report_present,
++    size_t const ue_report_index)
++{
++  if(msg_frm_1 == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "indication_message_format_1",
++        "null_pointer");
++
++    return;
++  }
++
++  tcd_kpm_struct_trace_begin(
++      "measurement_container",
++      indication_index);
++
++  fprintf(
++      stderr,
++      ",\"message_format\":%d",
++      message_format);
++
++  if(ue_report_present)
++    fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++  else
++    fputs(",\"ue_report_index\":null", stderr);
++
++  fprintf(
++      stderr,
++      ",\"meas_data_lst_len\":%zu,"
++      "\"meas_info_lst_len\":%zu",
++      msg_frm_1->meas_data_lst_len,
++      msg_frm_1->meas_info_lst_len);
++
++  tcd_kpm_struct_trace_end();
++
++  if(msg_frm_1->meas_info_lst_len > 0 &&
++     msg_frm_1->meas_info_lst == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "meas_info_lst",
++        "null_pointer_with_nonzero_length");
++  }
++
++  for(size_t info_index = 0;
++      info_index < msg_frm_1->meas_info_lst_len;
++      ++info_index) {
++
++    tcd_kpm_struct_trace_descriptor_index(
++        indication_index,
++        message_format,
++        ue_report_present,
++        ue_report_index,
++        info_index,
++        msg_frm_1->meas_info_lst_len);
++
++    if(msg_frm_1->meas_info_lst == NULL)
++      break;
++
++    if(info_index >= msg_frm_1->meas_info_lst_len) {
++      tcd_kpm_struct_trace_error(
++          indication_index,
++          "meas_info_lst",
++          "index_out_of_range");
++
++      break;
++    }
++
++    int const descriptor_type =
++        msg_frm_1->meas_info_lst[info_index].meas_type.type;
++
++    tcd_kpm_struct_trace_begin(
++        "measurement_descriptor",
++        indication_index);
++
++    fprintf(
++        stderr,
++        ",\"message_format\":%d",
++        message_format);
++
++    if(ue_report_present)
++      fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++    else
++      fputs(",\"ue_report_index\":null", stderr);
++
++    fprintf(
++        stderr,
++        ",\"meas_info_index\":%zu,"
++        "\"descriptor_type_raw\":%d",
++        info_index,
++        descriptor_type);
++
++    switch(descriptor_type) {
++      case NAME_MEAS_TYPE:
++      {
++        size_t const name_length =
++            msg_frm_1
++                ->meas_info_lst[info_index]
++                .meas_type
++                .name
++                .len;
++
++        uint8_t const* const name_buffer =
++            msg_frm_1
++                ->meas_info_lst[info_index]
++                .meas_type
++                .name
++                .buf;
++
++        fputs(
++            ",\"descriptor_type\":\"measurement_name\"",
++            stderr);
++
++        fprintf(
++            stderr,
++            ",\"measurement_name_length\":%zu,"
++            "\"measurement_name\":",
++            name_length);
++
++        bool const truncated =
++            tcd_kpm_struct_write_json_string(
++                stderr,
++                name_buffer,
++                name_length);
++
++        fprintf(
++            stderr,
++            ",\"measurement_name_truncated\":%s",
++            truncated ? "true" : "false");
++
++        break;
++      }
++
++      case ID_MEAS_TYPE:
++        fputs(
++            ",\"descriptor_type\":\"measurement_id\"",
++            stderr);
++
++        fprintf(
++            stderr,
++            ",\"measurement_id\":%" PRIu64,
++            (uint64_t)msg_frm_1
++                ->meas_info_lst[info_index]
++                .meas_type
++                .id);
++
++        break;
++
++      default:
++        fputs(
++            ",\"descriptor_type\":\"unsupported\"",
++            stderr);
++
++        break;
++    }
++
++    tcd_kpm_struct_trace_end();
++  }
++
++  if(msg_frm_1->meas_data_lst_len > 0 &&
++     msg_frm_1->meas_data_lst == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "meas_data_lst",
++        "null_pointer_with_nonzero_length");
++
++    return;
++  }
++
++  for(size_t data_index = 0;
++      data_index < msg_frm_1->meas_data_lst_len;
++      ++data_index) {
++
++    tcd_kpm_struct_trace_begin(
++        "measurement_data_index",
++        indication_index);
++
++    fprintf(
++        stderr,
++        ",\"message_format\":%d",
++        message_format);
++
++    if(ue_report_present)
++      fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++    else
++      fputs(",\"ue_report_index\":null", stderr);
++
++    fprintf(
++        stderr,
++        ",\"meas_data_index\":%zu,"
++        "\"meas_data_lst_len\":%zu",
++        data_index,
++        msg_frm_1->meas_data_lst_len);
++
++    tcd_kpm_struct_trace_end();
++
++    if(msg_frm_1->meas_data_lst == NULL)
++      break;
++
++    if(data_index >= msg_frm_1->meas_data_lst_len) {
++      tcd_kpm_struct_trace_error(
++          indication_index,
++          "meas_data_lst",
++          "index_out_of_range");
++
++      break;
++    }
++
++    size_t const record_len =
++        msg_frm_1
++            ->meas_data_lst[data_index]
++            .meas_record_len;
++
++    char const* const mapping_status =
++        record_len == msg_frm_1->meas_info_lst_len
++            ? "ok"
++            : "length_mismatch";
++
++    tcd_kpm_struct_trace_begin(
++        "measurement_dimensions",
++        indication_index);
++
++    fprintf(
++        stderr,
++        ",\"message_format\":%d",
++        message_format);
++
++    if(ue_report_present)
++      fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++    else
++      fputs(",\"ue_report_index\":null", stderr);
++
++    fprintf(
++        stderr,
++        ",\"meas_data_index\":%zu,"
++        "\"meas_data_lst_len\":%zu,"
++        "\"meas_info_lst_len\":%zu,"
++        "\"meas_record_len\":%zu,"
++        "\"mapping_status\":\"%s\"",
++        data_index,
++        msg_frm_1->meas_data_lst_len,
++        msg_frm_1->meas_info_lst_len,
++        record_len,
++        mapping_status);
++
++    if(msg_frm_1
++           ->meas_data_lst[data_index]
++           .incomplete_flag != NULL) {
++      bool const incomplete =
++          *msg_frm_1
++               ->meas_data_lst[data_index]
++               .incomplete_flag == TRUE_ENUM_VALUE;
++
++      fprintf(
++          stderr,
++          ",\"incomplete_flag_present\":true,"
++          "\"incomplete_flag\":%s",
++          incomplete ? "true" : "false");
++    } else {
++      fputs(
++          ",\"incomplete_flag_present\":false,"
++          "\"incomplete_flag\":null",
++          stderr);
++    }
++
++    tcd_kpm_struct_trace_end();
++
++    if(record_len > 0 &&
++       msg_frm_1
++           ->meas_data_lst[data_index]
++           .meas_record_lst == NULL) {
++      tcd_kpm_struct_trace_error(
++          indication_index,
++          "meas_record_lst",
++          "null_pointer_with_nonzero_length");
++
++      continue;
++    }
++
++    for(size_t record_index = 0;
++        record_index < record_len;
++        ++record_index) {
++
++      tcd_kpm_struct_trace_record_index(
++          indication_index,
++          message_format,
++          ue_report_present,
++          ue_report_index,
++          data_index,
++          record_index,
++          record_len,
++          msg_frm_1->meas_info_lst_len);
++
++      if(msg_frm_1
++             ->meas_data_lst[data_index]
++             .meas_record_lst == NULL) {
++        break;
++      }
++
++      if(record_index >= record_len) {
++        tcd_kpm_struct_trace_error(
++            indication_index,
++            "meas_record_lst",
++            "index_out_of_range");
++
++        break;
++      }
++
++      int const record_type =
++          msg_frm_1
++              ->meas_data_lst[data_index]
++              .meas_record_lst[record_index]
++              .value;
++
++      tcd_kpm_struct_trace_begin(
++          "measurement_record",
++          indication_index);
++
++      fprintf(
++          stderr,
++          ",\"message_format\":%d",
++          message_format);
++
++      if(ue_report_present)
++        fprintf(stderr, ",\"ue_report_index\":%zu", ue_report_index);
++      else
++        fputs(",\"ue_report_index\":null", stderr);
++
++      fprintf(
++          stderr,
++          ",\"meas_data_index\":%zu,"
++          "\"meas_record_index\":%zu,"
++          "\"record_value_type_raw\":%d,"
++          "\"mapping_status\":\"%s\"",
++          data_index,
++          record_index,
++          record_type,
++          mapping_status);
++
++      switch(record_type) {
++        case INTEGER_MEAS_VALUE:
++          fputs(
++              ",\"record_value_type\":\"integer\"",
++              stderr);
++
++          fprintf(
++              stderr,
++              ",\"integer_value\":%" PRId64,
++              (int64_t)msg_frm_1
++                  ->meas_data_lst[data_index]
++                  .meas_record_lst[record_index]
++                  .int_val);
++
++          break;
++
++        case REAL_MEAS_VALUE:
++          fputs(
++              ",\"record_value_type\":\"real\"",
++              stderr);
++
++          fprintf(
++              stderr,
++              ",\"real_value\":%.17g",
++              (double)msg_frm_1
++                  ->meas_data_lst[data_index]
++                  .meas_record_lst[record_index]
++                  .real_val);
++
++          break;
++
++        case NO_VALUE_MEAS_VALUE:
++          fputs(
++              ",\"record_value_type\":\"no_value\"",
++              stderr);
++
++          break;
++
++        default:
++          fputs(
++              ",\"record_value_type\":\"unsupported\"",
++              stderr);
++
++          break;
++      }
++
++      tcd_kpm_struct_trace_end();
++    }
++  }
++}
++
++static
++void tcd_kpm_struct_trace_format_3(
++    kpm_ind_msg_format_3_t const* const msg_frm_3,
++    uint64_t const indication_index,
++    int const message_format)
++{
++  if(msg_frm_3 == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "indication_message_format_3",
++        "null_pointer");
++
++    return;
++  }
++
++  if(msg_frm_3->ue_meas_report_lst_len > 0 &&
++     msg_frm_3->meas_report_per_ue == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "meas_report_per_ue",
++        "null_pointer_with_nonzero_length");
++
++    return;
++  }
++
++  for(size_t ue_report_index = 0;
++      ue_report_index < msg_frm_3->ue_meas_report_lst_len;
++      ++ue_report_index) {
++
++    tcd_kpm_struct_trace_begin(
++        "ue_report_index",
++        indication_index);
++
++    fprintf(
++        stderr,
++        ",\"message_format\":%d,"
++        "\"ue_report_index\":%zu,"
++        "\"ue_report_count\":%zu",
++        message_format,
++        ue_report_index,
++        msg_frm_3->ue_meas_report_lst_len);
++
++    tcd_kpm_struct_trace_end();
++
++    if(msg_frm_3->meas_report_per_ue == NULL)
++      break;
++
++    if(ue_report_index >= msg_frm_3->ue_meas_report_lst_len) {
++      tcd_kpm_struct_trace_error(
++          indication_index,
++          "meas_report_per_ue",
++          "index_out_of_range");
++
++      break;
++    }
++
++    int const ue_id_type =
++        msg_frm_3
++            ->meas_report_per_ue[ue_report_index]
++            .ue_meas_report_lst
++            .type;
++
++    tcd_kpm_struct_trace_begin(
++        "ue_report",
++        indication_index);
++
++    fprintf(
++        stderr,
++        ",\"message_format\":%d,"
++        "\"ue_report_index\":%zu,"
++        "\"ue_id_type_raw\":%d",
++        message_format,
++        ue_report_index,
++        ue_id_type);
++
++    switch(ue_id_type) {
++      case GNB_UE_ID_E2SM:
++        fputs(
++            ",\"ue_id_type\":\"gnb\","
++            "\"amf_ue_ngap_id\":",
++            stderr);
++
++        fprintf(
++            stderr,
++            "%" PRIu64,
++            (uint64_t)msg_frm_3
++                ->meas_report_per_ue[ue_report_index]
++                .ue_meas_report_lst
++                .gnb
++                .amf_ue_ngap_id);
++
++        fprintf(
++            stderr,
++            ",\"gnb_cu_ue_f1ap_lst_len\":%zu",
++            msg_frm_3
++                ->meas_report_per_ue[ue_report_index]
++                .ue_meas_report_lst
++                .gnb
++                .gnb_cu_ue_f1ap_lst_len);
++
++        break;
++
++      case GNB_DU_UE_ID_E2SM:
++        fputs(
++            ",\"ue_id_type\":\"gnb_du\","
++            "\"gnb_cu_ue_f1ap\":",
++            stderr);
++
++        fprintf(
++            stderr,
++            "%" PRIu64,
++            (uint64_t)msg_frm_3
++                ->meas_report_per_ue[ue_report_index]
++                .ue_meas_report_lst
++                .gnb_du
++                .gnb_cu_ue_f1ap);
++
++        break;
++
++      case GNB_CU_UP_UE_ID_E2SM:
++        fputs(
++            ",\"ue_id_type\":\"gnb_cu_up\","
++            "\"gnb_cu_cp_ue_e1ap\":",
++            stderr);
++
++        fprintf(
++            stderr,
++            "%" PRIu64,
++            (uint64_t)msg_frm_3
++                ->meas_report_per_ue[ue_report_index]
++                .ue_meas_report_lst
++                .gnb_cu_up
++                .gnb_cu_cp_ue_e1ap);
++
++        break;
++
++      default:
++        fputs(
++            ",\"ue_id_type\":\"unsupported\"",
++            stderr);
++
++        break;
++    }
++
++    tcd_kpm_struct_trace_end();
++
++    if(ue_id_type == GNB_UE_ID_E2SM) {
++      size_t const f1ap_len =
++          msg_frm_3
++              ->meas_report_per_ue[ue_report_index]
++              .ue_meas_report_lst
++              .gnb
++              .gnb_cu_ue_f1ap_lst_len;
++
++      uint32_t const* const f1ap_list =
++          msg_frm_3
++              ->meas_report_per_ue[ue_report_index]
++              .ue_meas_report_lst
++              .gnb
++              .gnb_cu_ue_f1ap_lst;
++
++      if(f1ap_len > 0 && f1ap_list == NULL) {
++        tcd_kpm_struct_trace_error(
++            indication_index,
++            "gnb_cu_ue_f1ap_lst",
++            "null_pointer_with_nonzero_length");
++      }
++
++      for(size_t f1ap_index = 0;
++          f1ap_index < f1ap_len;
++          ++f1ap_index) {
++
++        tcd_kpm_struct_trace_begin(
++            "ue_id_component_index",
++            indication_index);
++
++        fprintf(
++            stderr,
++            ",\"message_format\":%d,"
++            "\"ue_report_index\":%zu,"
++            "\"component\":\"gnb_cu_ue_f1ap\","
++            "\"component_index\":%zu,"
++            "\"component_count\":%zu",
++            message_format,
++            ue_report_index,
++            f1ap_index,
++            f1ap_len);
++
++        tcd_kpm_struct_trace_end();
++
++        if(f1ap_list == NULL)
++          break;
++
++        if(f1ap_index >= f1ap_len) {
++          tcd_kpm_struct_trace_error(
++              indication_index,
++              "gnb_cu_ue_f1ap_lst",
++              "index_out_of_range");
++
++          break;
++        }
++
++        tcd_kpm_struct_trace_begin(
++            "ue_id_component",
++            indication_index);
++
++        fprintf(
++            stderr,
++            ",\"message_format\":%d,"
++            "\"ue_report_index\":%zu,"
++            "\"component\":\"gnb_cu_ue_f1ap\","
++            "\"component_index\":%zu,"
++            "\"component_value\":%" PRIu64,
++            message_format,
++            ue_report_index,
++            f1ap_index,
++            (uint64_t)f1ap_list[f1ap_index]);
++
++        tcd_kpm_struct_trace_end();
++      }
++    }
++
++    tcd_kpm_struct_trace_format_1(
++        &msg_frm_3
++            ->meas_report_per_ue[ue_report_index]
++            .ind_msg_format_1,
++        indication_index,
++        message_format,
++        true,
++        ue_report_index);
++  }
++}
++
++static
++void tcd_kpm_struct_trace_indication(
++    kpm_ind_data_t const* const kpm,
++    uint64_t const indication_index,
++    bool const receive_timestamp_valid,
++    uint64_t const receive_timestamp_ns)
++{
++  if(kpm == NULL) {
++    tcd_kpm_struct_trace_error(
++        indication_index,
++        "kpm_indication",
++        "null_pointer");
++
++    return;
++  }
++
++  int const message_format = kpm->msg.type;
++
++  size_t ue_report_count = 0;
++  bool ue_report_count_known = true;
++
++  switch(message_format) {
++    case FORMAT_1_INDICATION_MESSAGE:
++      ue_report_count = 0;
++      break;
++
++    case FORMAT_3_INDICATION_MESSAGE:
++      ue_report_count =
++          kpm->msg.frm_3.ue_meas_report_lst_len;
++      break;
++
++    default:
++      ue_report_count_known = false;
++      break;
++  }
++
++  tcd_kpm_struct_trace_begin(
++      "indication",
++      indication_index);
++
++  if(receive_timestamp_valid) {
++    fprintf(
++        stderr,
++        ",\"receive_timestamp_unix_ns\":%" PRIu64,
++        receive_timestamp_ns);
++  } else {
++    fputs(
++        ",\"receive_timestamp_unix_ns\":null",
++        stderr);
++  }
++
++  fprintf(
++      stderr,
++      ",\"kpm_header_timestamp_raw\":%" PRIu64 ","
++      "\"kpm_header_timestamp_unit\":\"raw\","
++      "\"message_format\":%d",
++      (uint64_t)kpm
++          ->hdr
++          .kpm_ric_ind_hdr_format_1
++          .collectStartTime,
++      message_format);
++
++  if(ue_report_count_known)
++    fprintf(stderr, ",\"ue_report_count\":%zu", ue_report_count);
++  else
++    fputs(",\"ue_report_count\":null", stderr);
++
++  tcd_kpm_struct_trace_end();
++
++  switch(message_format) {
++    case FORMAT_1_INDICATION_MESSAGE:
++      tcd_kpm_struct_trace_format_1(
++          &kpm->msg.frm_1,
++          indication_index,
++          message_format,
++          false,
++          0);
++
++      break;
++
++    case FORMAT_3_INDICATION_MESSAGE:
++      tcd_kpm_struct_trace_format_3(
++          &kpm->msg.frm_3,
++          indication_index,
++          message_format);
++
++      break;
++
++    default:
++      tcd_kpm_struct_trace_error(
++          indication_index,
++          "indication_message",
++          "unsupported_format");
++
++      break;
++  }
++}
++
++/* TCD_KPM_STRUCT_TRACE_ACTION_3_END */
++
+ static
+ void sm_cb_kpm(sm_ag_if_rd_t const* rd, global_e2_node_id_t const* e2_node)
+ {
+@@ -84,6 +1127,24 @@ void sm_cb_kpm(sm_ag_if_rd_t const* rd, global_e2_node_id_t const* e2_node)
+   assert(rd->ind.type == KPM_STATS_V3_0);
+ 
+   kpm_ind_data_t const* kpm = &rd->ind.kpm.ind;
++  /* TCD_KPM_STRUCT_TRACE_ACTION_3_CALL */
++  if(tcd_kpm_struct_trace_enabled()) {
++    uint64_t const indication_index =
++        tcd_kpm_struct_next_indication_index();
++
++    uint64_t receive_timestamp_ns = 0;
++
++    bool const receive_timestamp_valid =
++        tcd_kpm_struct_realtime_ns(
++            &receive_timestamp_ns);
++
++    tcd_kpm_struct_trace_indication(
++        kpm,
++        indication_index,
++        receive_timestamp_valid,
++        receive_timestamp_ns);
++  }
++
+   kpm_ric_ind_hdr_format_1_t const* hdr_frm_1 = &kpm->hdr.kpm_ric_ind_hdr_format_1;
+ 
+   int64_t now = time_now_us();
+@@ -148,7 +1209,7 @@ void sm_cb_kpm(sm_ag_if_rd_t const* rd, global_e2_node_id_t const* e2_node)
+         // UE Measurements per granularity period
+         for (size_t j = 0; j<msg_frm_1->meas_data_lst_len; j++) {
+           for (size_t z = 0; z<msg_frm_1->meas_data_lst[j].meas_record_len; z++) {
+-            if (msg_frm_1->meas_info_lst_len > 0) {
++            if (z < msg_frm_1->meas_info_lst_len) {
+               switch (msg_frm_1->meas_info_lst[z].meas_type.type) {
+                 case NAME_MEAS_TYPE:
+                 {
