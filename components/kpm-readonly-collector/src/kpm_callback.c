@@ -1,6 +1,7 @@
 #include "tcd_kpm_collector/kpm_callback.h"
 
 #include "tcd_kpm_collector/flexric_discovery.h"
+#include "tcd_kpm_collector/kpm_validation.h"
 
 #include "sm/kpm_sm/kpm_sm_id_wrapper.h"
 
@@ -301,18 +302,6 @@ static void process_format_1(
         return;
     }
 
-    if (
-        message->meas_info_lst_len > 0U &&
-        message->meas_info_lst == NULL
-    ) {
-        atomic_fetch_add_explicit(
-            &context->counters->callback_errors,
-            1U,
-            memory_order_relaxed
-        );
-        return;
-    }
-
     bool ue_supported = true;
     tcd_kpm_ue_id_t copied_ue = {0};
     copy_ue_id(&copied_ue, ue_source, &ue_supported);
@@ -324,21 +313,54 @@ static void process_format_1(
     ) {
         const meas_data_lst_t *data = &message->meas_data_lst[data_index];
 
-        if (data->meas_record_len > 0U && data->meas_record_lst == NULL) {
-            atomic_fetch_add_explicit(
-                &context->counters->callback_errors,
-                1U,
-                memory_order_relaxed
-            );
+        const size_t record_count = data->meas_record_len;
+        const size_t info_count = message->meas_info_lst_len;
+        const tcd_kpm_row_shape_t shape = {
+            .metadata_available = info_count > 0U,
+            .metadata = message->meas_info_lst,
+            .metadata_len = info_count,
+            .record = data->meas_record_lst,
+            .record_len = record_count,
+            .maximum_supported_length = 65535U,
+        };
+        const tcd_kpm_row_validation_result_t validation =
+            tcd_kpm_validate_row_shape(&shape);
+
+        if (!validation.row_accepted) {
+            tcd_kpm_measurement_record_t diagnostic;
+            tcd_kpm_measurement_record_reset(&diagnostic);
+
+            diagnostic.indication = *indication;
+            diagnostic.ue_report_index = ue_report_index;
+            diagnostic.ue_id = copied_ue;
+            diagnostic.meas_data_index = length_to_u32(data_index);
+            diagnostic.meas_record_index = UINT32_MAX;
+            diagnostic.meas_info_index = UINT32_MAX;
+            diagnostic.meas_data_lst_len =
+                length_to_u32(message->meas_data_lst_len);
+            diagnostic.meas_info_lst_len = length_to_u32(info_count);
+            diagnostic.meas_record_len = length_to_u32(record_count);
+
+            if (data->incomplete_flag != NULL) {
+                diagnostic.incomplete_flag_present = true;
+                diagnostic.incomplete_flag =
+                    *data->incomplete_flag == TRUE_ENUM_VALUE;
+            }
+
+            diagnostic.structural_status =
+                validation.status == TCD_KPM_ROW_LENGTH_MISMATCH
+                    ? TCD_KPM_STATUS_LENGTH_MISMATCH
+                    : TCD_KPM_STATUS_INVALID_INPUT;
+
+            retain_record(context, &diagnostic);
             continue;
         }
 
-        const size_t record_count = data->meas_record_len;
-        const size_t info_count = message->meas_info_lst_len;
-        const size_t output_count =
-            record_count > info_count ? record_count : info_count;
-
-        for (size_t index = 0U; index < output_count; ++index) {
+        for (
+            size_t index = 0U;
+            index < validation.normalised_value_count;
+            ++index
+        ) {
             tcd_kpm_measurement_record_t record;
             tcd_kpm_measurement_record_reset(&record);
 
@@ -346,10 +368,8 @@ static void process_format_1(
             record.ue_report_index = ue_report_index;
             record.ue_id = copied_ue;
             record.meas_data_index = length_to_u32(data_index);
-            record.meas_record_index =
-                index < record_count ? length_to_u32(index) : UINT32_MAX;
-            record.meas_info_index =
-                index < info_count ? length_to_u32(index) : UINT32_MAX;
+            record.meas_record_index = length_to_u32(index);
+            record.meas_info_index = length_to_u32(index);
             record.meas_data_lst_len =
                 length_to_u32(message->meas_data_lst_len);
             record.meas_info_lst_len = length_to_u32(info_count);
@@ -361,26 +381,19 @@ static void process_format_1(
                     *data->incomplete_flag == TRUE_ENUM_VALUE;
             }
 
-            const bool lengths_match = record_count == info_count;
-            const bool descriptor_supported =
-                index < info_count &&
-                copy_descriptor(
-                    &record.descriptor,
-                    &message->meas_info_lst[index]
-                );
+            const bool descriptor_supported = copy_descriptor(
+                &record.descriptor,
+                &message->meas_info_lst[index]
+            );
 
             bool no_value = false;
-            const bool value_supported =
-                index < record_count &&
-                copy_value(
-                    &record.value,
-                    &data->meas_record_lst[index],
-                    &no_value
-                );
+            const bool value_supported = copy_value(
+                &record.value,
+                &data->meas_record_lst[index],
+                &no_value
+            );
 
-            if (!lengths_match || index >= record_count || index >= info_count) {
-                record.structural_status = TCD_KPM_STATUS_LENGTH_MISMATCH;
-            } else if (!ue_supported) {
+            if (!ue_supported) {
                 record.structural_status = TCD_KPM_STATUS_UNSUPPORTED_UE_ID;
             } else if (!descriptor_supported) {
                 record.structural_status =

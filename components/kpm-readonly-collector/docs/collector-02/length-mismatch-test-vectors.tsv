@@ -1,0 +1,7 @@
+case_id	metadata_state	metadata_len	record_len	expected_status	expected_normalised_value_count	expected_diagnostic_count	process_continues
+valid_equal_2_2	present	2	2	ok	2	0	yes
+observed_record_longer_2_4	present	2	4	length_mismatch	0	1	yes
+metadata_longer_4_2	present	4	2	length_mismatch	0	1	yes
+metadata_unavailable_0_4	unavailable	0	4	metadata_unavailable	0	1	yes
+invalid_record_length_2_0	present	2	0	invalid_record_length	0	1	yes
+post_rejection_valid_2_2	present	2	2	ok	2	0	yes

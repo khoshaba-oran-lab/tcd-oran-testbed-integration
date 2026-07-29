@@ -54,6 +54,7 @@ add_executable(
     src/main.c
     src/flexric_discovery.c
     src/kpm_callback.c
+    src/kpm_validation.c
     src/kpm_subscription.c
 )
 
