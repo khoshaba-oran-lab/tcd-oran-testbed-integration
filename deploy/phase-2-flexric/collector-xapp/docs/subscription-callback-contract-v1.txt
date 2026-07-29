@@ -1,0 +1,60 @@
+COLLECTOR-01 SUBSCRIPTION AND CALLBACK CONTRACT V1
+==================================================
+
+Subscription
+------------
+
+The collector creates exactly one KPM report subscription for exactly one
+selected E2 node.
+
+The request uses:
+
+- KPM event-trigger format 1;
+- one action definition;
+- action format 1 or 4 from the matching FlexRIC KPM profile;
+- measurement names or IDs copied from that profile;
+- noLabel for each measurement;
+- S-NSSAI equals 1 as the format-4 matching condition;
+- the configured period for both event reporting and format-1 granularity.
+
+The collector invokes report_sm_xapp_api only for SM_KPM_ID.
+
+Read-only boundary
+------------------
+
+The collector does not invoke control_sm_xapp_api or construct an RC control
+request.
+
+Callback input
+--------------
+
+The callback accepts only:
+
+- INDICATION_MSG_AGENT_IF_ANS_V0;
+- KPM_STATS_V3_0;
+- indication message format 1 or 3.
+
+Other inputs are counted as callback errors or unsupported records without
+out-of-bounds access.
+
+Callback ownership and work bound
+---------------------------------
+
+All retained values are copied before callback return.
+
+The callback performs no console output, file I/O, network output, sleep,
+subscription removal or exporter call.
+
+The only multi-field retained state is the latest copied record. It is updated
+with pthread_mutex_trylock so the callback never waits for that diagnostic
+state.
+
+Stop and removal
+----------------
+
+The main thread requests stop when either configured bound is reached:
+
+- maximum accepted indication callbacks; or
+- elapsed duration after successful subscription creation.
+
+The main thread invokes rm_report_sm_xapp_api before FlexRIC API shutdown.
