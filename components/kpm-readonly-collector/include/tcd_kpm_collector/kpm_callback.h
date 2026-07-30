@@ -13,11 +13,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct tcd_kpm_output_pipeline;
+typedef struct tcd_kpm_output_pipeline tcd_kpm_output_pipeline_t;
+
 typedef struct {
     tcd_kpm_counters_t *counters;
     uint64_t logical_subscription_id;
     uint64_t max_indications;
     bool structured_debug_stderr;
+    tcd_kpm_output_pipeline_t *output_pipeline;
 
     atomic_uint_fast64_t next_indication_sequence;
     atomic_bool stop_requested;
@@ -37,7 +41,7 @@ bool tcd_kpm_callback_context_init(
     size_t error_capacity
 );
 
-void tcd_kpm_callback_context_destroy(
+bool tcd_kpm_callback_context_destroy(
     tcd_kpm_callback_context_t *context
 );
 

@@ -2,6 +2,7 @@
 
 #include "tcd_kpm_collector/flexric_discovery.h"
 #include "tcd_kpm_collector/kpm_validation.h"
+#include "tcd_kpm_collector/output_adapter.h"
 
 #include "sm/kpm_sm/kpm_sm_id_wrapper.h"
 
@@ -276,6 +277,11 @@ static void retain_record(
         context->last_record_present = true;
         (void)pthread_mutex_unlock(&context->last_record_mutex);
     }
+
+    (void)tcd_kpm_output_adapter_submit(
+        context->output_pipeline,
+        record
+    );
 }
 
 static void process_format_1(
@@ -440,24 +446,65 @@ bool tcd_kpm_callback_context_init(
     }
 
     context->last_record_mutex_initialised = true;
+
+    if (
+        !tcd_kpm_output_adapter_pipeline_create(
+            &context->output_pipeline,
+            error,
+            error_capacity
+        )
+    ) {
+        (void)pthread_mutex_destroy(&context->last_record_mutex);
+        context->last_record_mutex_initialised = false;
+        return false;
+    }
+
     return true;
 }
 
-void tcd_kpm_callback_context_destroy(
+bool tcd_kpm_callback_context_destroy(
     tcd_kpm_callback_context_t *context
 )
 {
+    bool output_ok = true;
+
     if (context == NULL) {
-        return;
+        return true;
     }
 
     tcd_kpm_callback_uninstall(context);
+
+    if (context->counters != NULL) {
+        output_ok = tcd_kpm_output_adapter_pipeline_shutdown(
+            &context->output_pipeline,
+            atomic_load_explicit(
+                &context->counters->callback_errors,
+                memory_order_relaxed
+            ),
+            atomic_load_explicit(
+                &context->counters->subscriptions_created,
+                memory_order_relaxed
+            ),
+            atomic_load_explicit(
+                &context->counters->subscriptions_removed,
+                memory_order_relaxed
+            )
+        );
+    } else {
+        output_ok = tcd_kpm_output_adapter_pipeline_shutdown(
+            &context->output_pipeline,
+            0U,
+            0U,
+            0U
+        );
+    }
 
     if (context->last_record_mutex_initialised) {
         (void)pthread_mutex_destroy(&context->last_record_mutex);
     }
 
     memset(context, 0, sizeof(*context));
+    return output_ok;
 }
 
 bool tcd_kpm_callback_install(

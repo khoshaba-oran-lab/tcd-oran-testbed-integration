@@ -226,6 +226,7 @@ int main(int argc, char **argv)
     bool callback_context_initialised = false;
     bool callback_installed = false;
     bool subscription_created = false;
+    bool output_pipeline_ok = true;
     int subscription_handle = -1;
 
     e2_node_arr_xapp_t nodes = {0};
@@ -509,12 +510,19 @@ int main(int argc, char **argv)
     }
 
     if (callback_context_initialised) {
-        tcd_kpm_callback_context_destroy(&callback_context);
+        output_pipeline_ok =
+            tcd_kpm_callback_context_destroy(&callback_context);
         callback_context_initialised = false;
     }
 
     tcd_kpm_subscription_request_destroy(&subscription_request);
     free_fr_args(&args);
+
+    if (!output_pipeline_ok) {
+        fprintf(stderr, "configured output pipeline failed\n");
+        return 1;
+    }
+
     return 0;
 
 failure:
@@ -580,7 +588,7 @@ failure_without_api_stop:
     }
 
     if (callback_context_initialised) {
-        tcd_kpm_callback_context_destroy(&callback_context);
+        (void)tcd_kpm_callback_context_destroy(&callback_context);
         callback_context_initialised = false;
     }
 

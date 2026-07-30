@@ -53,6 +53,11 @@ add_executable(
     tcd_kpm_collector
     src/main.c
     src/flexric_discovery.c
+    src/canonical_serialize.c
+    src/file_sink.c
+    src/prometheus_textfile.c
+    src/output_pipeline.c
+    src/output_adapter.c
     src/kpm_callback.c
     src/kpm_validation.c
     src/kpm_subscription.c

@@ -1,0 +1,13 @@
+metric_name	type	labels	semantic
+tcd_kpm_collector_build_info	gauge	schema_version,collector_stage	Static build and schema identity; value is always 1
+tcd_kpm_collector_indications_total	counter	message_format	Accepted KPM indications observed by the collector
+tcd_kpm_collector_records_total	counter	record_kind,structural_status,value_type	Canonical records produced by classification
+tcd_kpm_collector_rejected_rows_total	counter	reason	Rows rejected before metadata/value pairing
+tcd_kpm_collector_callback_errors_total	counter	-	Callback-level internal errors
+tcd_kpm_collector_subscriptions_created_total	counter	-	Successful KPM subscriptions created
+tcd_kpm_collector_subscriptions_removed_total	counter	-	Successful KPM subscriptions removed
+tcd_kpm_collector_output_records_total	counter	backend,result	Output records attempted by backend and result
+tcd_kpm_collector_output_errors_total	counter	backend,reason	Output backend failures by bounded reason token
+tcd_kpm_collector_output_queue_depth	gauge	-	Current bounded output queue depth
+tcd_kpm_collector_last_receive_timestamp_seconds	gauge	-	Unix timestamp of the most recent indication
+tcd_kpm_collector_prometheus_snapshot_timestamp_seconds	gauge	-	Unix timestamp of the current textfile snapshot
