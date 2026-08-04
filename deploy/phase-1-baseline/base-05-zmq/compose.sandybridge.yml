@@ -1,0 +1,13 @@
+services:
+  5gc:
+    image: khoshaba/tb3-base05-artifacts@sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d
+    pull_policy: missing
+
+  gnb:
+    image: khoshaba/tb3-base05-artifacts:gnb-zmq-24.10.0-9d5dd742-sandybridge-v1@sha256:7e3a3c4d9e4a46d1e2bf566420e714f8f69f27fa0239a066330c59f0384d6319
+    pull_policy: missing
+    entrypoint: []
+
+  srsue:
+    image: khoshaba/tb3-base05-artifacts:srsue-zmq-23.11-eea87b1d893a-sandybridge-v2@sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410
+    pull_policy: missing
