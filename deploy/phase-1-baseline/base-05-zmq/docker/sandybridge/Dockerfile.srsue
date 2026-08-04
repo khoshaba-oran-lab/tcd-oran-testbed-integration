@@ -1,0 +1,96 @@
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        libboost-program-options-dev \
+        libconfig++-dev \
+        libfftw3-dev \
+        libmbedtls-dev \
+        libsctp-dev \
+        libzmq3-dev \
+        pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . /src
+
+RUN cmake \
+        -S /src \
+        -B /src/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DGCC_ARCH=sandybridge \
+        -DAUTO_DETECT_ISA=OFF \
+        -DDISABLE_SIMD=OFF \
+        -DHAVE_SSE:BOOL=ON \
+        -DHAVE_AVX:BOOL=ON \
+        -DHAVE_AVX2:BOOL=OFF \
+        -DHAVE_FMA:BOOL=OFF \
+        -DHAVE_AVX512:BOOL=OFF \
+        -DCMAKE_C_FLAGS="-march=sandybridge -mtune=sandybridge -mno-avx2 -mno-fma -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq" \
+        -DCMAKE_CXX_FLAGS="-march=sandybridge -mtune=sandybridge -mno-avx2 -mno-fma -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq" \
+        -DENABLE_SRSUE=ON \
+        -DENABLE_SRSENB=OFF \
+        -DENABLE_SRSEPC=OFF \
+        -DENABLE_GUI=OFF \
+        -DENABLE_UHD=OFF \
+        -DENABLE_BLADERF=OFF \
+        -DENABLE_SOAPYSDR=OFF \
+        -DENABLE_SKIQ=OFF \
+        -DENABLE_ZEROMQ=ON
+
+RUN set -eu; \
+    COMMANDS=/src/build/compile_commands.json; \
+    test -s "$COMMANDS"; \
+    grep -q -- '-march=sandybridge' "$COMMANDS"; \
+    grep -q -- '-mno-avx2' "$COMMANDS"; \
+    grep -q -- '-mno-fma' "$COMMANDS"; \
+    if grep -E \
+        -- '(-march=native|-mavx2|-mfma|-mavx512)' \
+        "$COMMANDS"; \
+    then \
+        echo "FORBIDDEN_COMPILER_FLAG_DETECTED=yes" >&2; \
+        exit 1; \
+    fi; \
+    echo "COMPILE_COMMANDS_ISA_CHECK=PASS"
+
+RUN cmake --build /src/build --parallel 8 && \
+    cmake --install /src/build
+
+FROM khoshaba/tb3-base05-artifacts@sha256:b02c44dda074a512a916eb526e78ee895867fa5798adde2e3673935c1edcf622
+
+USER root
+
+RUN rm -f \
+        /usr/local/bin/srsue \
+        /usr/local/lib/libsrsran_rf.so \
+        /usr/local/lib/libsrsran_rf.so.0 \
+        /usr/local/lib/libsrsran_rf.so.* \
+        /usr/local/lib/libsrsran_rf_zmq.so \
+        /usr/local/lib/libsrsran_rf_zmq.so.0 \
+        /usr/local/lib/libsrsran_rf_zmq.so.*
+
+COPY --from=builder /usr/local/bin/srsue /usr/local/bin/srsue
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/share/srsran/ /usr/local/share/srsran/
+
+RUN ldconfig && \
+    mkdir -p /usr/local/share/tb3-build && \
+    printf '%s\n' \
+        'source_commit=eea87b1d893ae58e0b08bc381730c502024ae71f' \
+        'builder_base=ubuntu:22.04' \
+        'gcc_arch=sandybridge' \
+        'auto_detect_isa=off' \
+        'avx=enabled' \
+        'avx2=disabled' \
+        'fma=disabled' \
+        'avx512=disabled' \
+        > /usr/local/share/tb3-build/srsue-cpu-profile.txt
+
+LABEL org.opencontainers.image.revision="eea87b1d893ae58e0b08bc381730c502024ae71f"
+LABEL tcd.tb3.cpu-profile="sandybridge-avx-no-avx2-no-fma-v2"

@@ -1,0 +1,107 @@
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        libfftw3-dev \
+        libgtest-dev \
+        libmbedtls-dev \
+        libsctp-dev \
+        libyaml-cpp-dev \
+        libzmq3-dev \
+        pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . /src
+
+RUN cmake \
+        -S /src \
+        -B /src/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DCMAKE_INSTALL_PREFIX=/opt/srs \
+        -DMARCH=sandybridge \
+        -DMTUNE=sandybridge \
+        -DCMAKE_C_FLAGS="-march=sandybridge -mtune=sandybridge -mno-avx2 -mno-fma -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq" \
+        -DCMAKE_CXX_FLAGS="-march=sandybridge -mtune=sandybridge -mno-avx2 -mno-fma -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq" \
+        -DBUILD_TESTS=OFF \
+        -DENABLE_WERROR=OFF \
+        -DENABLE_UHD=OFF \
+        -DENABLE_ZEROMQ=ON \
+        -DENABLE_EXPORT=ON \
+        -DENABLE_DPDK=OFF \
+        -DENABLE_LIBNUMA=OFF \
+        -DDU_SPLIT_TYPE=SPLIT_8
+
+RUN set -eu; \
+    COMMANDS=/src/build/compile_commands.json; \
+    CACHE=/src/build/CMakeCache.txt; \
+    test -s "$COMMANDS"; \
+    test -s "$CACHE"; \
+    grep -q -- '-march=sandybridge' "$COMMANDS"; \
+    grep -q -- '-mno-avx2' "$COMMANDS"; \
+    grep -q -- '-mno-fma' "$COMMANDS"; \
+    grep -q '^MARCH:STRING=sandybridge$' "$CACHE"; \
+    grep -q '^MTUNE:STRING=sandybridge$' "$CACHE"; \
+    grep -q '^ENABLE_ZEROMQ:BOOL=ON$' "$CACHE"; \
+    grep -q '^ENABLE_UHD:BOOL=OFF$' "$CACHE"; \
+    if grep -q -- '-march=native' "$COMMANDS"; then \
+        echo "GENERIC_NATIVE_ARCH_FLAG_DETECTED=yes" >&2; \
+        exit 1; \
+    fi; \
+    SPECIALIZED_ISA_COUNT="$(grep -Ec -- '(-mavx2|-mfma|-mavx512)' "$COMMANDS" || true)"; \
+    test "$SPECIALIZED_ISA_COUNT" -gt 0; \
+    echo "SPECIALIZED_ISA_COMPILE_COMMAND_COUNT=$SPECIALIZED_ISA_COUNT"; \
+    echo "GLOBAL_ISA_POLICY_CHECK=PASS"
+
+RUN cmake \
+        --build /src/build \
+        --target install \
+        --parallel 6
+
+RUN test -x /opt/srs/bin/gnb && \
+    mkdir -p /opt/srs/share/tb3-build && \
+    { \
+        echo 'source_commit=9d5dd742a70e82c0813c34f57982f9507f1b6d5d'; \
+        echo 'source_ref=release_24_10'; \
+        echo 'builder_base=ubuntu:22.04'; \
+        echo 'march=sandybridge'; \
+        echo 'mtune=sandybridge'; \
+        echo 'avx2=disabled'; \
+        echo 'fma=disabled'; \
+        echo 'avx512=disabled'; \
+        echo 'uhd=disabled'; \
+        echo 'zeromq=enabled'; \
+        echo 'du_split=SPLIT_8'; \
+    } > /opt/srs/share/tb3-build/gnb-cpu-profile.txt
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libfftw3-dev \
+        libmbedtls-dev \
+        libsctp-dev \
+        libyaml-cpp-dev \
+        libzmq3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/srs/ /usr/local/
+
+RUN ldconfig && \
+    test -x /usr/local/bin/gnb
+
+LABEL org.opencontainers.image.revision="9d5dd742a70e82c0813c34f57982f9507f1b6d5d"
+LABEL org.opencontainers.image.description="Tb3 srsRAN gNB ZeroMQ build for Intel Sandy Bridge"
+LABEL tcd.tb3.cpu-profile="sandybridge-avx-no-avx2-no-fma"
+LABEL tcd.tb3.source-equivalence="release-24.10-not-historical-commit-exact"
+
+ENTRYPOINT ["/usr/local/bin/gnb"]
