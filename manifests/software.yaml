@@ -1,0 +1,92 @@
+schema_version: "1.0"
+project: "Sci_O-RAN"
+manifest_type: "software-environment"
+host: "tb3-dell"
+
+inventory:
+  captured_at_utc: "2026-08-09T12:00:21+00:00"
+  git_branch: "feat/tb3-dell-reproducibility"
+  git_commit: "7258aa21956fdee3cc66117f7ea6b11535ce5e05"
+
+host_environment:
+  os:
+    distribution: "Ubuntu"
+    version: "24.04.4 LTS"
+    version_id: "24.04"
+    codename: "Noble Numbat"
+  kernel:
+    release: "6.8.0-137-generic"
+  architecture: "x86_64"
+
+container_runtime:
+  docker:
+    version: "29.7.2"
+    build: "a7dcaa6"
+  docker_compose:
+    version: "v5.4.0"
+
+compose_runtime:
+  project: "tcd-base05-zmq"
+  working_directory: "deploy/phase-1-baseline/base-05-zmq"
+  config_files:
+    - path: "deploy/phase-1-baseline/base-05-zmq/compose.runtime.yml"
+      sha256: "9ed0bf75ed2df503a3cfba373e508cc4a4b5332751c181fd93f97a7774742ce5"
+    - path: "deploy/phase-1-baseline/base-05-zmq/compose.sandybridge.yml"
+      sha256: "84b8a4a8c0b72e230b90d29793c4e09157b20bff6b616bb3eef0405db5ea70a0"
+
+runtime_configuration:
+  gnb:
+    path: "deploy/phase-1-baseline/base-05-zmq/configs/gnb_zmq_base05.yaml"
+    container_path: "/gnb_zmq_base05.yaml"
+    mount_mode: "ro"
+    sha256: "ba211c4b5b600a77869560981469302d17c57440ab9898ea61ff84d14780c17d"
+
+  srsue:
+    path: "deploy/phase-1-baseline/base-05-zmq/configs/ue_zmq_base05.conf"
+    container_path: "/ue_zmq_base05.conf"
+    mount_mode: "ro"
+    sha256: "ceab877f0f8105966ee89f910a98ee51158550a8503e7a6eea6e41fc8ce1e47e"
+
+containers:
+  - name: "base05_open5gs_5gc"
+    compose_service: "5gc"
+    image_reference: "khoshaba/tb3-base05-artifacts@sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d"
+    image_id: "sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d"
+    platform: "linux/amd64"
+    compose_config_hash: "1eef07d4e67652e19628c898cebb5ac9d88c5c020ab00ac8e398c3d082b76cf5"
+    application:
+      name: "Open5GS"
+      version: "2.7.0"
+      version_source: "local image tag open5gs-v2.7.0-e584550e"
+      provenance_status: "tag-derived; build procedure not yet established"
+
+  - name: "base05_srsran_gnb"
+    compose_service: "gnb"
+    image_reference: "khoshaba/tb3-base05-artifacts:gnb-zmq-24.10.0-9d5dd742-sandybridge-v1@sha256:7e3a3c4d9e4a46d1e2bf566420e714f8f69f27fa0239a066330c59f0384d6319"
+    image_id: "sha256:7e3a3c4d9e4a46d1e2bf566420e714f8f69f27fa0239a066330c59f0384d6319"
+    platform: "linux/amd64"
+    compose_config_hash: "7cc4fb3647fb5fb1aa87d18e76c9f1f9945f3fd19e3227abeabf55c0820c3f42"
+    application:
+      name: "srsRAN gNB"
+      version: "24.10.0"
+      revision: "9d5dd742a70e82c0813c34f57982f9507f1b6d5d"
+      cpu_profile: "sandybridge-avx-no-avx2-no-fma"
+      source_equivalence: "release-24.10-not-historical-commit-exact"
+
+  - name: "base05_srsran_srsue"
+    compose_service: "srsue"
+    image_reference: "khoshaba/tb3-base05-artifacts:srsue-zmq-23.11-eea87b1d893a-sandybridge-v2@sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410"
+    image_id: "sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410"
+    platform: "linux/amd64"
+    compose_config_hash: "1864d5905831363fd5090f867ee69cf466f7fb93f2809961bfdd39dbec4d8823"
+    application:
+      name: "srsUE ZeroMQ"
+      version: "23.11"
+      revision: "eea87b1d893ae58e0b08bc381730c502024ae71f"
+      source: "https://github.com/srsran/srsRAN_4G"
+      cpu_profile: "sandybridge-avx-no-avx2-no-fma-v2"
+
+notes:
+  - "This manifest records the observed Tb3 runtime software environment."
+  - "Image publication to Docker Hub is outside this action and has not been performed."
+  - "Immutable image inventory is maintained separately in manifests/docker-images.yaml."
