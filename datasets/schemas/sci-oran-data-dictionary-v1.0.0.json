@@ -1,0 +1,451 @@
+{
+  "dictionary_id": "urn:sci-oran:data-dictionary:1.0.0",
+  "dictionary_version": "1.0.0",
+  "schema_version": "1.0.0",
+  "description": "Canonical field dictionary for the initial Sci_O-RAN unified dataset architecture.",
+  "evidence_class_vocabulary": {
+    "SOURCE_PROVEN": "Semantics or unit established directly from the exact runtime source revision or authoritative implementation.",
+    "RUNTIME_OBSERVED": "Property directly demonstrated in the Tb3 runtime.",
+    "DERIVED": "Value calculated deterministically from source, receiver, processed, or other explicitly identified input fields.",
+    "HYPOTHESIS": "Interpretation not yet proven and not permitted as an established dataset fact."
+  },
+  "evidence_model_note": "evidence_class describes the evidential basis of a field definition. It is distinct from experiment-level evidence_status, which describes completeness or acceptability of experimental evidence.",
+  "fields": [
+    {
+      "name": "experiment_id",
+      "description": "Primary scientific experiment identity.",
+      "type": "string",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "experiment metadata",
+      "data_level": [
+        "raw",
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "run_id",
+      "description": "Identity of one concrete operational execution instance.",
+      "type": "string",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "run metadata",
+      "data_level": [
+        "raw",
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "record_id",
+      "description": "Source-specific stable row or event identity where required.",
+      "type": "string",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "dataset generation or source-specific capture",
+      "data_level": [
+        "raw",
+        "processed"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "timestamp_utc_ns",
+      "description": "Canonical processed UTC alignment coordinate expressed as nanoseconds since UNIX epoch.",
+      "type": "int64",
+      "unit": "ns since UNIX epoch",
+      "nullable": false,
+      "semantic_class": "derived_timestamp",
+      "source": "deterministic normalization of the scientifically appropriate epoch-based source timestamp",
+      "data_level": [
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "DERIVED"
+    },
+    {
+      "name": "gnb_timestamp_s",
+      "description": "Native gNB JSON source-side wall-clock timestamp.",
+      "type": "float64",
+      "unit": "s since UNIX epoch",
+      "nullable": false,
+      "semantic_class": "observation",
+      "source": "native gNB JSON timestamp",
+      "data_level": [
+        "raw",
+        "processed"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "rx_wall_ns",
+      "description": "Host receiver wall-clock receive timestamp.",
+      "type": "int64",
+      "unit": "ns since UNIX epoch",
+      "nullable": false,
+      "semantic_class": "observation",
+      "source": "receiver time.time_ns()",
+      "data_level": [
+        "raw",
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "rx_mono_ns",
+      "description": "Host receiver monotonic timestamp for local ordering and inter-arrival timing.",
+      "type": "int64",
+      "unit": "ns",
+      "nullable": false,
+      "semantic_class": "observation",
+      "source": "receiver time.monotonic_ns()",
+      "data_level": [
+        "raw",
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "average_latency_us",
+      "description": "Mean internal native gNB scheduler decision latency over the report window.",
+      "type": "uint32",
+      "unit": "us",
+      "nullable": false,
+      "semantic_class": "observation",
+      "source": "native gNB scheduler telemetry",
+      "data_level": [
+        "raw",
+        "processed"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "offered_rate_kbit_s",
+      "description": "Configured offered traffic rate.",
+      "type": "integer",
+      "unit": "kbit/s",
+      "nullable": true,
+      "semantic_class": "configuration",
+      "source": "experiment configuration",
+      "data_level": [
+        "raw",
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "configured_duration_s",
+      "description": "Configured workload duration.",
+      "type": "number",
+      "unit": "s",
+      "nullable": true,
+      "semantic_class": "configuration",
+      "source": "experiment configuration",
+      "data_level": [
+        "raw",
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "packet_size_bytes",
+      "description": "Configured traffic payload or packet size.",
+      "type": "integer",
+      "unit": "bytes",
+      "nullable": true,
+      "semantic_class": "configuration",
+      "source": "experiment configuration",
+      "data_level": [
+        "raw",
+        "processed",
+        "derived"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "throughput_kbit_s",
+      "description": "Measured traffic throughput normalized to kilobits per second.",
+      "type": "number",
+      "unit": "kbit/s",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "traffic measurement tool such as iperf",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "DERIVED"
+    },
+    {
+      "name": "loss_pct",
+      "description": "Observed or tool-calculated packet loss percentage.",
+      "type": "number",
+      "unit": "percent",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "traffic measurement tool",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "jitter_ms",
+      "description": "Observed or tool-calculated traffic jitter.",
+      "type": "number",
+      "unit": "ms",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "traffic measurement tool",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "rtt_ms",
+      "description": "Observed round-trip-time sample.",
+      "type": "number",
+      "unit": "ms",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "RTT measurement tool",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "rtt_p50_ms",
+      "description": "50th percentile RTT over a declared aggregation scope.",
+      "type": "number",
+      "unit": "ms",
+      "nullable": true,
+      "semantic_class": "derived_statistic",
+      "source": "RTT samples",
+      "data_level": [
+        "derived"
+      ],
+      "evidence_class": "DERIVED"
+    },
+    {
+      "name": "rtt_p95_ms",
+      "description": "95th percentile RTT over a declared aggregation scope.",
+      "type": "number",
+      "unit": "ms",
+      "nullable": true,
+      "semantic_class": "derived_statistic",
+      "source": "RTT samples",
+      "data_level": [
+        "derived"
+      ],
+      "evidence_class": "DERIVED"
+    },
+    {
+      "name": "rtt_p99_ms",
+      "description": "99th percentile RTT over a declared aggregation scope.",
+      "type": "number",
+      "unit": "ms",
+      "nullable": true,
+      "semantic_class": "derived_statistic",
+      "source": "RTT samples",
+      "data_level": [
+        "derived"
+      ],
+      "evidence_class": "DERIVED"
+    },
+    {
+      "name": "cpu_utilization_pct",
+      "description": "Host-wide CPU utilization.",
+      "type": "number",
+      "unit": "percent",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host CPU collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "cpu_core_id",
+      "description": "Logical processor-core identity.",
+      "type": "integer",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "host CPU topology or collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "cpu_core_utilization_pct",
+      "description": "Per-core CPU utilization.",
+      "type": "number",
+      "unit": "percent",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "per-core host CPU collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "cpu_frequency_mhz",
+      "description": "Observed processor-core frequency.",
+      "type": "number",
+      "unit": "MHz",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "CPU-frequency collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "load_1m",
+      "description": "One-minute host load average.",
+      "type": "number",
+      "unit": "dimensionless",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host load collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "load_5m",
+      "description": "Five-minute host load average.",
+      "type": "number",
+      "unit": "dimensionless",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host load collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "load_15m",
+      "description": "Fifteen-minute host load average.",
+      "type": "number",
+      "unit": "dimensionless",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host load collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "memory_total_bytes",
+      "description": "Total host memory quantity reported by the collector.",
+      "type": "integer",
+      "unit": "bytes",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host memory collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "memory_used_bytes",
+      "description": "Host memory reported as used.",
+      "type": "integer",
+      "unit": "bytes",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host memory collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "memory_available_bytes",
+      "description": "Host memory reported as available.",
+      "type": "integer",
+      "unit": "bytes",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "host memory collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "container_id",
+      "description": "Container runtime identity.",
+      "type": "string",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "container runtime",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "container_role",
+      "description": "Scientific role of the container, such as gNB, UE, or 5GC.",
+      "type": "string",
+      "unit": null,
+      "nullable": false,
+      "semantic_class": "identity",
+      "source": "Sci_O-RAN experiment metadata",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "SOURCE_PROVEN"
+    },
+    {
+      "name": "container_cpu_pct",
+      "description": "Container CPU utilization.",
+      "type": "number",
+      "unit": "percent",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "container resource collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    },
+    {
+      "name": "container_memory_bytes",
+      "description": "Container memory utilization quantity.",
+      "type": "integer",
+      "unit": "bytes",
+      "nullable": true,
+      "semantic_class": "observation",
+      "source": "container resource collector",
+      "data_level": [
+        "processed"
+      ],
+      "evidence_class": "RUNTIME_OBSERVED"
+    }
+  ],
+  "deferred_namespaces": {
+    "oran_kpm": "Exact field names and units are deferred until E2SM-KPM measurement definitions are validated.",
+    "actuator": "Exact command, acknowledgement, and readback fields are deferred until the runtime actuator surface is validated."
+  }
+}

@@ -63,6 +63,12 @@ tmp/
 datasets/*
 !datasets/README.md
 
+# Version-controlled dataset specifications and lightweight examples
+!datasets/schemas/
+!datasets/schemas/**
+!datasets/examples/
+!datasets/examples/**
+
 # Local configuration backups
 
 deploy/phase-1-baseline/base-05-zmq/configs/gnb_zmq_base05.yaml.before-native-metrics
