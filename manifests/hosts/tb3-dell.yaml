@@ -1,0 +1,31 @@
+schema_version: "0.1"
+manifest_type: "host_environment"
+
+captured_at_utc: "2026-08-08T14:33:14Z"
+
+host:
+  hostname: "tb3-dell"
+  os: "Ubuntu 24.04.4 LTS"
+  kernel: "6.8.0-137-generic"
+  architecture: "x86_64"
+
+container_runtime:
+  docker_client_version: "29.7.2"
+  docker_server_version: "29.7.2"
+  docker_compose_version: "5.4.0"
+
+repository_state:
+  branch: "feat/tb3-dell-reproducibility"
+  head_commit: "632b27a27d33c10babb1f93042245dd712b2c835"
+  working_tree_clean: false
+
+provenance_references:
+  base05_lock: "deploy/phase-1-baseline/base-05-zmq/locks/base-05-zmq.lock"
+  base05_runtime_lock: "deploy/phase-1-baseline/base-05-zmq/locks/base-05-zmq-runtime.lock"
+  srsue_source_lock: "deploy/phase-1-baseline/base-05-zmq/locks/srsue-zmq.source.lock"
+  upstream_lock: "upstream/upstream.lock.yaml"
+
+notes:
+  - "Values in this manifest were obtained directly from tb3-dell."
+  - "A dirty working tree means the Git commit alone is insufficient to reconstruct the exact runtime state."
+  - "Hardware and extended software inventories are added only when required by experimental reproducibility."
