@@ -23,6 +23,7 @@ results/*
 *.pcapng
 *.parquet
 *.csv
+!experiments/registry.csv
 *.jsonl
 *.log
 
