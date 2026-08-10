@@ -8,15 +8,21 @@ sci_oran_validate_run_evidence() {
     [[ -s "${run_dir}/metadata-snapshot.json" ]] || return 65
     [[ -s "${run_dir}/raw/resource/resource-network.jsonl" ]] || return 65
     [[ -s "${run_dir}/raw/native_gnb/native-gNB.log" ]] || return 65
+    [[ -s "${run_dir}/raw/rtt/ping.log" ]] || return 65
     [[ -s "${run_dir}/raw/traffic/traffic.stdout.log" ]] || return 65
 
     [[ -f "${run_dir}/raw/resource/resource-network.stderr.log" ]] || return 65
     [[ -f "${run_dir}/raw/native_gnb/native-gNB.stderr.log" ]] || return 65
+    [[ -f "${run_dir}/raw/rtt/ping.stderr.log" ]] || return 65
     [[ -f "${run_dir}/raw/traffic/traffic.stderr.log" ]] || return 65
 
     grep -Fxq \
         'UDP_RECEIVER_READY=10.53.1.1:55555' \
         "${run_dir}/raw/native_gnb/native-gNB.log" || return 65
+
+    grep -Eq \
+        '^\[[0-9]+\.[0-9]+\].*icmp_seq=[0-9]+.*time=[0-9.]+ ms' \
+        "${run_dir}/raw/rtt/ping.log" || return 65
 
     python3 - "${run_dir}/raw/resource/resource-network.jsonl" <<'PY'
 import json

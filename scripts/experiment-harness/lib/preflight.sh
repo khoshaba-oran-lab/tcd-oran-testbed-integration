@@ -114,11 +114,13 @@ sci_oran_postcheck() {
     local run_dir="$2"
     local resource_pid="$3"
     local native_pid="$4"
+    local rtt_pid="$5"
     local state
 
     [[ -d "${repo_root}/.git" ]] || return 66
     [[ "$resource_pid" =~ ^[0-9]+$ ]] || return 64
     [[ "$native_pid" =~ ^[0-9]+$ ]] || return 64
+    [[ "$rtt_pid" =~ ^[0-9]+$ ]] || return 64
 
     docker info >/dev/null 2>&1 || return 69
 
@@ -132,11 +134,20 @@ sci_oran_postcheck() {
     state="$(ps -o stat= -p "$native_pid" 2>/dev/null | awk 'NR == 1 {print $1}')"
     [[ -n "$state" && "$state" != Z* ]] || return 70
 
+    kill -0 "$rtt_pid" 2>/dev/null || return 70
+    state="$(ps -o stat= -p "$rtt_pid" 2>/dev/null | awk 'NR == 1 {print $1}')"
+    [[ -n "$state" && "$state" != Z* ]] || return 70
+
     [[ -s "${run_dir}/raw/resource/resource-network.jsonl" ]] || return 65
+    [[ -s "${run_dir}/raw/rtt/ping.log" ]] || return 65
 
     grep -Fxq \
         'UDP_RECEIVER_READY=10.53.1.1:55555' \
         "${run_dir}/raw/native_gnb/native-gNB.log" || return 65
+
+    grep -Eq \
+        '^\[[0-9]+\.[0-9]+\].*icmp_seq=[0-9]+.*time=[0-9.]+ ms' \
+        "${run_dir}/raw/rtt/ping.log" || return 65
 
     return 0
 }

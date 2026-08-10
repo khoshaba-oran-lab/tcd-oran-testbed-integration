@@ -222,6 +222,7 @@ fi
 
 RESOURCE_PID="$SCI_ORAN_RESOURCE_PID"
 NATIVE_PID="$SCI_ORAN_NATIVE_PID"
+RTT_PID="$SCI_ORAN_RTT_PID"
 
 if [[ "$KPM_ENABLED" == "true" ]]; then
     if sci_oran_kpm_start         true         "${RUN_DIR}/raw/oran_kpm/oran-kpm.log"         "${RUN_DIR}/raw/oran_kpm/oran-kpm.stderr.log"         "$KPM_COMMAND"
@@ -285,7 +286,8 @@ if sci_oran_postcheck \
     "$REPO_ROOT" \
     "$RUN_DIR" \
     "$RESOURCE_PID" \
-    "$NATIVE_PID"
+    "$NATIVE_PID" \
+    "$RTT_PID"
 then
     :
 else
