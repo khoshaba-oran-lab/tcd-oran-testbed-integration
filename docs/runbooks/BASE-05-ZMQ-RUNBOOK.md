@@ -114,6 +114,52 @@ SIM or USIM provisioning, or OTA experiments.
 The local file `configs/open5gs.env` and generated resolved Compose models
 must not be committed.
 
+## Tb3 recovery validation (2026-08-11)
+
+A controlled recovery experiment was performed after BASE-05 user-plane
+initial access stopped working.
+
+The experiment kept the following elements unchanged:
+
+- Open5GS 5GC;
+- srsUE configuration;
+- BASE-05 ZeroMQ topology;
+- Docker networking;
+- Sandy Bridge compatible gNB and srsUE images.
+
+The gNB configuration was then tested using an A/B comparison.
+
+With the current HEAD configuration containing the `metrics:` block, the UE
+remained at `Attaching UE...`, no `tun_srsue` interface was created, and no
+user-plane connectivity was established.
+
+With the gNB configuration from commit `f04a55b` (without the `metrics:`
+block), the complete access sequence was restored:
+
+- Random Access Complete;
+- RRC Connected;
+- PDU Session Establishment successful;
+- `tun_srsue = 10.45.1.2/24`;
+- ping to `10.45.1.1` completed with `0% packet loss`.
+
+The repository-native verification reproduced the same successful result
+without a temporary configuration override.
+
+Therefore, the validated BASE-05 gNB configuration must remain independent
+of the native metrics server configuration. Native gNB telemetry must be
+enabled through a separate observability configuration or overlay and must
+not modify the validated BASE-05 runtime configuration.
+
+For Tb3, the validated RAN images are the Sandy Bridge compatible images
+selected by:
+
+- `compose.runtime.yml`;
+- `compose.sandybridge.yml`.
+
+The effective image contract must be checked before any container recreate.
+The generic Compose path must not be allowed to replace these images with
+CPU-incompatible standard RAN images.
+
 ## Scope
 
 This baseline excludes:

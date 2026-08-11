@@ -65,7 +65,8 @@ The repository inventory established the following facts:
 - forensic runtime artifacts exist locally under `artifacts/`.
 - repository-level Sandy Bridge scripts are wrappers for deployment-specific implementations and are not duplicate copies.
 - Tb3 BASE-05 architecture and native gNB telemetry are preserved in remote checkpoint `0616298b149a0a4b13f6651aa67e7ac18628bf61` on branch `feat/tb3-dell-reproducibility`.
-- the BASE-05 native-metrics configuration is tracked and preserved in the remote Git branch.
+- the validated BASE-05 gNB configuration excludes the native metrics server; native gNB telemetry is treated as a separate observability configuration and must not modify the BASE-05 runtime baseline.
+- on 2026-08-11, a controlled A/B recovery test showed that the HEAD-only `metrics:` block was the gNB configuration delta associated with failed initial access; restoring the `f04a55b` gNB configuration restored RACH, RRC, PDU session establishment, `tun_srsue = 10.45.1.2/24`, and `0% packet loss` to `10.45.1.1`.
 - the native-metrics receiver and compact-parser helper scripts are tracked and preserved in the remote Git branch.
 
 ## Evidence discipline

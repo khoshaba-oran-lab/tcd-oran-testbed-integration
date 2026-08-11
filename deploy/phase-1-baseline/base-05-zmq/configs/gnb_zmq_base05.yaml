@@ -54,9 +54,3 @@ pcap:
   ngap_enable: false
   ngap_filename: /tmp/gnb_ngap.pcap
   e2ap_enable: false
-
-metrics:
-  addr: 10.53.1.1
-  port: 55555
-  enable_json_metrics: true
-  sched_report_period: 1000
