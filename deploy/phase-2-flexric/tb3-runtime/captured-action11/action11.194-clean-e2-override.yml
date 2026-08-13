@@ -1,0 +1,4 @@
+services:
+  gnb:
+    volumes:
+      - /tmp/action11.194-gnb-base05-clean-e2-rc.yaml:/gnb_zmq_base05.yaml:ro

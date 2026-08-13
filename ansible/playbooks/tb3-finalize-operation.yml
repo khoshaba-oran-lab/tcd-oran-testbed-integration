@@ -1,0 +1,244 @@
+---
+- name: Sci-O-RAN Tb3 lifecycle operation finalization
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+    sci_oran_evidence_root: >-
+      {{ sci_oran_repo_root }}/artifacts/lifecycle
+
+  tasks:
+    - name: Require lifecycle operation identity
+      ansible.builtin.assert:
+        that:
+          - operation_id is defined
+          - operation_id is string
+          - >-
+            operation_id is match(
+              '^lifecycle-(preflight|snapshot|deploy|teardown|recover|day-start|day-stop)-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: "A valid lifecycle operation_id is required."
+
+    - name: Require lifecycle operation type
+      ansible.builtin.assert:
+        that:
+          - operation_type is defined
+          - >-
+            operation_type in [
+              'preflight',
+              'snapshot',
+              'deploy',
+              'teardown',
+              'recover',
+              'day-start',
+              'day-stop'
+            ]
+        fail_msg: "A valid operation_type is required."
+
+    - name: Require lifecycle operation result
+      ansible.builtin.assert:
+        that:
+          - operation_result is defined
+          - operation_result in ['PASS', 'FAIL']
+        fail_msg: "operation_result must be PASS or FAIL."
+
+    - name: Define operation evidence paths
+      ansible.builtin.set_fact:
+        sci_oran_operation_dir: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}
+        sci_oran_before_state: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/before-state.txt
+        sci_oran_after_state: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/after-state.txt
+        sci_oran_operation_log: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/operation.log
+        sci_oran_manifest: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/manifest.json
+        sci_oran_checksums: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/checksums.sha256
+        sci_oran_completion_utc: "{{ ansible_date_time.iso8601 }}"
+        sci_oran_start_utc_from_id: >-
+          {{ operation_id | regex_search('[0-9]{8}T[0-9]{6}Z') }}
+
+    - name: Inspect lifecycle operation directory
+      ansible.builtin.stat:
+        path: "{{ sci_oran_operation_dir }}"
+      register: sci_oran_operation_dir_state
+
+    - name: Require existing lifecycle operation directory
+      ansible.builtin.assert:
+        that:
+          - sci_oran_operation_dir_state.stat.exists
+          - sci_oran_operation_dir_state.stat.isdir
+        fail_msg: >-
+          Lifecycle operation evidence directory does not exist.
+
+    - name: Inspect before state
+      ansible.builtin.stat:
+        path: "{{ sci_oran_before_state }}"
+      register: sci_oran_before_state_info
+
+    - name: Inspect after state
+      ansible.builtin.stat:
+        path: "{{ sci_oran_after_state }}"
+      register: sci_oran_after_state_info
+
+    - name: Require before-state evidence
+      ansible.builtin.assert:
+        that:
+          - sci_oran_before_state_info.stat.exists
+          - sci_oran_before_state_info.stat.isreg
+        fail_msg: "before-state.txt is required."
+
+    - name: Require after-state evidence when requested
+      ansible.builtin.assert:
+        that:
+          - sci_oran_after_state_info.stat.exists
+          - sci_oran_after_state_info.stat.isreg
+        fail_msg: "after-state.txt is required."
+      when: require_after_state | default(true) | bool
+
+    - name: Inspect existing finalization artifacts
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ sci_oran_operation_log }}"
+        - "{{ sci_oran_manifest }}"
+        - "{{ sci_oran_checksums }}"
+      register: sci_oran_existing_finalization
+
+    - name: Refuse silent finalization overwrite
+      ansible.builtin.assert:
+        that:
+          - not item.stat.exists
+        fail_msg: >-
+          Finalization artifact already exists: {{ item.item }}
+      loop: "{{ sci_oran_existing_finalization.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Capture repository branch
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_repo_root }}"
+          - branch
+          - --show-current
+      register: sci_oran_git_branch
+      changed_when: false
+
+    - name: Capture repository HEAD
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_repo_root }}"
+          - rev-parse
+          - HEAD
+      register: sci_oran_git_head
+      changed_when: false
+
+    - name: Write lifecycle operation log
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_operation_log }}"
+        mode: "0644"
+        content: |
+          SCI_ORAN_LIFECYCLE_OPERATION_LOG_V1
+
+          OPERATION_ID={{ operation_id }}
+          OPERATION_TYPE={{ operation_type }}
+          OPERATION_RESULT={{ operation_result }}
+          START_UTC_FROM_OPERATION_ID={{ sci_oran_start_utc_from_id }}
+          COMPLETION_UTC={{ sci_oran_completion_utc }}
+          TARGET={{ inventory_hostname }}
+          HOSTNAME={{ ansible_hostname }}
+          REPOSITORY_BRANCH={{ sci_oran_git_branch.stdout }}
+          REPOSITORY_HEAD={{ sci_oran_git_head.stdout }}
+          BEFORE_STATE={{ sci_oran_before_state }}
+          AFTER_STATE={{ sci_oran_after_state if sci_oran_after_state_info.stat.exists else 'NOT_AVAILABLE' }}
+          CHANGED_COMPONENTS={{ changed_components | default([]) | to_json }}
+          LIFECYCLE_GATES={{ lifecycle_gates | default([]) | to_json }}
+
+    - name: Write lifecycle manifest
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_manifest }}"
+        mode: "0644"
+        content: >-
+          {{
+            {
+              "schema_version": "1.0",
+              "operation_id": operation_id,
+              "operation_type": operation_type,
+              "operation_start_utc": sci_oran_start_utc_from_id,
+              "operation_completion_utc": sci_oran_completion_utc,
+              "target": inventory_hostname,
+              "hostname": ansible_hostname,
+              "repository_branch": sci_oran_git_branch.stdout,
+              "repository_head": sci_oran_git_head.stdout,
+              "operation_result": operation_result,
+              "changed_components": changed_components | default([]),
+              "lifecycle_gates": lifecycle_gates | default([]),
+              "before_state": sci_oran_before_state,
+              "after_state": (
+                sci_oran_after_state
+                if sci_oran_after_state_info.stat.exists
+                else None
+              ),
+              "experiment_id": related_experiment_id | default(None),
+              "run_id": related_run_id | default(None)
+            } | to_nice_json
+          }}
+
+    - name: Generate lifecycle evidence checksum manifest
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        cd "{{ sci_oran_operation_dir }}"
+
+        find . \
+          -maxdepth 1 \
+          -type f \
+          ! -name 'checksums.sha256' \
+          -printf '%P\n' |
+        LC_ALL=C sort |
+        while IFS= read -r F
+        do
+          sha256sum "$F"
+        done > checksums.sha256
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Validate manifest JSON
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -m
+          - json.tool
+          - "{{ sci_oran_manifest }}"
+      changed_when: false
+
+    - name: Validate lifecycle checksum manifest
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - -c
+          - checksums.sha256
+      args:
+        chdir: "{{ sci_oran_operation_dir }}"
+      register: sci_oran_checksum_validation
+      changed_when: false
+
+    - name: Report lifecycle operation finalization
+      ansible.builtin.debug:
+        msg:
+          - "OPERATION_ID={{ operation_id }}"
+          - "OPERATION_TYPE={{ operation_type }}"
+          - "OPERATION_RESULT={{ operation_result }}"
+          - "MANIFEST={{ sci_oran_manifest }}"
+          - "OPERATION_LOG={{ sci_oran_operation_log }}"
+          - "CHECKSUMS={{ sci_oran_checksums }}"
+          - "LIFECYCLE_OPERATION_FINALIZATION_GATE=PASS"

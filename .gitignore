@@ -29,7 +29,12 @@ results/*
 
 # Large runtime data
 data/
-artifacts/
+# Runtime artifacts are ignored by default.
+artifacts/*
+# Keep the lifecycle contract under version control.
+!artifacts/lifecycle/
+artifacts/lifecycle/*
+!artifacts/lifecycle/README.md
 captures/
 influxdb-data/
 grafana-data/

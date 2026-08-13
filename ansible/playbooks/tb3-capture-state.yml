@@ -1,0 +1,216 @@
+---
+- name: Sci-O-RAN Tb3 persistent lifecycle state capture
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+    sci_oran_evidence_root: >-
+      {{ sci_oran_repo_root }}/artifacts/lifecycle
+
+    sci_oran_base05_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-1-baseline/base-05-zmq
+
+    sci_oran_runtime_compose: >-
+      {{ sci_oran_base05_dir }}/compose.runtime.yml
+
+    sci_oran_sandybridge_compose: >-
+      {{ sci_oran_base05_dir }}/compose.sandybridge.yml
+
+    sci_oran_base05_network: "tcd-base05-zmq_ran"
+
+    sci_oran_container_name_regex: >-
+      ^(base05_|action11_|p2a_)|(^|[-_])(flexric|ric|xapp)([-_]|$)
+
+  tasks:
+    - name: Require lifecycle operation identity
+      ansible.builtin.assert:
+        that:
+          - operation_id is defined
+          - operation_id is string
+          - >-
+            operation_id is match(
+              '^lifecycle-(preflight|snapshot|deploy|teardown|recover|day-start|day-stop)-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          A valid lifecycle operation_id is required.
+
+    - name: Require before or after snapshot role
+      ansible.builtin.assert:
+        that:
+          - snapshot_role is defined
+          - snapshot_role in ['before', 'after']
+        fail_msg: >-
+          snapshot_role must be either before or after.
+
+    - name: Define evidence paths
+      ansible.builtin.set_fact:
+        sci_oran_operation_dir: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}
+        sci_oran_state_file: >-
+          {{ sci_oran_evidence_root }}/{{ operation_id }}/{{ snapshot_role }}-state.txt
+        sci_oran_snapshot_utc: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Inspect existing state evidence file
+      ansible.builtin.stat:
+        path: "{{ sci_oran_state_file }}"
+      register: sci_oran_existing_state_file
+
+    - name: Refuse silent state evidence overwrite
+      ansible.builtin.assert:
+        that:
+          - not sci_oran_existing_state_file.stat.exists
+        fail_msg: >-
+          Lifecycle state evidence already exists:
+          {{ sci_oran_state_file }}
+
+    - name: Create lifecycle operation evidence directory
+      ansible.builtin.file:
+        path: "{{ sci_oran_operation_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Capture repository branch
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_repo_root }}"
+          - branch
+          - --show-current
+      register: sci_oran_git_branch
+      changed_when: false
+
+    - name: Capture repository HEAD
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_repo_root }}"
+          - rev-parse
+          - HEAD
+      register: sci_oran_git_head
+      changed_when: false
+
+    - name: Capture BASE-05 Compose state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - "{{ sci_oran_runtime_compose }}"
+          - -f
+          - "{{ sci_oran_sandybridge_compose }}"
+          - ps
+          - -a
+      register: sci_oran_compose_state
+      changed_when: false
+
+    - name: Discover relevant lifecycle containers
+      ansible.builtin.shell: |
+        set -o pipefail
+
+        docker ps -a \
+          --format '{% raw %}{{.Names}}{% endraw %}' |
+        grep -E '{{ sci_oran_container_name_regex }}' |
+        sort || true
+      args:
+        executable: /bin/bash
+      register: sci_oran_container_names
+      changed_when: false
+
+    - name: Capture detailed lifecycle container state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - --format
+          - >-
+            {% raw %}NAME={{.Name}}
+            STATUS={{.State.Status}}
+            RUNNING={{.State.Running}}
+            PID={{.State.Pid}}
+            RESTART_COUNT={{.RestartCount}}
+            IMAGE_REF={{.Config.Image}}
+            IMAGE_ID={{.Image}}
+            RESTART_POLICY={{.HostConfig.RestartPolicy.Name}}
+            AUTO_REMOVE={{.HostConfig.AutoRemove}}
+            COMPOSE_PROJECT={{with .Config.Labels}}{{index . "com.docker.compose.project"}}{{end}}
+            COMPOSE_SERVICE={{with .Config.Labels}}{{index . "com.docker.compose.service"}}{{end}}
+            NETWORK_MODE={{.HostConfig.NetworkMode}}{% endraw %}
+          - "{{ item }}"
+      loop: "{{ sci_oran_container_names.stdout_lines }}"
+      loop_control:
+        label: "{{ item }}"
+      register: sci_oran_container_state
+      changed_when: false
+      when: sci_oran_container_names.stdout_lines | length > 0
+
+    - name: Capture BASE-05 network state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - network
+          - inspect
+          - --format
+          - >-
+            {% raw %}NETWORK={{.Name}}
+            DRIVER={{.Driver}}
+            SCOPE={{.Scope}}
+            {{range $id,$c := .Containers}}
+            MEMBER={{$c.Name}} IP={{$c.IPv4Address}}
+            {{end}}{% endraw %}
+          - "{{ sci_oran_base05_network }}"
+      register: sci_oran_network_state
+      changed_when: false
+      failed_when: false
+
+    - name: Persist lifecycle state evidence
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_state_file }}"
+        mode: "0644"
+        content: |
+          SCI_ORAN_LIFECYCLE_STATE_V1
+
+          OPERATION_ID={{ operation_id }}
+          SNAPSHOT_ROLE={{ snapshot_role }}
+          SNAPSHOT_UTC={{ sci_oran_snapshot_utc }}
+          TARGET={{ inventory_hostname }}
+          HOSTNAME={{ ansible_hostname }}
+          REPOSITORY_BRANCH={{ sci_oran_git_branch.stdout }}
+          REPOSITORY_HEAD={{ sci_oran_git_head.stdout }}
+
+          ===== BASE05_COMPOSE_STATE =====
+          {{ sci_oran_compose_state.stdout }}
+
+          ===== RELEVANT_CONTAINERS =====
+          {{ sci_oran_container_names.stdout }}
+
+          ===== CONTAINER_STATE =====
+          {% for result in sci_oran_container_state.results | default([]) %}
+          {% if result.stdout is defined %}
+          {{ result.stdout }}
+          {% endif %}
+          {% endfor %}
+
+          ===== BASE05_NETWORK_STATE =====
+          RC={{ sci_oran_network_state.rc }}
+          {{ sci_oran_network_state.stdout }}
+
+    - name: Calculate persisted state SHA256
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - "{{ sci_oran_state_file }}"
+      register: sci_oran_state_sha256
+      changed_when: false
+
+    - name: Report persistent lifecycle state capture
+      ansible.builtin.debug:
+        msg:
+          - "OPERATION_ID={{ operation_id }}"
+          - "SNAPSHOT_ROLE={{ snapshot_role }}"
+          - "STATE_FILE={{ sci_oran_state_file }}"
+          - "STATE_SHA256={{ sci_oran_state_sha256.stdout }}"
+          - "LIFECYCLE_STATE_CAPTURE_GATE=PASS"
