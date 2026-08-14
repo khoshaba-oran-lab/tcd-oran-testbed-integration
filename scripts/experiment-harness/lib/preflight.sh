@@ -27,6 +27,74 @@ sci_oran_precheck() {
         return 75
     fi
 
+    local doctor_path
+    local doctor_output
+    local doctor_rc
+    local readiness_gate
+    local failure_reason
+
+    doctor_path="${repo_root}/scripts/sci-oran-doctor.sh"
+
+    [[ -x "$doctor_path" ]] || return 66
+
+    if doctor_output="$("$doctor_path" 2>&1)"; then
+        doctor_rc=0
+    else
+        doctor_rc=$?
+    fi
+
+    readiness_gate="$(
+        printf '%s\n' "$doctor_output" |
+        awk -F= '
+            $1 == "SCI_ORAN_READY_GATE" {
+                value = substr($0, index($0, "=") + 1)
+            }
+            END {
+                if (value != "")
+                    print value
+            }
+        '
+    )"
+
+    failure_reason="$(
+        printf '%s\n' "$doctor_output" |
+        awk -F= '
+            $1 == "FAILURE_REASON" {
+                value = substr($0, index($0, "=") + 1)
+            }
+            END {
+                if (value != "")
+                    print value
+            }
+        '
+    )"
+
+    if [[ "$doctor_rc" -ne 0 ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=${doctor_rc}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=${failure_reason:-MISSING}" \
+            >&2
+
+        return "$doctor_rc"
+    fi
+
+    if [[ "$readiness_gate" != "PASS" ]] || \
+       [[ "$failure_reason" != "NONE" ]]
+    then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=${doctor_rc}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=${failure_reason:-MISSING}" \
+            >&2
+
+        return 70
+    fi
+
+    echo "SCI_ORAN_PREFLIGHT_READY_GATE=PASS"
+    echo "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0"
+    echo "SCI_ORAN_PREFLIGHT_FAILURE_REASON=NONE"
+
     return 0
 }
 

@@ -1,6 +1,6 @@
 # Sci_O-RAN Project Status
 
-**Status date:** 2026-08-09
+**Status date:** 2026-08-14
 **Repository:** `tcd-oran-testbed-integration`
 
 ## Status convention
@@ -51,6 +51,33 @@ The project is currently in:
 **Phase 2 — Documentation, Data and Resource Observability**
 
 The immediate priority is to establish reproducible documentation, experiment metadata conventions, environment provenance, and observability before beginning system-identification and controller-design experiments.
+
+## Prompt 11B status
+
+Prompt 11B — Comprehensive Read-Only Testbed Doctor has completed its
+implementation and validation scope.
+
+Confirmed results include:
+
+- `DOCTOR_READ_ONLY_GATE=PASS`;
+- all principal infrastructure and runtime readiness gates passed;
+- `USER_PLANE_READINESS_GATE=PASS`;
+- `TRAFFIC_HARNESS_READINESS_GATE=PASS`;
+- `PROCESS_CONTINUITY_GATE=PASS`;
+- `READINESS_ARTIFACT_GATE=PASS`;
+- `READINESS_FRESHNESS_GATE=PASS`;
+- `READINESS_ARTIFACT_FINALIZATION_GATE=PASS`;
+- final `SCI_ORAN_READY_GATE=PASS`;
+- final `FAILURE_REASON=NONE`;
+- experiment preflight integration propagates the doctor result;
+- negative-path validation demonstrates fail-closed behaviour.
+
+Canonical Prompt 11B documentation is maintained in
+`docs/11b-sci-oran-readiness-doctor.md`.
+
+Prompt 11B does not constitute runtime actuator validation.
+The Runtime Actuation Gate remains a separate blocked control point and must
+not be inferred from `SCI_ORAN_READY_GATE=PASS`.
 
 ## Confirmed repository findings
 
