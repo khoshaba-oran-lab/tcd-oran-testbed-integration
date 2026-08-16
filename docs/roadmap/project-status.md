@@ -75,9 +75,10 @@ Confirmed results include:
 Canonical Prompt 11B documentation is maintained in
 `docs/11b-sci-oran-readiness-doctor.md`.
 
-Prompt 11B does not constitute runtime actuator validation.
-The Runtime Actuation Gate remains a separate blocked control point and must
-not be inferred from `SCI_ORAN_READY_GATE=PASS`.
+Prompt 11B does not by itself constitute runtime actuator validation and
+must not be inferred from `SCI_ORAN_READY_GATE=PASS`. The subsequent
+Prompt 11R.42 runtime-control experiment is summarized in the final-status
+section below.
 
 ## Confirmed repository findings
 
@@ -138,3 +139,40 @@ PID or MPC implementation must not begin until:
 Documentation and data management are continuous parts of the experimental workflow:
 
 > experiment -> validation -> raw data -> metadata -> documentation -> Git commit -> next experiment
+
+## Prompt 11R.42 final status
+
+Prompt 11R.42 completed an exactly-one corrected E2SM-RC PRB25 runtime
+control experiment on 2026-08-16.
+
+Proven experimental results:
+
+- RUNTIME_CONTROL_EXECUTION=PROVEN;
+- U_CMD=PROVEN;
+- U_ACK=PROVEN;
+- POST_CONTROL_NO_RESTART=PROVEN;
+- POST_CONTROL_E2_ASSOCIATION_CONTINUITY=PROVEN;
+- EXACTLY_ONE_LIVE_CONTROL_EXPERIMENT=PASS.
+
+Remaining evidence limitations:
+
+- DIRECT_ACTUATOR_READBACK=UNAVAILABLE;
+- PLANT_RESPONSE_AT_8MBIT=INCONCLUSIVE;
+- NATIVE_TELEMETRY=UNAVAILABLE_IN_CURRENT_RUNTIME;
+- KPM_RUNTIME_CAPTURE=UNAVAILABLE_IN_CURRENT_SESSION.
+
+Final gate classification:
+
+- OPERATIONAL_RUNTIME_ACTUATION_GATE=NOT_PASSED;
+- STRICT_ORIGINAL_ACTUATION_GATE=NOT_PASSED;
+- FINAL_ACTUATION_GATE_CLASSIFICATION=CLOSED_NOT_PASSED.
+
+System identification, PID, and MPC remain prohibited until the missing
+applied-state, plant-response, and telemetry evidence is resolved.
+
+Authoritative evidence:
+
+/home/khoshaba/sci-oran-evidence/action11r/2026-08-16-live-control-prb25/actuation-gate-classification.env
+
+SHA256:
+e15b4a1ec3776d3c4a4ccf6756402838c325a290981508d4374427567250d40e

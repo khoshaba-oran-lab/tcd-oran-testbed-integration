@@ -222,9 +222,72 @@ INDIRECT_APPLIED_STATE_EVIDENCE=CONTROL_ACK_PLUS_PLANT_RESPONSE
 In that case an operational runtime actuation result may be classified
 separately from the strict original Actuation Gate.
 
-## Next gate
+## Historical pre-experiment gate
 
-`NEXT_GATE=FRESH_SESSION_PRE_CONTROL_AND_RUNTIME_E2SM_RC_PRB25_CONTROL`
+Before the 2026-08-16 live-control experiment, the planned next gate was
+NEXT_GATE=FRESH_SESSION_PRE_CONTROL_AND_RUNTIME_E2SM_RC_PRB25_CONTROL.
 
-Do not start PID control or system identification before the Actuation
-Gate has been classified.
+That gate has now been executed and is superseded by the final
+Prompt 11R.42 classification below.
+
+## Prompt 11R.42 final experimental classification
+
+A fresh-session live experiment was completed on 2026-08-16 with the
+corrected E2SM-RC PRB25 actuator.
+
+The corrected actuator binary used in the experiment had SHA256
+0fb175a8cdfc376033717245746bd1e257101c3a18baccf9e5e7891d1ec4a689.
+
+The experiment established the following facts:
+
+- exactly one live actuator execution was performed;
+- exactly one E2SM-RC PRB25 Control Request was emitted;
+- U_CMD=PROVEN;
+- U_ACK=PROVEN;
+- CONTROL_REQUEST_COUNT=1;
+- ADDITIONAL_CONTROL_REQUEST_SENT=NO;
+- no restart of gNB, UE, 5GC, or Near-RT RIC occurred;
+- the E2 SCTP association remained present after control;
+- DIRECT_ACTUATOR_READBACK=UNAVAILABLE.
+
+The paired frozen 8 Mbit/s UDP downlink observations were:
+
+- Y_BEFORE_RX_MBIT_S=7.97;
+- Y_AFTER_RX_MBIT_S=7.98;
+- Y_BEFORE_JITTER_MS=1.564;
+- Y_AFTER_JITTER_MS=1.593;
+- Y_BEFORE_LOSS=0/14482;
+- Y_AFTER_LOSS=0/14484.
+
+Therefore PLANT_RESPONSE_AT_8MBIT=INCONCLUSIVE. The absence of an
+observable throughput degradation at this operating point must not be
+interpreted as proof that the PRB25 command was not applied.
+
+Post-control telemetry classification was:
+
+- NATIVE_TELEMETRY=UNAVAILABLE_IN_CURRENT_RUNTIME;
+- KPM_RUNTIME_CAPTURE=UNAVAILABLE_IN_CURRENT_SESSION.
+
+The resulting final classification is:
+
+- EXACTLY_ONE_LIVE_CONTROL_EXPERIMENT=PASS;
+- INDIRECT_APPLIED_STATE_EVIDENCE=INSUFFICIENT_FOR_PASS;
+- OPERATIONAL_RUNTIME_ACTUATION_GATE=NOT_PASSED;
+- STRICT_ORIGINAL_ACTUATION_GATE=NOT_PASSED;
+- FINAL_ACTUATION_GATE_CLASSIFICATION=CLOSED_NOT_PASSED;
+- PROMPT11_SYSTEM_IDENTIFICATION_ALLOWED=NO;
+- PROMPT11_PID_ALLOWED=NO;
+- PROMPT11_MPC_ALLOWED=NO.
+
+The authoritative durable classification artifact is stored outside Git at:
+
+/home/khoshaba/sci-oran-evidence/action11r/2026-08-16-live-control-prb25/actuation-gate-classification.env
+
+Its SHA256 is:
+
+e15b4a1ec3776d3c4a4ccf6756402838c325a290981508d4374427567250d40e
+
+The one-shot actuator container used for this experiment must not be
+re-executed.
+
+NEXT_GATE=PROMPT_11R42_DOCUMENTATION_AND_GITHUB_CHECKPOINT
