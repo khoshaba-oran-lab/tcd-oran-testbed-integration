@@ -9,7 +9,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 BASE_LOCK="${REPO_ROOT}/deploy/phase-1-baseline/base-05-zmq/locks/base-05-zmq-runtime.lock"
 PROFILE="${REPO_ROOT}/deploy/phase-1-baseline/base-05-zmq/profiles/tb3-dell-sandybridge.env"
-GNB_LOCK="${REPO_ROOT}/deploy/phase-2-flexric/tb3-runtime/captured-action11/gnb-runtime.lock"
+GNB_LOCK="${REPO_ROOT}/deploy/phase-2-flexric/tb3-runtime/locks/tb3-gnb-runtime.lock"
 RIC_LOCK="${REPO_ROOT}/deploy/phase-2-flexric/tb3-runtime/locks/tb3-ric-runtime.lock"
 DIAG_LOCK="${REPO_ROOT}/deploy/images/diagnostic/images.lock.json"
 GNB_CFG="${REPO_ROOT}/deploy/phase-2-flexric/tb3-runtime/configs/gnb-e2sm-rc.yaml"

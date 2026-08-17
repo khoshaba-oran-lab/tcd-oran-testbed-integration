@@ -20,7 +20,7 @@ TRACKED_DEPENDENCY_COUNT=9
 
 TRACKED_DEPENDENCY_01=deploy/phase-1-baseline/base-05-zmq/locks/base-05-zmq-runtime.lock
 TRACKED_DEPENDENCY_02=deploy/phase-1-baseline/base-05-zmq/profiles/tb3-dell-sandybridge.env
-TRACKED_DEPENDENCY_03=deploy/phase-2-flexric/tb3-runtime/captured-action11/gnb-runtime.lock
+TRACKED_DEPENDENCY_03=deploy/phase-2-flexric/tb3-runtime/locks/tb3-gnb-runtime.lock
 TRACKED_DEPENDENCY_04=deploy/phase-2-flexric/tb3-runtime/locks/tb3-ric-runtime.lock
 TRACKED_DEPENDENCY_05=deploy/images/diagnostic/images.lock.json
 TRACKED_DEPENDENCY_06=deploy/phase-2-flexric/tb3-runtime/configs/gnb-e2sm-rc.yaml
