@@ -37,9 +37,9 @@ A `DONE` state refers only to the explicitly defined scope of a work package and
 | 15 | Dataset acquisition | NOT STARTED | Depends on experiment and dataset conventions |
 | 16 | Repeatability and statistics | NOT STARTED | Requires stable acquisition procedures and repeated experiments |
 | 17 | End-to-end latency | NOT STARTED | Unified latency methodology and percentile reporting remain to be established |
-| 18 | Runtime actuator | NOT STARTED | A controllable runtime parameter with measurable system effect must be demonstrated |
-| 19 | Actuation Gate | BLOCKED | Cannot be passed before runtime actuator validation |
-| 20-23 | SISO identification and PID | BLOCKED | Requires validated actuation and system identification data |
+| 18 | Runtime actuator | DONE | R03 validated the E2SM-RC PRB25 runtime actuator with live 25 percent to 13 PRB readback and measurable plant response |
+| 19 | Actuation Gate | DONE | R03 proved u_cmd -> u_ack -> u_applied/readback -> plant response -> native telemetry without restart |
+| 20-23 | SISO identification and PID | NOT STARTED | Actuation Gate passed; work may begin after AO-29 GitHub checkpoint is closed |
 | 24-27 | MIMO, PID, and MPC | BLOCKED | Requires preceding identification and control stages |
 | 28 | O-RAN E2SM-KPM validation | NOT STARTED | Planned as a separate validation work package |
 | 29-34 | Comparative experiments, releases, audit, publication | NOT STARTED | Final research and dissemination stages |
@@ -176,3 +176,46 @@ Authoritative evidence:
 
 SHA256:
 e15b4a1ec3776d3c4a4ccf6756402838c325a290981508d4374427567250d40e
+
+## Prompt 11R R03 final status
+
+The historical Prompt 11R.42 result above remains preserved for the
+2026-08-16 experiment. The repaired R03 experiment completed on
+2026-08-17 defines the current project state.
+
+Experiment:
+
+- EXP_ID=EXP-20260817-A11R50-PRB25-18MBIT-R03
+- CONTROL_REQUEST_COUNT=1
+- U_CMD=PASS
+- U_ACK=PASS
+- U_APPLIED_READBACK=PASS
+- applied_max_prbs=13
+- POST_NEW_TX_PRB_CAP=PASS
+- maximum post-control DL NewTx grant=13 PRB
+- NewTx violations above 13 PRB=0
+- THROUGHPUT_RESPONSE=PASS
+- QUEUE_RESPONSE=PASS
+- PLANT_RESPONSE=OBSERVED
+- NATIVE_TELEMETRY=PASS
+- NO_RESTART=PASS
+- ACTUATION_GATE=PASS
+
+R03 Control was executed exactly once and must never be repeated.
+
+E2SM-KPM was disabled in the reproducible R03 configuration and remains
+a separate validation work package.
+
+Dataset freeze:
+
+- frozen files=57
+- files.tsv SHA256=00d034b6e3f22672034273fe9da83197c92129a8bfaf1d585a513146f87af9d7
+- freeze.env SHA256=f1c20b45faeec290979e62a4fbea65f17d054e9e14e64246e19773c41363638b
+
+Current state:
+
+- AO27=CLOSED
+- AO28=CLOSED
+- ACTUATION_GATE=PASS
+- AO29=OPEN_PENDING_GITHUB_CHECKPOINT
+- SYSTEM_IDENTIFICATION=ALLOWED_AFTER_AO29

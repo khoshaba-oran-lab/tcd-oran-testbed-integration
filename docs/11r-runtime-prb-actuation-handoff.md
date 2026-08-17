@@ -2,21 +2,23 @@
 
 ## Status
 
-This document records the intermediate handoff point reached on
-2026-08-14 during Prompt 11R-2.
+Prompt 11R runtime PRB actuator validation was completed experimentally
+through R03 on 2026-08-17.
 
-The runtime PRB actuator discovery and build stages are complete.
-The final runtime Actuation Gate has not yet been executed.
+The historical Prompt 11R.42 / R02 negative result remains preserved below.
+R03 is the subsequent repaired experiment that resolved the missing
+applied-state and plant-response evidence.
 
 Current classification:
 
-- PRE_ACTUATION_8MBIT_BASELINE_GATE=PASS
-- Y_BEFORE_CAPTURE_GATE=PASS
-- PRE_ACTUATION_RUNTIME_CONTINUITY_GATE=PASS
-- ACTUATOR_BINARY_EXECUTED=NO
-- E2_CONTROL_REQUEST_SENT=NO
-- CONTROL_REQUEST_COUNT=0
-- RUNTIME_ACTUATION_GATE=NOT_YET_EXECUTED
+- AO27=CLOSED
+- AO28=CLOSED
+- ACTUATION_GATE=PASS
+- R03_CONTROL=EXECUTED_EXACTLY_ONCE_NEVER_REPEAT
+- PRIMARY_TELEMETRY_PATH=NATIVE_GNB_TELEMETRY
+- E2SM_KPM_VALIDATION=NOT_PERFORMED_IN_R03
+- AO29=OPEN_PENDING_GITHUB_CHECKPOINT
+- SYSTEM_IDENTIFICATION=ALLOWED_AFTER_AO29
 
 ## Runtime PRB actuator
 
@@ -290,4 +292,81 @@ e15b4a1ec3776d3c4a4ccf6756402838c325a290981508d4374427567250d40e
 The one-shot actuator container used for this experiment must not be
 re-executed.
 
-NEXT_GATE=PROMPT_11R42_DOCUMENTATION_AND_GITHUB_CHECKPOINT
+HISTORICAL_NEXT_GATE=PROMPT_11R42_DOCUMENTATION_AND_GITHUB_CHECKPOINT
+
+## Prompt 11R R03 final status
+
+Experiment:
+
+- EXP_ID=EXP-20260817-A11R50-PRB25-18MBIT-R03
+- evidence root=/home/khoshaba/sci-oran-evidence/action11r/2026-08-17-prb25-18mbit-r03
+- target RNTI=0x4601
+- physical cell bandwidth=52 PRB
+- requested maximum ratio=25 percent
+- applied maximum=13 PRB
+
+Exactly-one Control evidence:
+
+- R03_CONTROL_EXECUTED=YES
+- CONTROL_REQUEST_COUNT=1
+- U_CMD=PASS
+- U_ACK=PASS
+- U_APPLIED_READBACK=PASS
+- applied_min_prbs=0
+- applied_max_prbs=13
+- R03_CONTROL_REPEAT_ALLOWED=NO
+
+Pre-control R03:
+
+- receiver throughput approximately 17.8 Mbit/s
+- packet loss=0 percent
+- maximum DL NewTx grant=48 PRB
+- mean dl_bo=45396.31
+- maximum dl_bo=109416
+
+Post-control R03:
+
+- receiver throughput=7.01 Mbit/s
+- packet loss=32 percent
+- DL NewTx samples=13671
+- maximum DL NewTx grant=13 PRB
+- NewTx violations above 13 PRB=0
+- mean dl_bo=3978307.50
+- maximum dl_bo=6066373
+- post/pre mean dl_bo ratio=87.6350
+
+Final experimental classification:
+
+- POST_NEW_TX_PRB_CAP=PASS
+- THROUGHPUT_RESPONSE=PASS
+- QUEUE_RESPONSE=PASS
+- PLANT_RESPONSE=OBSERVED
+- NATIVE_TELEMETRY=PASS
+- NO_RESTART=PASS
+- ACTUATION_GATE=PASS
+
+The demonstrated chain is:
+
+u_cmd -> u_ack -> u_applied/readback -> plant response -> native gNB telemetry
+
+The reproducible R03 configuration had E2SM-RC enabled and E2SM-KPM
+disabled. E2SM-KPM validation was therefore not performed in R03 and
+remains a separate O-RAN observability validation task.
+
+R03 dataset freeze:
+
+- DATASET_FREEZE_UTC=2026-08-17T11:44:24Z
+- FROZEN_FILE_COUNT=57
+- files.tsv SHA256=00d034b6e3f22672034273fe9da83197c92129a8bfaf1d585a513146f87af9d7
+- freeze.env SHA256=f1c20b45faeec290979e62a4fbea65f17d054e9e14e64246e19773c41363638b
+
+The historical Prompt 11R.42 negative result remains preserved for its
+original experiment. R03 supersedes it only as the current project state.
+
+Current state:
+
+- AO27=CLOSED
+- AO28=CLOSED
+- ACTUATION_GATE=PASS
+- AO29=OPEN_PENDING_GITHUB_CHECKPOINT
+- SYSTEM_IDENTIFICATION=ALLOWED_AFTER_AO29
