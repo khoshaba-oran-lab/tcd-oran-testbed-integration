@@ -77,3 +77,7 @@ datasets/*
 # Local configuration backups
 
 deploy/phase-1-baseline/base-05-zmq/configs/gnb_zmq_base05.yaml.before-native-metrics
+
+# Lightweight version-controlled dataset metadata records
+!datasets/records/
+!datasets/records/**

@@ -144,3 +144,27 @@ Publication review must not alter the retained scientific raw copy. If redaction
 The unified dataset architecture is being established during Phase 2 of Sci_O-RAN.
 
 No dataset should be described as reproducible or publication-ready solely because files have been collected.
+
+## Version-controlled dataset records
+
+Lightweight dataset registry records are stored under:
+
+    datasets/records/<dataset_id>/
+
+Each dataset directory represents one stable dataset identity and may contain
+versioned metadata, artifact inventories, checksum references, processing
+provenance, validation records, and archival references.
+
+For example:
+
+    datasets/records/DS-20260817-001-r03-prb-actuation/
+
+Large raw, processed, or derived scientific payloads are not copied into this
+directory merely to place them under Git version control. Their immutable
+archival payload remains outside Git and is linked through artifact identity,
+byte size, SHA-256 checksum, provenance metadata, and, after publication, the
+archival record and DOI.
+
+The detailed metadata record under `datasets/records/<dataset_id>/` serves as
+the GitHub dataset registry record. A separate `datasets/registry.csv` is not
+required by the current Sci_O-RAN dataset specification.
