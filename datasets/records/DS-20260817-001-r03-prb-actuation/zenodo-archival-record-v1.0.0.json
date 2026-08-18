@@ -1,0 +1,29 @@
+{
+  "archival_record_schema_version": "1.0.0",
+  "dataset_id": "DS-20260817-001-r03-prb-actuation",
+  "dataset_version": "v1.0.0",
+  "publication_state": "published",
+  "publication_date": "2026-08-18",
+  "repository": "Zenodo",
+  "zenodo_record_id": 21998451,
+  "version_doi": "10.5281/zenodo.21998451",
+  "concept_doi": "10.5281/zenodo.21998450",
+  "record_url": "https://zenodo.org/records/21998451",
+  "published_file": {
+    "name": "DS-20260817-001-r03-prb-actuation-v1.0.0.tar.gz",
+    "bytes": 3350360,
+    "sha256": "041e665ac3dec27b38ebee9f15b97343a0cf13e4b2f48ad903ebf6090a787468",
+    "md5": "8bb59b611354f8b65942aed8fc512d6b"
+  },
+  "verification": {
+    "public_api_http_status": 200,
+    "published_metadata_gate": "PASS",
+    "zenodo_local_file_identity_gate": "PASS",
+    "source_action": "ActionArchive.7O"
+  },
+  "github": {
+    "repository": "https://github.com/khoshaba-oran-lab/tcd-oran-testbed-integration",
+    "main_at_publication": "b34300a3135498b1e1440ebda1b971d8332e3403"
+  },
+  "immutability_note": "The published Zenodo tar.gz and the release manifest contained inside it are not modified by this post-publication GitHub metadata update."
+}
