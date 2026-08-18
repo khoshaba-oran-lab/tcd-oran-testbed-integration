@@ -1,0 +1,223 @@
+---
+- name: Sci-O-RAN Tb3 lifecycle preflight
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_expected_inventory_host: "tb3-dell"
+    sci_oran_expected_hostname: "tb3-dell"
+    sci_oran_expected_branch: "feat/tb3-dell-reproducibility"
+
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+    sci_oran_base05_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-1-baseline/base-05-zmq
+
+    sci_oran_runtime_compose: >-
+      {{ sci_oran_base05_dir }}/compose.runtime.yml
+
+    sci_oran_sandybridge_compose: >-
+      {{ sci_oran_base05_dir }}/compose.sandybridge.yml
+
+    sci_oran_gnb_config: >-
+      {{ sci_oran_base05_dir }}/configs/gnb_zmq_base05.yaml
+
+    sci_oran_ue_config: >-
+      {{ sci_oran_base05_dir }}/configs/ue_zmq_base05.conf
+
+    sci_oran_open5gs_env: >-
+      {{ sci_oran_base05_dir }}/configs/open5gs.env
+
+    sci_oran_ric_config: >-
+      {{ sci_oran_repo_root }}/deploy/phase-2-flexric/tb3-runtime/configs/ric.conf
+
+    sci_oran_ric_lock: >-
+      {{ sci_oran_repo_root }}/deploy/phase-2-flexric/tb3-runtime/locks/tb3-ric-runtime.lock
+
+  tasks:
+    - name: Validate lifecycle target identity
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == sci_oran_expected_inventory_host
+          - ansible_hostname == sci_oran_expected_hostname
+        fail_msg: >-
+          Refusing lifecycle operation because the Ansible target does not
+          match the validated Tb3 host.
+        success_msg: "TB3_TARGET_IDENTITY=PASS"
+
+    - name: Define required lifecycle paths
+      ansible.builtin.set_fact:
+        sci_oran_required_paths:
+          - "{{ sci_oran_repo_root }}/.git"
+          - "{{ sci_oran_runtime_compose }}"
+          - "{{ sci_oran_sandybridge_compose }}"
+          - "{{ sci_oran_gnb_config }}"
+          - "{{ sci_oran_ue_config }}"
+          - "{{ sci_oran_open5gs_env }}"
+          - "{{ sci_oran_ric_config }}"
+          - "{{ sci_oran_ric_lock }}"
+
+    - name: Inspect required lifecycle paths
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ sci_oran_required_paths }}"
+      register: sci_oran_required_path_state
+
+    - name: Require lifecycle repository artifacts
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+        fail_msg: "Required lifecycle artifact is missing: {{ item.item }}"
+      loop: "{{ sci_oran_required_path_state.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Read repository branch
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_repo_root }}"
+          - branch
+          - --show-current
+      register: sci_oran_git_branch
+      changed_when: false
+
+    - name: Require expected repository branch
+      ansible.builtin.assert:
+        that:
+          - sci_oran_git_branch.stdout == sci_oran_expected_branch
+        fail_msg: >-
+          Unexpected repository branch:
+          {{ sci_oran_git_branch.stdout }}
+        success_msg: "TB3_REPOSITORY_BRANCH=PASS"
+
+    - name: Verify Docker daemon access
+      ansible.builtin.command:
+        argv:
+          - docker
+          - version
+      register: sci_oran_docker_version
+      changed_when: false
+
+    - name: Verify Docker Compose availability
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - version
+      register: sci_oran_compose_version
+      changed_when: false
+
+    - name: Resolve effective BASE-05 service set
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - "{{ sci_oran_runtime_compose }}"
+          - -f
+          - "{{ sci_oran_sandybridge_compose }}"
+          - config
+          - --services
+      register: sci_oran_base05_services
+      changed_when: false
+
+    - name: Require exact BASE-05 service contract
+      ansible.builtin.assert:
+        that:
+          - sci_oran_base05_services.stdout_lines | length == 3
+          - "'5gc' in sci_oran_base05_services.stdout_lines"
+          - "'gnb' in sci_oran_base05_services.stdout_lines"
+          - "'srsue' in sci_oran_base05_services.stdout_lines"
+        fail_msg: >-
+          Effective BASE-05 service contract differs from
+          the validated 5gc/gnb/srsue model.
+        success_msg: "TB3_BASE05_SERVICE_CONTRACT=PASS"
+
+    - name: Capture lifecycle configuration identities
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - "{{ sci_oran_runtime_compose }}"
+          - "{{ sci_oran_sandybridge_compose }}"
+          - "{{ sci_oran_gnb_config }}"
+          - "{{ sci_oran_ue_config }}"
+          - "{{ sci_oran_ric_config }}"
+          - "{{ sci_oran_ric_lock }}"
+      register: sci_oran_configuration_identities
+      changed_when: false
+
+    - name: Calculate strict lifecycle contract SHA256 identities
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        checksum_algorithm: sha256
+      loop:
+        - path: "{{ sci_oran_runtime_compose }}"
+          expected_sha256: "9ed0bf75ed2df503a3cfba373e508cc4a4b5332751c181fd93f97a7774742ce5"
+        - path: "{{ sci_oran_sandybridge_compose }}"
+          expected_sha256: "84b8a4a8c0b72e230b90d29793c4e09157b20bff6b616bb3eef0405db5ea70a0"
+        - path: "{{ sci_oran_gnb_config }}"
+          expected_sha256: "1ebae6b10ac74e6f0d90997276aa506f989d672223be245b48e9d5fad42c0d5b"
+        - path: "{{ sci_oran_ue_config }}"
+          expected_sha256: "ceab877f0f8105966ee89f910a98ee51158550a8503e7a6eea6e41fc8ce1e47e"
+        - path: "{{ sci_oran_ric_config }}"
+          expected_sha256: "940d8e1a87b8e937fea3678ca9fc47dd765f3bdf9f68f731cf6d2d47dda8be68"
+        - path: "{{ sci_oran_ric_lock }}"
+          expected_sha256: "edb1f3649a0a506a95084cc2526b8049710d537f24a200a4af4488dffef35893"
+      register: sci_oran_strict_contract_identities
+
+    - name: Require exact lifecycle contract SHA256 identities
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+          - item.stat.checksum == item.item.expected_sha256
+        fail_msg: >-
+          Lifecycle contract drift detected for {{ item.item.path }}.
+          Expected SHA256={{ item.item.expected_sha256 }},
+          actual SHA256={{ item.stat.checksum | default('unavailable') }}.
+      loop: "{{ sci_oran_strict_contract_identities.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Resolve effective BASE-05 image contract
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - "{{ sci_oran_runtime_compose }}"
+          - -f
+          - "{{ sci_oran_sandybridge_compose }}"
+          - config
+          - --images
+      register: sci_oran_base05_images
+      changed_when: false
+
+    - name: Require exact BASE-05 image contract
+      ansible.builtin.assert:
+        that:
+          - sci_oran_base05_images.stdout_lines | length == 3
+          - "'khoshaba/tb3-base05-artifacts@sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d' in sci_oran_base05_images.stdout_lines"
+          - "'khoshaba/tb3-base05-artifacts:gnb-zmq-24.10.0-9d5dd742-sandybridge-v1@sha256:7e3a3c4d9e4a46d1e2bf566420e714f8f69f27fa0239a066330c59f0384d6319' in sci_oran_base05_images.stdout_lines"
+          - "'khoshaba/tb3-base05-artifacts:srsue-zmq-23.11-eea87b1d893a-sandybridge-v2@sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410' in sci_oran_base05_images.stdout_lines"
+        fail_msg: >-
+          Effective BASE-05 image contract differs from the validated
+          Sandy Bridge digest-pinned image set.
+        success_msg: "TB3_BASE05_IMAGE_CONTRACT=PASS"
+
+    - name: Report lifecycle preflight evidence
+      ansible.builtin.debug:
+        msg:
+          - "TARGET={{ inventory_hostname }}"
+          - "HOSTNAME={{ ansible_hostname }}"
+          - "BRANCH={{ sci_oran_git_branch.stdout }}"
+          - "BASE05_SERVICES={{ sci_oran_base05_services.stdout_lines | join(',') }}"
+          - "DOCKER_CHECK=PASS"
+          - "DOCKER_COMPOSE_CHECK=PASS"
+          - "CONFIG_IDENTITY_GATE=PASS"
+          - "BASE05_IMAGE_CONTRACT=PASS"
+          - "BASE05_IMAGES={{ sci_oran_base05_images.stdout_lines }}"
+          - "CONFIG_IDENTITIES={{ sci_oran_configuration_identities.stdout_lines }}"
+          - "LIFECYCLE_PREFLIGHT_GATE=PASS"

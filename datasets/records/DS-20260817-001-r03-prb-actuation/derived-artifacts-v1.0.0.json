@@ -1,0 +1,139 @@
+[
+  {
+    "artifact_id": "ART-R03-001",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "actuator",
+    "relative_path": "derived/PROV-20260817T113756Z-001/actuation-gate.env",
+    "media_type": "text/plain",
+    "byte_size": 944,
+    "sha256": "ec57442197377723b1142d1ef6f78c492cf3f63640365a780bbf9a97a06f086e",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-007",
+      "ART-R03-008",
+      "ART-R03-009",
+      "ART-R03-010",
+      "ART-R03-011",
+      "ART-R03-012",
+      "ART-R03-013",
+      "ART-R03-014",
+      "ART-R03-015",
+      "ART-R03-016",
+      "ART-R03-017",
+      "ART-R03-018",
+      "ART-R03-019",
+      "ART-R03-020",
+      "ART-R03-021",
+      "ART-R03-022",
+      "ART-R03-023",
+      "ART-R03-024",
+      "ART-R03-030",
+      "ART-R03-031",
+      "ART-R03-032",
+      "ART-R03-034",
+      "ART-R03-035",
+      "ART-R03-039",
+      "ART-R03-040",
+      "ART-R03-041",
+      "ART-R03-044",
+      "ART-R03-045",
+      "ART-R03-049",
+      "ART-R03-002",
+      "ART-R03-003",
+      "ART-R03-004",
+      "ART-R03-005",
+      "ART-R03-006"
+    ],
+    "processing_provenance_id": "PROV-20260817T113756Z-001",
+    "validation_status": "valid"
+  },
+  {
+    "artifact_id": "ART-R03-002",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "native_gnb",
+    "relative_path": "derived/PROV-20260817T113338Z-001/newtx-lines.txt",
+    "media_type": "text/plain",
+    "byte_size": 2833654,
+    "sha256": "0c7f42ef2205ad531f73c3b1d62baa6c93e9aed61a70d77bb7b61cf3fe542158",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-030"
+    ],
+    "processing_provenance_id": "PROV-20260817T113338Z-001",
+    "validation_status": "valid"
+  },
+  {
+    "artifact_id": "ART-R03-003",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "native_gnb",
+    "relative_path": "derived/PROV-20260817T113338Z-001/newtx-widths.txt",
+    "media_type": "text/plain",
+    "byte_size": 2874639,
+    "sha256": "0466d947dc91c3979c8c28b5fb1114c954e95ab3533ca0b3973983e9d63410ea",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-030"
+    ],
+    "processing_provenance_id": "PROV-20260817T113338Z-001",
+    "validation_status": "valid"
+  },
+  {
+    "artifact_id": "ART-R03-004",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "native_gnb",
+    "relative_path": "derived/PROV-20260817T113338Z-001/violations.txt",
+    "media_type": "text/plain",
+    "byte_size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-030"
+    ],
+    "processing_provenance_id": "PROV-20260817T113338Z-001",
+    "validation_status": "valid"
+  },
+  {
+    "artifact_id": "ART-R03-005",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "native_gnb",
+    "relative_path": "derived/PROV-20260817T113615Z-001/after-dl-bo.txt",
+    "media_type": "text/plain",
+    "byte_size": 107543,
+    "sha256": "8de24873447eb67b77e35fed213804ce20c299fb765baa4162704ebe490e78cc",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-039",
+      "ART-R03-030"
+    ],
+    "processing_provenance_id": "PROV-20260817T113615Z-001",
+    "validation_status": "valid"
+  },
+  {
+    "artifact_id": "ART-R03-006",
+    "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+    "run_id": "RUN-20260817T105928Z-001",
+    "data_level": "derived",
+    "namespace": "native_gnb",
+    "relative_path": "derived/PROV-20260817T113615Z-001/before-dl-bo.txt",
+    "media_type": "text/plain",
+    "byte_size": 34889,
+    "sha256": "a8985121ce4755daa6b819c380bd90639a53a9d47e400282cc1c591069d7d2bd",
+    "schema_version": "1.0.0",
+    "source_artifact_ids": [
+      "ART-R03-039",
+      "ART-R03-030"
+    ],
+    "processing_provenance_id": "PROV-20260817T113615Z-001",
+    "validation_status": "valid"
+  }
+]

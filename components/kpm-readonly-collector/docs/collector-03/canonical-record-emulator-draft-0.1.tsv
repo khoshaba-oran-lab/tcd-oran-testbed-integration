@@ -1,0 +1,29 @@
+ordinal	field_name	logical_type	nullable	csv_encoding	json_encoding	parquet_type	semantic_role
+1	schema_version	string	no	UTF-8 string	JSON string	STRING	Schema discriminator; constant tcd.kpm.record.emulator-draft-0.1
+2	record_kind	enum	no	measurement|diagnostic	JSON string	STRING	Distinguishes value records from rejected-row diagnostics
+3	indication_sequence	uint64	no	decimal integer	JSON integer	UINT64	Monotonic collector-local indication sequence
+4	receive_timestamp_us	uint64	no	decimal integer	JSON integer	UINT64	Collector receive timestamp in Unix microseconds
+5	kpm_header_timestamp_us	uint64	yes	empty or decimal integer	null or JSON integer	UINT64	KPM header timestamp in Unix microseconds when present
+6	message_format	uint32	no	decimal integer	JSON integer	UINT32	Decoded KPM indication message format
+7	node_type	string	yes	empty or UTF-8 string	null or JSON string	STRING	E2 node type when available
+8	node_id	string	yes	empty or UTF-8 string	null or JSON string	STRING	Stable textual E2 node identifier when available
+9	ue_report_index	uint32	yes	empty or decimal integer	null or JSON integer	UINT32	UE report list index
+10	ue_id_type	string	no	UTF-8 enum token	JSON string	STRING	UE identifier discriminator; unknown when unavailable
+11	ue_id_value	string	yes	empty or UTF-8 string	null or JSON string	STRING	Canonical textual UE identifier
+12	meas_data_index	uint32	yes	empty or decimal integer	null or JSON integer	UINT32	MeasurementData list index
+13	meas_info_index	uint32	yes	empty or decimal integer	null or JSON integer	UINT32	MeasurementInfo list index; null for rejected rows
+14	meas_record_index	uint32	yes	empty or decimal integer	null or JSON integer	UINT32	MeasurementRecord list index; null for rejected rows
+15	meas_data_lst_len	uint32	no	decimal integer	JSON integer	UINT32	MeasurementData list length
+16	meas_info_lst_len	uint32	no	decimal integer	JSON integer	UINT32	MeasurementInfo list length
+17	meas_record_len	uint32	no	decimal integer	JSON integer	UINT32	MeasurementRecord row length
+18	incomplete_flag_present	boolean	no	true|false	JSON boolean	BOOLEAN	Whether incompleteFlag was present
+19	incomplete_flag	boolean	yes	empty|true|false	null or JSON boolean	BOOLEAN	Value of incompleteFlag when present
+20	structural_status	enum	no	UTF-8 enum token	JSON string	STRING	Validated structural outcome
+21	descriptor_type	enum	no	name|id|unknown	JSON string	STRING	Measurement descriptor discriminator
+22	measurement_name	string	yes	RFC 4180 escaped UTF-8	null or JSON string	STRING	Measurement name for name descriptors
+23	measurement_id	uint32	yes	empty or decimal integer	null or JSON integer	UINT32	Measurement identifier for ID descriptors
+24	value_type	enum	no	integer|real|no_value|unknown	JSON string	STRING	Measurement value discriminator
+25	integer_value	int64	yes	empty or decimal integer	null or JSON integer	INT64	Integer measurement value
+26	real_value	float64	yes	empty or finite C-locale decimal	null or finite JSON number	DOUBLE	Real measurement value
+27	diagnostic_code	string	yes	empty or UTF-8 token	null or JSON string	STRING	Machine-readable rejection or output diagnostic
+28	diagnostic_message	string	yes	RFC 4180 escaped UTF-8	null or JSON string	STRING	Human-readable bounded diagnostic text

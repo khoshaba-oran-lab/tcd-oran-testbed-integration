@@ -1,0 +1,72 @@
+COLLECTOR-01 CONFIGURATION CONTRACT V1
+=====================================
+
+FlexRIC configuration
+---------------------
+
+The standard FlexRIC xApp configuration is supplied through:
+
+    -c <flexric-xapp-config>
+
+The configuration must contain exactly one KPM subscription profile whose
+`ran_type` matches the selected E2-node type.
+
+The matching KPM profile must satisfy all of the following:
+
+- name is KPM, case-insensitively;
+- action format is 1 or 4;
+- time is positive;
+- at least one measurement action is present;
+- time equals TCD_KPM_SUBSCRIPTION_PERIOD_MS.
+
+A profile mismatch or ambiguity is a controlled failure before subscription
+creation.
+
+Collector environment
+---------------------
+
+Collector-specific settings are supplied through environment variables so
+they do not interfere with init_fr_args.
+
+TCD_KPM_NODE_TYPE
+    Node-type selector. Default: gNB_DU.
+
+TCD_KPM_NODE_ID
+    Optional canonical node identifier:
+
+        nb_id=<decimal>
+        nb_id=<decimal>;cu_du_id=<decimal>
+
+TCD_KPM_REQUIRE_EXACTLY_ONE_MATCH
+    Must be true during COLLECTOR-01.
+
+TCD_KPM_DISCOVERY_TIMEOUT_SECONDS
+    Bounded node-discovery timeout. Range: 1..300. Default: 10.
+
+TCD_KPM_DISCOVERY_POLL_MS
+    Discovery polling interval. Range: 10..5000. Default: 200.
+
+TCD_KPM_SUBSCRIPTION_PERIOD_MS
+    KPM report and granularity period. Range: 1..60000. Default: 1000.
+    Must equal the `time` value of the matching KPM profile.
+
+TCD_KPM_MAX_INDICATIONS
+    Maximum accepted KPM indication callbacks. Range: 0..1000000000.
+    Default: 10. Zero disables this bound.
+
+TCD_KPM_DURATION_SECONDS
+    Maximum subscription runtime after successful creation. Range: 0..86400.
+    Default: 30. Zero disables this bound.
+
+TCD_KPM_STRUCTURED_DEBUG_STDERR
+    Boolean. Default: false. When enabled, the final copied record is printed
+    to standard error only after subscription removal and API shutdown.
+
+At least one of TCD_KPM_MAX_INDICATIONS and TCD_KPM_DURATION_SECONDS must be
+non-zero.
+
+Real-equipment values
+---------------------
+
+No real RIC address, credential or E2-node identifier is embedded in source.
+Real-equipment parameters will be supplied later through runtime configuration.

@@ -23,12 +23,18 @@ results/*
 *.pcapng
 *.parquet
 *.csv
+!experiments/registry.csv
 *.jsonl
 *.log
 
 # Large runtime data
 data/
-artifacts/
+# Runtime artifacts are ignored by default.
+artifacts/*
+# Keep the lifecycle contract under version control.
+!artifacts/lifecycle/
+artifacts/lifecycle/*
+!artifacts/lifecycle/README.md
 captures/
 influxdb-data/
 grafana-data/
@@ -56,3 +62,22 @@ dist/
 # Temporary files
 tmp/
 .cache/
+
+# Sci_O-RAN dataset payloads
+
+datasets/*
+!datasets/README.md
+
+# Version-controlled dataset specifications and lightweight examples
+!datasets/schemas/
+!datasets/schemas/**
+!datasets/examples/
+!datasets/examples/**
+
+# Local configuration backups
+
+deploy/phase-1-baseline/base-05-zmq/configs/gnb_zmq_base05.yaml.before-native-metrics
+
+# Lightweight version-controlled dataset metadata records
+!datasets/records/
+!datasets/records/**

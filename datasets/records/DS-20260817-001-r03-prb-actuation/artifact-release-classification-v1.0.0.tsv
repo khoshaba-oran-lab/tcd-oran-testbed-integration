@@ -1,0 +1,58 @@
+artifact_id	release_role	data_level	namespace	source_relative_path
+ART-R03-001	dataset_artifact	derived	actuator	classification/final-actuation-gate/actuation-gate.env
+ART-R03-002	dataset_artifact	derived	native_gnb	classification/post-newtx-prb-cap/newtx-lines.txt
+ART-R03-003	dataset_artifact	derived	native_gnb	classification/post-newtx-prb-cap/newtx-widths.txt
+ART-R03-004	dataset_artifact	derived	native_gnb	classification/post-newtx-prb-cap/violations.txt
+ART-R03-005	dataset_artifact	derived	native_gnb	classification/queue-response/after-dl-bo.txt
+ART-R03-006	dataset_artifact	derived	native_gnb	classification/queue-response/before-dl-bo.txt
+ART-R03-007	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/actuator-console.log
+ART-R03-008	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/actuator-control-evidence.txt
+ART-R03-009	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/actuator-created-contract.txt
+ART-R03-010	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/actuator-final-state.txt
+ART-R03-011	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/actuator-runtime.log
+ART-R03-012	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/ao26-result.env
+ART-R03-013	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/control-attempt.env
+ART-R03-014	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/control-launch-utc.txt
+ART-R03-015	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/docker-create-id.txt
+ART-R03-016	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/docker-start-rc.txt
+ART-R03-017	dataset_artifact	raw	native_gnb	control/exactly-one-prb25-r03/gnb-control-evidence.txt
+ART-R03-018	dataset_artifact	raw	native_gnb	control/exactly-one-prb25-r03/gnb-control-window.log
+ART-R03-019	dataset_artifact	raw	native_gnb	control/exactly-one-prb25-r03/gnb-log-end-bytes.txt
+ART-R03-020	dataset_artifact	raw	native_gnb	control/exactly-one-prb25-r03/gnb-log-start-bytes.txt
+ART-R03-021	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/ric-control-evidence.txt
+ART-R03-022	dataset_artifact	raw	actuator	control/exactly-one-prb25-r03/ric-control-window.log
+ART-R03-023	dataset_artifact	raw	container	control/exactly-one-prb25-r03/runtime-after.txt
+ART-R03-024	dataset_artifact	raw	container	control/exactly-one-prb25-r03/runtime-before.txt
+ART-R03-025	metadata_provenance			experiment.env
+ART-R03-026	metadata_provenance			inputs/sha256.txt
+ART-R03-027	software_reference			inputs/xapp_oran_slice_ctrl.corrected
+ART-R03-028	metadata_provenance			inputs/xapp_oran_sm.conf
+ART-R03-029	metadata_provenance			measurements/y_after/.measurement_started_utc
+ART-R03-030	dataset_artifact	raw	native_gnb	measurements/y_after/gnb-native.delta.log
+ART-R03-031	dataset_artifact	raw	iperf	measurements/y_after/iperf-client.txt
+ART-R03-032	dataset_artifact	raw	iperf	measurements/y_after/iperf-server.txt
+ART-R03-033	metadata_provenance			measurements/y_after/measurement.env
+ART-R03-034	dataset_artifact	raw	container	measurements/y_after/runtime-after.txt
+ART-R03-035	dataset_artifact	raw	container	measurements/y_after/runtime-before.txt
+ART-R03-036	metadata_provenance			measurements/y_after/server-container-id.txt
+ART-R03-037	metadata_provenance			measurements/y_after/server-wait.txt
+ART-R03-038	metadata_provenance			measurements/y_before/Y_BEFORE_COMPLETE
+ART-R03-039	dataset_artifact	raw	native_gnb	measurements/y_before/gnb-telemetry-window.log
+ART-R03-040	dataset_artifact	raw	iperf	measurements/y_before/iperf/iperf3-client.stdout.log
+ART-R03-041	dataset_artifact	raw	iperf	measurements/y_before/iperf/iperf3-server.stdout.log
+ART-R03-042	metadata_provenance			measurements/y_before/iperf/server-container-id.txt
+ART-R03-043	metadata_provenance			measurements/y_before/iperf/server-exit-code.txt
+ART-R03-044	dataset_artifact	raw	container	measurements/y_before/runtime-after.txt
+ART-R03-045	dataset_artifact	raw	container	measurements/y_before/runtime-before.txt
+ART-R03-046	metadata_provenance			measurements/y_before/telemetry-end-bytes.txt
+ART-R03-047	metadata_provenance			measurements/y_before/telemetry-start-bytes.txt
+ART-R03-048	metadata_provenance			measurements/y_before/telemetry-start-utc.txt
+ART-R03-049	dataset_artifact	raw	traffic	measurements/y_before/workload-console.log
+ART-R03-050	metadata_provenance			measurements/y_before/y-before-end-utc.txt
+ART-R03-051	metadata_provenance			measurements/y_before/y-before-start-utc.txt
+ART-R03-052	rejected_evidence			measurements/y_before_failed_50s/iperf/iperf3-client.stdout.log
+ART-R03-053	rejected_evidence			measurements/y_before_failed_50s/iperf/iperf3-server.stdout.log
+ART-R03-054	rejected_evidence			measurements/y_before_failed_50s/runtime-before.txt
+ART-R03-055	rejected_evidence			measurements/y_before_failed_50s/telemetry-start-bytes.txt
+ART-R03-056	rejected_evidence			measurements/y_before_failed_50s/telemetry-start-utc.txt
+ART-R03-057	rejected_evidence			measurements/y_before_failed_50s/workload-console.log

@@ -1,0 +1,104 @@
+[
+  {
+    "processing_provenance_id": "PROV-20260817T113338Z-001",
+    "process_name": "R03 post-control NewTx PRB-cap analysis",
+    "process_type": "validation",
+    "created_time_utc": "2026-08-17T11:33:38Z",
+    "input_artifact_ids": [
+      "ART-R03-030"
+    ],
+    "output_artifact_ids": [
+      "ART-R03-002",
+      "ART-R03-003",
+      "ART-R03-004"
+    ],
+    "software_commit": "8417f7b09db36a0121785f0cd6debf6fbea4d740",
+    "entrypoint": "historical-inline-shell-command:not-retained",
+    "parameters": {
+      "target_rnti": "0x4601",
+      "expected_max_prb": 13,
+      "operation": "Extract post-control DL NewTx scheduler records, derive PRB grant widths, and identify grants above the 13 PRB limit.",
+      "historical_command_retained": false,
+      "provenance_reconstruction": "Reconstructed from immutable input/output artifacts, file timestamps, frozen SHA-256 inventory, and documented R03 results."
+    }
+  },
+  {
+    "processing_provenance_id": "PROV-20260817T113615Z-001",
+    "process_name": "R03 downlink queue response analysis",
+    "process_type": "analysis",
+    "created_time_utc": "2026-08-17T11:36:15Z",
+    "input_artifact_ids": [
+      "ART-R03-039",
+      "ART-R03-030"
+    ],
+    "output_artifact_ids": [
+      "ART-R03-005",
+      "ART-R03-006"
+    ],
+    "software_commit": "8417f7b09db36a0121785f0cd6debf6fbea4d740",
+    "entrypoint": "historical-inline-shell-command:not-retained",
+    "parameters": {
+      "metric": "dl_bo",
+      "comparison": "pre_control_vs_post_control",
+      "operation": "Extract downlink buffer occupancy values from accepted pre-control and post-control native gNB telemetry for queue-response comparison.",
+      "historical_command_retained": false,
+      "provenance_reconstruction": "Reconstructed from immutable input/output artifacts, file timestamps, frozen SHA-256 inventory, and documented R03 results."
+    }
+  },
+  {
+    "processing_provenance_id": "PROV-20260817T113756Z-001",
+    "process_name": "R03 final Actuation Gate classification",
+    "process_type": "validation",
+    "created_time_utc": "2026-08-17T11:37:56Z",
+    "input_artifact_ids": [
+      "ART-R03-007",
+      "ART-R03-008",
+      "ART-R03-009",
+      "ART-R03-010",
+      "ART-R03-011",
+      "ART-R03-012",
+      "ART-R03-013",
+      "ART-R03-014",
+      "ART-R03-015",
+      "ART-R03-016",
+      "ART-R03-017",
+      "ART-R03-018",
+      "ART-R03-019",
+      "ART-R03-020",
+      "ART-R03-021",
+      "ART-R03-022",
+      "ART-R03-023",
+      "ART-R03-024",
+      "ART-R03-030",
+      "ART-R03-031",
+      "ART-R03-032",
+      "ART-R03-034",
+      "ART-R03-035",
+      "ART-R03-039",
+      "ART-R03-040",
+      "ART-R03-041",
+      "ART-R03-044",
+      "ART-R03-045",
+      "ART-R03-049",
+      "ART-R03-002",
+      "ART-R03-003",
+      "ART-R03-004",
+      "ART-R03-005",
+      "ART-R03-006"
+    ],
+    "output_artifact_ids": [
+      "ART-R03-001"
+    ],
+    "software_commit": "8417f7b09db36a0121785f0cd6debf6fbea4d740",
+    "entrypoint": "historical-inline-shell-command:not-retained",
+    "parameters": {
+      "actuation_chain": "u_cmd -> u_ack -> u_applied/readback -> plant response -> native gNB telemetry",
+      "control_repeat_allowed": false,
+      "e2sm_kpm_enabled": false,
+      "primary_telemetry": "native_gnb",
+      "operation": "Classify the final R03 runtime Actuation Gate from accepted control, throughput, native telemetry, runtime continuity, and derived validation evidence.",
+      "historical_command_retained": false,
+      "provenance_reconstruction": "Reconstructed from the complete accepted raw dataset-artifact set, derived validation artifacts, frozen SHA-256 inventory, timestamps, and final R03 documentation."
+    }
+  }
+]

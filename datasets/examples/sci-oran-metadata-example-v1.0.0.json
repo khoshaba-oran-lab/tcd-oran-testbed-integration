@@ -1,0 +1,125 @@
+{
+  "dataset": {
+    "dataset_id": "DS-20260809-001-schema-example",
+    "dataset_title": "Sci_O-RAN synthetic metadata schema example",
+    "dataset_version": "v1.0.0",
+    "schema_version": "1.0.0",
+    "created_time_utc": "2026-08-09T12:05:00Z",
+    "experiment_ids": [
+      "EXP-20260809-DL-03500K-R01"
+    ],
+    "data_levels": [
+      "raw",
+      "processed"
+    ],
+    "description": "Synthetic example used only to demonstrate the Sci_O-RAN metadata schema. It is not evidence of an executed experiment.",
+    "repository_commit": "1111111111111111111111111111111111111111",
+    "license": "EXAMPLE-ONLY-NOT-A-RELEASE-LICENSE",
+    "known_limitations": [
+      "Illustrative example only; identifiers, paths, sizes, digests, commands, and timing values do not represent retained experimental evidence."
+    ],
+    "validation_status": "not_validated",
+    "archival_record": null
+  },
+  "experiments": [
+    {
+      "experiment_id": "EXP-20260809-DL-03500K-R01",
+      "experiment_status": "completed",
+      "experiment_date_utc": "2026-08-09",
+      "traffic_direction": "DL",
+      "transport_protocol": "UDP",
+      "offered_rate_kbit_s": 3500,
+      "repeat_number": 1,
+      "configured_duration_s": 60,
+      "packet_size_bytes": 1200,
+      "experiment_purpose": "Synthetic example of a controlled downlink traffic experiment metadata record.",
+      "configuration_ref": "examples/config/controlled-dl-03500k-example.yaml",
+      "accepted_run_id": "RUN-20260809T120000Z-001",
+      "evidence_status": "ASSUMPTION",
+      "notes": "Synthetic schema example only; this experiment was not asserted to have been executed."
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "RUN-20260809T120000Z-001",
+      "experiment_id": "EXP-20260809-DL-03500K-R01",
+      "run_status": "accepted",
+      "start_time_utc": "2026-08-09T12:00:00Z",
+      "end_time_utc": "2026-08-09T12:01:00Z",
+      "host_id": "tb3-dell",
+      "software_commit": "1111111111111111111111111111111111111111",
+      "configuration_ref": "examples/config/controlled-dl-03500k-example.yaml",
+      "traffic_command": "iperf3 -c 192.0.2.10 -u -b 3500K -l 1200 -t 60",
+      "collector_set": [
+        "traffic",
+        "iperf",
+        "rtt",
+        "host_cpu",
+        "memory",
+        "native_gnb"
+      ],
+      "clock_sync_status": "synchronized",
+      "failure_reason": null,
+      "operator_notes": "Synthetic run used only to demonstrate metadata structure."
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "ART-EXAMPLE-RAW-RTT-001",
+      "experiment_id": "EXP-20260809-DL-03500K-R01",
+      "run_id": "RUN-20260809T120000Z-001",
+      "data_level": "raw",
+      "namespace": "rtt",
+      "relative_path": "raw/EXP-20260809-DL-03500K-R01/RUN-20260809T120000Z-001/rtt/ping-example.log",
+      "media_type": "text/plain",
+      "byte_size": 4096,
+      "sha256": "14ee1ad8e419ed695180ba15604e516ec639d1d4f5891e34c3dbd3f60fd0e6ad",
+      "schema_version": null,
+      "source_artifact_ids": [],
+      "processing_provenance_id": null,
+      "validation_status": "not_validated"
+    },
+    {
+      "artifact_id": "ART-EXAMPLE-PROCESSED-RTT-001",
+      "experiment_id": "EXP-20260809-DL-03500K-R01",
+      "run_id": "RUN-20260809T120000Z-001",
+      "data_level": "processed",
+      "namespace": "rtt",
+      "relative_path": "processed/1.0.0/EXP-20260809-DL-03500K-R01/RUN-20260809T120000Z-001/rtt/rtt-example.parquet",
+      "media_type": "application/vnd.apache.parquet",
+      "byte_size": 8192,
+      "sha256": "7111a9ae4b914d95e7176ab18b34165cf02b829eb772d2bfe75b3f1702383bf1",
+      "schema_version": "1.0.0",
+      "source_artifact_ids": [
+        "ART-EXAMPLE-RAW-RTT-001"
+      ],
+      "processing_provenance_id": "PROV-20260809T120200Z-001",
+      "validation_status": "not_validated"
+    }
+  ],
+  "processing_provenance": [
+    {
+      "processing_provenance_id": "PROV-20260809T120200Z-001",
+      "process_name": "normalize_rtt_example",
+      "process_type": "processing",
+      "created_time_utc": "2026-08-09T12:02:00Z",
+      "input_artifact_ids": [
+        "ART-EXAMPLE-RAW-RTT-001"
+      ],
+      "output_artifact_ids": [
+        "ART-EXAMPLE-PROCESSED-RTT-001"
+      ],
+      "software_commit": "1111111111111111111111111111111111111111",
+      "entrypoint": "scripts/process-rtt-example.py",
+      "parameters": {
+        "output_unit": "ms",
+        "timestamp_field": "timestamp_utc_ns"
+      },
+      "input_schema_versions": [],
+      "output_schema_version": "1.0.0",
+      "environment_ref": "synthetic-example-environment",
+      "container_image_digest": null,
+      "notes": "Synthetic provenance record for schema demonstration only."
+    }
+  ]
+}

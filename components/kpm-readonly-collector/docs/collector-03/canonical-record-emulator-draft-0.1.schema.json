@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tcd-oran.invalid/schema/kpm/canonical-record-emulator-draft-0.1.schema.json",
+  "title": "TCD KPM emulator-derived canonical record draft 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_kind",
+    "indication_sequence",
+    "receive_timestamp_us",
+    "kpm_header_timestamp_us",
+    "message_format",
+    "node_type",
+    "node_id",
+    "ue_report_index",
+    "ue_id_type",
+    "ue_id_value",
+    "meas_data_index",
+    "meas_info_index",
+    "meas_record_index",
+    "meas_data_lst_len",
+    "meas_info_lst_len",
+    "meas_record_len",
+    "incomplete_flag_present",
+    "incomplete_flag",
+    "structural_status",
+    "descriptor_type",
+    "measurement_name",
+    "measurement_id",
+    "value_type",
+    "integer_value",
+    "real_value",
+    "diagnostic_code",
+    "diagnostic_message"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "tcd.kpm.record.emulator-draft-0.1"
+    },
+    "record_kind": {
+      "enum": [
+        "measurement",
+        "diagnostic"
+      ]
+    },
+    "indication_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "receive_timestamp_us": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "kpm_header_timestamp_us": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "message_format": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "node_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "node_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ue_report_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "ue_id_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ue_id_value": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "meas_data_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "meas_info_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "meas_record_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "meas_data_lst_len": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "meas_info_lst_len": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "meas_record_len": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "incomplete_flag_present": {
+      "type": "boolean"
+    },
+    "incomplete_flag": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "structural_status": {
+      "enum": [
+        "ok",
+        "no_value",
+        "length_mismatch",
+        "invalid_input",
+        "unsupported_ue_id",
+        "unsupported_descriptor",
+        "unsupported_value_type"
+      ]
+    },
+    "descriptor_type": {
+      "enum": [
+        "name",
+        "id",
+        "unknown"
+      ]
+    },
+    "measurement_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "measurement_id": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "value_type": {
+      "enum": [
+        "integer",
+        "real",
+        "no_value",
+        "unknown"
+      ]
+    },
+    "integer_value": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "real_value": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "diagnostic_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "diagnostic_message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "x-field-order": [
+    "schema_version",
+    "record_kind",
+    "indication_sequence",
+    "receive_timestamp_us",
+    "kpm_header_timestamp_us",
+    "message_format",
+    "node_type",
+    "node_id",
+    "ue_report_index",
+    "ue_id_type",
+    "ue_id_value",
+    "meas_data_index",
+    "meas_info_index",
+    "meas_record_index",
+    "meas_data_lst_len",
+    "meas_info_lst_len",
+    "meas_record_len",
+    "incomplete_flag_present",
+    "incomplete_flag",
+    "structural_status",
+    "descriptor_type",
+    "measurement_name",
+    "measurement_id",
+    "value_type",
+    "integer_value",
+    "real_value",
+    "diagnostic_code",
+    "diagnostic_message"
+  ],
+  "description": "Software-prototype schema derived from FlexRIC emulator evidence. This schema is not frozen, is not accepted as normalised schema v1, and may change after real-node telemetry characterisation.",
+  "x-tcd-status": "emulator-derived-draft",
+  "x-tcd-freeze-state": "not-frozen",
+  "x-tcd-acceptance-state": "not-accepted",
+  "x-tcd-source-basis": "software-emulator-only",
+  "x-tcd-required-real-gates": [
+    "REAL-GATE-01",
+    "REAL-GATE-02"
+  ]
+}

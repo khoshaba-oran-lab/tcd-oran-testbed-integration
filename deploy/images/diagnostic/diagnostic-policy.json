@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "contract": "sci-oran-diagnostic-policy-v1",
+  "architecture": {
+    "default_strategy": "toolbox-first",
+    "runtime_container_package_installation": false,
+    "privileged_default": false,
+    "permanent_capability_escalation": false
+  },
+  "components": {
+    "gnb": {
+      "base_image": "sci-oran/gnb:action11.226-plmnfix-sandybridge",
+      "base_image_id": "sha256:aac094264803c663fd714af28840aa9db10d323526c5e0ca6cbc22645022c292",
+      "diagnostic_strategy": "derived-lightweight-plus-toolbox",
+      "diagnostic_image_required": true,
+      "diagnostic_image": "sci-oran/gnb:action11.226-plmnfix-sandybridge-diag-v1",
+      "diagnostic_image_id": "sha256:997a6280c7e4aa3db81c9e83181f8efe88901849bc9d1339e2393a6f840c9408",
+      "basic_tools": [
+        "ip",
+        "ss",
+        "tc",
+        "ping",
+        "iperf3",
+        "ps",
+        "pgrep",
+        "fuser",
+        "pstree",
+        "lsof",
+        "curl",
+        "jq",
+        "nc"
+      ],
+      "extended_diagnostics": "toolbox",
+      "equivalence": {
+        "binary_sha256": "PASS",
+        "runtime_image_config": "PASS",
+        "cpu_profile": "PASS",
+        "dynamic_linkage": "PASS",
+        "cli_runtime": "PASS",
+        "full_testbed_integration": "PENDING_11A_11B"
+      }
+    },
+    "ue": {
+      "runtime_image": "khoshaba/tb3-base05-artifacts:srsue-zmq-23.11-eea87b1d893a-sandybridge-v2",
+      "runtime_image_id": "sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410",
+      "diagnostic_strategy": "native-basic-plus-toolbox",
+      "diagnostic_image_required": false,
+      "native_basic_tools": [
+        "ip",
+        "ss",
+        "tc",
+        "ping",
+        "ps",
+        "pgrep"
+      ],
+      "extended_diagnostics": "toolbox"
+    },
+    "5gc": {
+      "runtime_image": "tcd-oran/base05-open5gs:v2.7.0-e584550e",
+      "runtime_image_id": "sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d",
+      "diagnostic_strategy": "native-basic-plus-toolbox",
+      "diagnostic_image_required": false,
+      "native_basic_tools": [
+        "ip",
+        "ss",
+        "tc",
+        "ping",
+        "ps",
+        "pgrep",
+        "iperf3",
+        "curl",
+        "nc"
+      ],
+      "extended_diagnostics": "toolbox"
+    },
+    "ric": {
+      "runtime_image": "tcd-oran/flexric-action11:e2ap-v3-live-probe",
+      "runtime_image_id": "sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb",
+      "diagnostic_strategy": "toolbox-first",
+      "diagnostic_image_required": false,
+      "native_basic_tools": [
+        "ps",
+        "pgrep"
+      ],
+      "network_diagnostics": "toolbox",
+      "extended_diagnostics": "toolbox"
+    }
+  },
+  "toolbox": {
+    "image": "sci-oran/toolbox:v1",
+    "image_id": "sha256:2f60d32db88bb07cfc8af06830fe5e25b3183c107591ce5044e1711eb28b0adb",
+    "base_image": "ubuntu:22.04",
+    "base_digest": "sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f",
+    "contract": "toolbox-v1",
+    "installed_tools": [
+      "ip",
+      "ss",
+      "tc",
+      "ping",
+      "iperf3",
+      "tcpdump",
+      "nc",
+      "socat",
+      "curl",
+      "jq",
+      "ps",
+      "pgrep",
+      "fuser",
+      "pstree",
+      "lsof",
+      "traceroute",
+      "ethtool",
+      "sctp_darn",
+      "sctp_status",
+      "strace",
+      "dig",
+      "nslookup"
+    ],
+    "network_namespace": {
+      "mode": "--network container:<target>",
+      "validated": true,
+      "gate": "TOOLBOX_NETWORK_NAMESPACE_GATE=PASS",
+      "zero_capability_passive_diagnostics": true,
+      "validated_passive_functions": [
+        "interface_inventory",
+        "address_inventory",
+        "route_inventory",
+        "socket_inventory",
+        "tcp_reachability"
+      ]
+    },
+    "capability_policy": {
+      "default": {
+        "cap_drop": "ALL",
+        "cap_add": []
+      },
+      "icmp": {
+        "cap_drop": "ALL",
+        "cap_add": [
+          "NET_RAW"
+        ]
+      },
+      "packet_capture": {
+        "cap_drop": "ALL",
+        "cap_add_required": [
+          "NET_RAW"
+        ],
+        "cap_add_optional": [
+          "NET_ADMIN"
+        ]
+      },
+      "network_administration": {
+        "cap_drop": "ALL",
+        "cap_add": [
+          "NET_ADMIN"
+        ]
+      },
+      "privileged": false,
+      "SYS_ADMIN": false
+    },
+    "process_namespace_diagnostics": {
+      "validated_for_target_processes": false,
+      "scope": "not-required-for-network-link-diagnostics-in-prompt-11c"
+    }
+  },
+  "validated_gates": {
+    "GNB_STATIC_FUNCTIONAL_EQUIVALENCE_GATE": "PASS",
+    "GNB_DYNAMIC_LINKAGE_EQUIVALENCE_GATE": "PASS",
+    "GNB_CLI_RUNTIME_EQUIVALENCE_GATE": "PASS",
+    "TOOLBOX_UBUNTU_22_04_COMPATIBILITY_GATE": "PASS",
+    "TOOLBOX_BUILD_GATE": "PASS",
+    "TOOLBOX_REQUIRED_TOOL_PRESENCE_GATE": "PASS",
+    "TOOLBOX_NETWORK_NAMESPACE_GATE": "PASS",
+    "UE_DIAGNOSTIC_CAPABILITY_INVENTORY_GATE": "PASS",
+    "5GC_DIAGNOSTIC_CAPABILITY_INVENTORY_GATE": "PASS",
+    "RIC_DIAGNOSTIC_CAPABILITY_INVENTORY_GATE": "PASS"
+  }
+}

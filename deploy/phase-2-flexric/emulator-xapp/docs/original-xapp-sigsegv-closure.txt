@@ -86,3 +86,55 @@ Not yet claimed:
   support for every KPM indication format;
   resolution of separate "Measurement Record not reliable" and
   "unknown kpm ind format" observations.
+
+BASE-06F FINAL PROMOTION ADDENDUM
+--------------------------------
+The earlier two-trial validation was followed by a controlled five-run
+repeatability experiment using the exact p2 reference-xApp image.
+
+Five-run result:
+
+  requested runs: 5
+  passed runs:    5
+  failed runs:    0
+
+Every run completed with:
+
+  exit code:       0
+  OOM killed:      false
+  restart count:   0
+  KPM indications: 11
+  success marker:  present
+  crash marker:    absent
+
+The RIC and E2 Agent identities and start times remained unchanged throughout
+the experiment.
+
+Validated p2 image:
+
+  sha256:9965de270d3eb0e4e39df245f3352330fe9f3d8489bfe303fb0ac36c65bf939b
+
+Baseline p1 xApp SHA-256:
+
+  d00d9b0789d7d9e01ad72d47b1392e3fde1384be719ef8dcdb8e24ad2823ed6c
+
+Patched p2 xApp SHA-256:
+
+  dc13c53af9134c68336397ff593b21f8be8e7edee869af2626d993a2cf3f523a
+
+Only usr/local/bin/flexric/xApp/c/xapp_oran_moni differed between the
+p1 and p2 /usr/local manifests.
+
+External evidence retained outside Git:
+
+  five-run repeatability log SHA-256:
+  e4a73e2ac773603df4efc6cbaa4473b0d7d5e3b9dcf70b998f201e3bca7b7e36
+
+  five-run summary TSV SHA-256:
+  3756acf098c26b21a98871378fa41871cdae009aa66fd4cd6ca3f237efa71f5d
+
+  p1/p2 binary comparison SHA-256:
+  22a1d3cc8eac2715be48e4118a94498253a57b345a58f14a60c3372b5c0d67c0
+
+BASE-06E status: CLOSED
+Five-run repeatability: PASS

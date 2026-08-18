@@ -1,0 +1,105 @@
+BASE-06E VALIDATED FIX REPRODUCTION
+===================================
+
+Scope
+-----
+This procedure rebuilds and validates the already proven xapp_oran_moni
+bounds correction. It does not repeat the original GDB investigation.
+
+Source identity
+---------------
+Repository:
+  https://github.com/merimdzaferagic/CONVERGE-summer-school.git
+
+Commit:
+  b1d6d36334a44a0dfeaacd643b82948259355d7c
+
+FlexRIC tree:
+  bfd1a35b019f9ea7f48d5ee95e2751219e7ad578
+
+Build configuration:
+  E2AP_VERSION=E2AP_V2
+  KPM_VERSION=KPM_V3_00
+  XAPP_DB=NONE_XAPP
+
+Repository input verification
+-----------------------------
+Run from the integration repository root:
+
+  STACK=deploy/phase-2-flexric/emulator-xapp
+
+  sha256sum \
+    "$STACK/docker/Dockerfile.flexric.p2" \
+    "$STACK/docker/patches/0001-xapp-oran-moni-initialize-mutex.patch" \
+    "$STACK/docker/patches/0002-xapp-oran-moni-bound-meas-info-index.patch"
+
+Expected hashes:
+
+  Dockerfile.flexric.p2:
+  605d3a8259d1434cb174b376f6dc8a72d8e8d4240408745e1670a8e41ca2be50
+
+  patch 0001:
+  787fe4e8f98f0417e0c5d5fa8f578b25b888754e48a1ac4c7780324abbee83f3
+
+  patch 0002:
+  78280f4c58659ab1d41cf6e1d2bb5a750869fcf33e7311be27a0c6f1d376a757
+
+Patch applicability
+-------------------
+Use a disposable clone checked out at the exact source commit. Apply patch
+0001 first, then verify and apply patch 0002 with git apply --check and
+git apply.
+
+Expected patched source SHA-256:
+
+  7c0cd3fa9895c80be889665f4dd2793584c57cc97e35715ec1d2b2b60262893d
+
+Image build
+-----------
+From deploy/phase-2-flexric/emulator-xapp:
+
+  BUILD_LOG="$HOME/base-06e-p2-image-build.log" \
+  ./scripts/build-flexric-p2.sh
+
+Expected tag:
+
+  tcd-oran/flexric-emulator:e2ap-v2-kpm-v3-b1d6d36-p2
+
+Compose static validation
+-------------------------
+Run without starting containers:
+
+  STACK_DIR="$(pwd -P)"
+
+  docker compose \
+    --project-directory "$STACK_DIR" \
+    -f "$STACK_DIR/compose.emulator.yml" \
+    config
+
+The promoted isolation model uses p1 for the RIC and E2 Agent and p2 only
+for reference-xapp.
+
+Runtime validation
+------------------
+The p1 RIC and p1 E2 Agent must already be running.
+
+  EVIDENCE_ROOT="$HOME/base-06e-reproduction-evidence" \
+  ./scripts/validate-reference-xapp-p2.sh
+
+Expected successful properties:
+
+  xApp exit code 0
+  SIGSEGV absent
+  KPM callbacks observed
+  subscription lifecycle completed
+  RIC not recreated
+  E2 Agent not recreated
+
+Validated xApp binary SHA-256:
+
+  dc13c53af9134c68336397ff593b21f8be8e7edee869af2626d993a2cf3f523a
+
+Evidence policy
+---------------
+Runtime logs, core dumps, container-inspect JSON, compiled binaries and
+Docker archives remain outside Git.

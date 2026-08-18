@@ -1,0 +1,331 @@
+---
+- name: Sci-O-RAN Tb3 day-stop evidence capture
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_day_stop_teardown_id: >-
+      {{
+        day_stop_operation_id
+        | regex_replace(
+            '^lifecycle-day-stop-',
+            'lifecycle-teardown-'
+          )
+      }}
+
+    sci_oran_day_stop_evidence_dir: >-
+      {{
+        sci_oran_repo_root
+        ~ '/artifacts/lifecycle/'
+        ~ sci_oran_day_stop_teardown_id
+      }}
+
+    sci_oran_day_stop_snapshot: >-
+      {{
+        sci_oran_day_stop_evidence_dir
+        ~ '/day-stop-runtime-snapshot.txt'
+      }}
+
+    sci_oran_day_stop_snapshot_checksum: >-
+      {{
+        sci_oran_day_stop_evidence_dir
+        ~ '/day-stop-runtime-snapshot.sha256'
+      }}
+
+  tasks:
+    - name: Require explicit day-stop confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_day_stop | default(false) | bool
+        fail_msg: >-
+          Day-stop requires explicit -e confirm_day_stop=true.
+
+    - name: Require day-stop operation identity
+      ansible.builtin.assert:
+        that:
+          - day_stop_operation_id is defined
+          - day_stop_operation_id is string
+          - >-
+            day_stop_operation_id is match(
+              '^lifecycle-day-stop-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          A valid lifecycle-day-stop operation identity is required.
+
+    - name: Require valid day-stop teardown identity
+      ansible.builtin.assert:
+        that:
+          - >-
+            sci_oran_day_stop_teardown_id is match(
+              '^lifecycle-teardown-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          Day-stop teardown operation identity derivation failed.
+
+    - name: Inspect day-stop evidence directory
+      ansible.builtin.stat:
+        path: "{{ sci_oran_day_stop_evidence_dir }}"
+      register: sci_oran_day_stop_existing_evidence
+
+    - name: Refuse day-stop evidence overwrite
+      ansible.builtin.assert:
+        that:
+          - not sci_oran_day_stop_existing_evidence.stat.exists
+        fail_msg: >-
+          Day-stop teardown evidence directory already exists.
+
+    - name: Create day-stop evidence directory
+      ansible.builtin.file:
+        path: "{{ sci_oran_day_stop_evidence_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Capture day-stop runtime snapshot
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        SNAPSHOT="{{ sci_oran_day_stop_snapshot }}"
+
+        {
+          echo "===== SCI_ORAN DAY-STOP RUNTIME SNAPSHOT ====="
+          echo "UTC_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "HOSTNAME=$(hostname)"
+          echo
+
+          echo "===== REPOSITORY ====="
+          cd "{{ sci_oran_repo_root }}"
+          echo "BRANCH=$(git branch --show-current)"
+          echo "HEAD=$(git rev-parse HEAD)"
+          echo
+
+          echo "===== DOCKER PS -A ====="
+          docker ps -a --no-trunc 2>&1 || true
+          echo
+
+          echo "===== COMPOSE PS ====="
+          docker compose \
+            -f deploy/phase-1-baseline/base-05-zmq/compose.runtime.yml \
+            -f deploy/phase-1-baseline/base-05-zmq/compose.sandybridge.yml \
+            -f deploy/phase-2-flexric/tb3-runtime/compose.lifecycle-gnb.yml \
+            ps -a 2>&1 || true
+          echo
+
+          for C in \
+            base05_open5gs_5gc \
+            action11_202_flexric_ric_safe \
+            base05_srsran_gnb \
+            base05_srsran_srsue
+          do
+            echo "===== CONTAINER $C ====="
+
+            if docker inspect "$C" >/dev/null 2>&1; then
+              docker inspect \
+                --format \
+                '{% raw %}NAME={{.Name}} RUNNING={{.State.Running}} PID={{.State.Pid}} RESTARTS={{.RestartCount}} IMAGE_ID={{.Image}} IMAGE_REF={{.Config.Image}}{% endraw %}' \
+                "$C"
+
+              echo
+              echo "--- FULL INSPECT ---"
+              docker inspect "$C"
+
+              IMAGE_ID="$(
+                docker inspect \
+                  --format \
+                  '{% raw %}{{.Image}}{% endraw %}' \
+                  "$C"
+              )"
+
+              echo
+              echo "--- IMAGE INSPECT $IMAGE_ID ---"
+              docker image inspect "$IMAGE_ID" 2>&1 || true
+
+              echo
+              echo "--- LAST 200 LOG LINES ---"
+              docker logs --tail 200 "$C" 2>&1 || true
+            else
+              echo "CONTAINER_STATE=ABSENT"
+            fi
+
+            echo
+          done
+
+          echo "===== NETWORK tcd-base05-zmq_ran ====="
+          docker network inspect \
+            tcd-base05-zmq_ran \
+            2>&1 || true
+
+          echo
+          echo "===== END SCI_ORAN DAY-STOP RUNTIME SNAPSHOT ====="
+        } > "$SNAPSHOT"
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Create day-stop snapshot checksum
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        cd "{{ sci_oran_day_stop_evidence_dir }}"
+
+        sha256sum \
+          day-stop-runtime-snapshot.txt \
+          > day-stop-runtime-snapshot.sha256
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Report day-stop capture result
+      ansible.builtin.debug:
+        msg:
+          - "DAY_STOP_OPERATION_ID={{ day_stop_operation_id }}"
+          - "DAY_STOP_TEARDOWN_OPERATION_ID={{ sci_oran_day_stop_teardown_id }}"
+          - "DAY_STOP_RUNTIME_SNAPSHOT={{ sci_oran_day_stop_snapshot }}"
+          - "DAY_STOP_RUNTIME_CAPTURE_GATE=PASS"
+
+- import_playbook: tb3-teardown.yml
+  vars:
+    operation_id: >-
+      {{
+        day_stop_operation_id
+        | regex_replace(
+            '^lifecycle-day-stop-',
+            'lifecycle-teardown-'
+          )
+      }}
+    confirm_teardown: true
+
+- name: Sci-O-RAN Tb3 day-stop final gate
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_day_stop_teardown_id: >-
+      {{
+        day_stop_operation_id
+        | regex_replace(
+            '^lifecycle-day-stop-',
+            'lifecycle-teardown-'
+          )
+      }}
+
+    sci_oran_day_stop_evidence_dir: >-
+      {{
+        sci_oran_repo_root
+        ~ '/artifacts/lifecycle/'
+        ~ sci_oran_day_stop_teardown_id
+      }}
+
+  tasks:
+    - name: Inspect day-stop evidence artifacts
+      ansible.builtin.stat:
+        path: "{{ sci_oran_day_stop_evidence_dir }}/{{ item }}"
+      loop:
+        - day-stop-runtime-snapshot.txt
+        - day-stop-runtime-snapshot.sha256
+        - before-state.txt
+        - after-state.txt
+        - operation.log
+        - manifest.json
+        - checksums.sha256
+      register: sci_oran_day_stop_evidence_files
+
+    - name: Require complete day-stop evidence
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+          - item.stat.size > 0
+        fail_msg: >-
+          Required day-stop evidence artifact is missing or empty:
+          {{ item.item }}.
+      loop: "{{ sci_oran_day_stop_evidence_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Validate day-stop runtime snapshot checksum
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - -c
+          - day-stop-runtime-snapshot.sha256
+      args:
+        chdir: "{{ sci_oran_day_stop_evidence_dir }}"
+      changed_when: false
+
+    - name: Read day-stop teardown manifest
+      ansible.builtin.command:
+        argv:
+          - cat
+          - "{{ sci_oran_day_stop_evidence_dir }}/manifest.json"
+      register: sci_oran_day_stop_manifest
+      changed_when: false
+
+    - name: Require successful day-stop teardown evidence
+      ansible.builtin.assert:
+        that:
+          - >-
+            (sci_oran_day_stop_manifest.stdout | from_json)
+            ['operation_type'] == 'teardown'
+          - >-
+            (sci_oran_day_stop_manifest.stdout | from_json)
+            ['operation_result'] == 'PASS'
+        fail_msg: >-
+          Day-stop teardown manifest does not prove successful teardown.
+
+    - name: Verify day-stop containers are absent
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        FAIL=0
+
+        for C in \
+          base05_open5gs_5gc \
+          action11_202_flexric_ric_safe \
+          base05_srsran_gnb \
+          base05_srsran_srsue
+        do
+          if docker inspect "$C" >/dev/null 2>&1; then
+            echo "UNEXPECTED_CONTAINER=$C"
+            FAIL=1
+          fi
+        done
+
+        exit "$FAIL"
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Inspect day-stop network absence
+      ansible.builtin.command:
+        argv:
+          - docker
+          - network
+          - inspect
+          - tcd-base05-zmq_ran
+      register: sci_oran_day_stop_network
+      changed_when: false
+      failed_when: false
+
+    - name: Require day-stop network absence
+      ansible.builtin.assert:
+        that:
+          - sci_oran_day_stop_network.rc != 0
+        fail_msg: >-
+          BASE-05 lifecycle network still exists after day-stop.
+
+    - name: Report day-stop result
+      ansible.builtin.debug:
+        msg:
+          - "DAY_STOP_OPERATION_ID={{ day_stop_operation_id }}"
+          - "DAY_STOP_TEARDOWN_OPERATION_ID={{ sci_oran_day_stop_teardown_id }}"
+          - "DAY_STOP_RUNTIME_CAPTURE_GATE=PASS"
+          - "DAY_STOP_EVIDENCE_GATE=PASS"
+          - "DAY_STOP_TEARDOWN_GATE=PASS"
+          - "DAY_STOP_CLEAN_STATE_GATE=PASS"
+          - "DAY_STOP_GATE=PASS"

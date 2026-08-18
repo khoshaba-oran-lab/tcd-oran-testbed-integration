@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "contract": "sci-oran-diagnostic-images-lock-v1",
+  "project": {
+    "branch_at_generation": "feat/tb3-dell-reproducibility",
+    "git_head_at_generation": "81a60abd357cd930008a122b40ec0721fbfcc4e5",
+    "note": "The lock file itself is version-controlled; its final checkpoint commit is determined from Git history."
+  },
+  "policy": {
+    "path": "deploy/images/diagnostic/diagnostic-policy.json",
+    "sha256": "cd11f4af9fb9a50c1e185d719a1b1cb63907508c6cf17cd63bdafd5086c7d7bd"
+  },
+  "images": {
+    "gnb-diagnostic": {
+      "repository": "sci-oran/gnb",
+      "tag": "action11.226-plmnfix-sandybridge-diag-v1",
+      "reference": "sci-oran/gnb:action11.226-plmnfix-sandybridge-diag-v1",
+      "local_image_id": "sha256:997a6280c7e4aa3db81c9e83181f8efe88901849bc9d1339e2393a6f840c9408",
+      "registry_digest": null,
+      "publication_state": "local-only-unpublished",
+      "repo_digests_observed": [
+        "sci-oran/gnb@sha256:997a6280c7e4aa3db81c9e83181f8efe88901849bc9d1339e2393a6f840c9408"
+      ],
+      "created": "2026-08-13T07:09:23.894762802Z",
+      "dockerfile": {
+        "path": "deploy/images/diagnostic/gnb/Dockerfile",
+        "sha256": "f3e068224a07eb180ae7cf48d96956afb27ab0172dd3b64d6c0d1106c02472e7"
+      },
+      "application": {
+        "binary": "/usr/local/bin/gnb",
+        "binary_sha256": "e5615cb2400aebda43f68bf8b6c756449442e02e6940a0b91ed59bd9a928aa90",
+        "source_revision": "9d5dd742a70e82c0813c34f57982f9507f1b6d5d"
+      },
+      "base": {
+        "reference": "sci-oran/gnb:action11.226-plmnfix-sandybridge",
+        "local_image_id": "sha256:aac094264803c663fd714af28840aa9db10d323526c5e0ca6cbc22645022c292",
+        "registry_digest": null,
+        "provenance_mode": "validated-local-image-id"
+      },
+      "size": {
+        "base_bytes": 127139809,
+        "image_bytes": 131095086,
+        "delta_bytes": 3955277
+      }
+    },
+    "toolbox": {
+      "repository": "sci-oran/toolbox",
+      "tag": "v1",
+      "reference": "sci-oran/toolbox:v1",
+      "local_image_id": "sha256:2f60d32db88bb07cfc8af06830fe5e25b3183c107591ce5044e1711eb28b0adb",
+      "registry_digest": null,
+      "publication_state": "local-only-unpublished",
+      "repo_digests_observed": [
+        "sci-oran/toolbox@sha256:2f60d32db88bb07cfc8af06830fe5e25b3183c107591ce5044e1711eb28b0adb"
+      ],
+      "created": "2026-08-13T08:38:52.543941953Z",
+      "dockerfile": {
+        "path": "deploy/images/diagnostic/toolbox/Dockerfile",
+        "sha256": "547fe5bf6f2ee926dcd6b7f6eaa2bbc51e7c802ee346d7fd8b5a527199905785"
+      },
+      "base": {
+        "reference": "ubuntu@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f",
+        "local_image_id": "sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f",
+        "registry_digest": "sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f",
+        "provenance_mode": "registry-digest-pinned"
+      },
+      "size": {
+        "base_bytes": 29745680,
+        "image_bytes": 54186896,
+        "delta_bytes": 24441216
+      }
+    }
+  }
+}

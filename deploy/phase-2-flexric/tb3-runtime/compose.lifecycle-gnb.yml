@@ -1,0 +1,8 @@
+services:
+  gnb:
+    image: sci-oran/gnb:action11r48-prbfix-sandybridge
+    volumes:
+      - type: bind
+        source: ../../phase-2-flexric/tb3-runtime/configs/gnb-e2sm-rc.yaml
+        target: /gnb_zmq_base05.yaml
+        read_only: true

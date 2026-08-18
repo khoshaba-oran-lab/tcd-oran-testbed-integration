@@ -1,0 +1,67 @@
+COLLECTOR-01 NODE SELECTION CONTRACT V1
+=======================================
+
+Purpose
+-------
+
+The collector discovers E2 nodes through e2_nodes_xapp_api and selects exactly
+one node before constructing a KPM subscription.
+
+Selector inputs
+---------------
+
+TCD_KPM_NODE_TYPE
+    Required node type. The default software-baseline value is gNB_DU.
+
+TCD_KPM_NODE_ID
+    Optional canonical node identifier.
+
+    Canonical forms:
+
+        nb_id=<decimal>
+        nb_id=<decimal>;cu_du_id=<decimal>
+
+TCD_KPM_REQUIRE_EXACTLY_ONE_MATCH
+    Must remain true during COLLECTOR-01.
+
+Selection result
+----------------
+
+Zero matches:
+
+    controlled failure
+
+One match:
+
+    node selected
+
+More than one match:
+
+    controlled ambiguous-selection failure
+
+Ownership
+---------
+
+The selected result contains copied scalar and string values only.
+
+No pointer into e2_node_arr_xapp_t or global_e2_node_id_t is retained after
+free_e2_node_arr_xapp returns.
+
+Action 4A scope
+---------------
+
+Implemented:
+
+- FlexRIC xApp initialisation;
+- bounded E2-node discovery;
+- deterministic node-type selection;
+- optional canonical node-ID selection;
+- exactly-one KPM profile selection for the selected node type;
+- one read-only KPM subscription;
+- bounded subscription removal and API shutdown.
+
+Not implemented:
+
+- reconnect/resubscribe;
+- RAN control;
+- output adapters.

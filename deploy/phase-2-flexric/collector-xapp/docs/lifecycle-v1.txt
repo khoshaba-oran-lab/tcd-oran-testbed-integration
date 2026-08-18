@@ -1,0 +1,56 @@
+COLLECTOR-01 LIFECYCLE V1
+========================
+
+Normal path
+-----------
+
+created
+  -> api_initialised
+  -> ric_connected
+  -> node_discovered
+  -> node_selected
+  -> subscription_active
+  -> receiving               [only after the first indication]
+  -> stop_requested
+  -> subscription_removed
+  -> stopped
+
+A duration-bound run with no indication may move directly from
+subscription_active to stop_requested.
+
+Failure path
+------------
+
+Any active state may enter failed.
+
+If a subscription is active, failed performs best-effort subscription removal
+before stopped.
+
+A transition to stopped is forbidden while subscription_active is true.
+
+Ownership rules
+---------------
+
+The collector owns the subscription handle after successful
+report_sm_xapp_api completion and until rm_report_sm_xapp_api is invoked.
+
+The KPM subscription request owns all event-trigger and action-definition
+allocations until free_kpm_sub_data is called.
+
+The E2-node array returned by e2_nodes_xapp_api is caller-owned and is released
+through free_e2_node_arr_xapp.
+
+Callback rules
+--------------
+
+No single-thread callback guarantee is assumed.
+
+Shared counters use C11 atomics. The callback copies all retained data and does
+not retain FlexRIC-owned pointers.
+
+The callback does not print, sleep, perform file I/O or invoke an exporter. It
+uses a non-blocking mutex attempt only to retain the latest copied record for
+post-shutdown diagnostics.
+
+The callback is uninstalled after subscription removal. Its context remains
+alive until bounded FlexRIC API shutdown completes.

@@ -1,0 +1,3 @@
+services:
+  gnb:
+    image: sci-oran/gnb:action11.226-plmnfix-sandybridge

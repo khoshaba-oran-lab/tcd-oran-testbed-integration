@@ -1,0 +1,87 @@
+COLLECTOR-01 INTERNAL RECORD V1
+==============================
+
+Purpose
+-------
+
+The internal record is an owned, callback-independent representation of a KPM
+measurement.
+
+It is not a stable external JSON, CSV, Parquet or database schema.
+
+Ownership
+---------
+
+All data retained after callback return is copied into collector-owned storage.
+
+FlexRIC pointers are not retained after callback return.
+
+Indication context
+------------------
+
+The indication context contains:
+
+- indication sequence;
+- logical collector subscription ID;
+- receive timestamp in Unix nanoseconds;
+- raw KPM header timestamp;
+- raw message format;
+- raw E2-node type;
+- owned E2-node identifier string;
+- UE report count.
+
+Measurement record
+------------------
+
+Each measurement record contains:
+
+- indication context;
+- UE report index;
+- owned UE identifier components;
+- measurement-data index;
+- measurement-record index;
+- measurement-info index;
+- measurement-data list length;
+- measurement-info list length;
+- measurement-record length;
+- owned measurement descriptor;
+- integer, real or no-value payload;
+- incomplete-flag presence and value;
+- structural status.
+
+UINT32_MAX is the missing-index sentinel for UE-report, measurement-data,
+measurement-record and measurement-info indices.
+
+Supported callback structures
+-----------------------------
+
+Action 4A accepts KPM v3 indication message formats 1 and 3.
+
+Format 3 is flattened by processing each per-UE nested format-1 report while
+copying the supported gNB, gNB-DU or gNB-CU-UP UE identifier.
+
+Structural statuses
+-------------------
+
+Action 4A uses:
+
+- ok;
+- length_mismatch;
+- no_value;
+- unsupported_descriptor;
+- unsupported_value_type;
+- unsupported_ue_id;
+- unknown_message_format;
+- invalid_input.
+
+The complete semantic status taxonomy belongs to COLLECTOR-02.
+
+Length mismatch
+---------------
+
+Different measurement-info and measurement-record lengths are preserved in
+the record.
+
+The callback iterates over the larger length and uses the missing-index
+sentinel for the absent side. No index is dereferenced unless it is valid for
+the corresponding source list.
