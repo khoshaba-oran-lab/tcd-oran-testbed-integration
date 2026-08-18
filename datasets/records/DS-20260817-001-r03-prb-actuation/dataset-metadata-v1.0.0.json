@@ -1,5 +1,6 @@
 {
   "dataset": {
+    "license": "CC-BY-4.0",
     "dataset_id": "DS-20260817-001-r03-prb-actuation",
     "dataset_title": "Sci_O-RAN R03 runtime PRB actuation dataset",
     "dataset_version": "v1.0.0",
@@ -18,7 +19,7 @@
       "E2SM-KPM validation was not performed in R03 because e2sm_kpm_enabled=false in the reproducible R03 configuration.",
       "This metadata record precedes construction and validation of the final Zenodo dataset release package."
     ],
-    "validation_status": "not_validated",
+    "validation_status": "valid",
     "archival_record": null
   },
   "experiments": [
@@ -64,7 +65,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-008",
@@ -79,7 +80,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-009",
@@ -94,7 +95,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-010",
@@ -109,7 +110,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-011",
@@ -124,7 +125,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-012",
@@ -139,7 +140,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-013",
@@ -154,7 +155,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-014",
@@ -169,7 +170,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-015",
@@ -184,7 +185,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-016",
@@ -199,7 +200,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-017",
@@ -214,7 +215,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-018",
@@ -229,7 +230,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-019",
@@ -244,7 +245,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-020",
@@ -259,7 +260,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-021",
@@ -274,7 +275,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-022",
@@ -289,7 +290,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-023",
@@ -304,7 +305,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-024",
@@ -319,7 +320,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-030",
@@ -334,7 +335,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-031",
@@ -349,7 +350,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-032",
@@ -364,7 +365,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-034",
@@ -379,7 +380,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-035",
@@ -394,7 +395,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-039",
@@ -409,7 +410,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-040",
@@ -424,7 +425,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-041",
@@ -439,7 +440,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-044",
@@ -454,7 +455,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-045",
@@ -469,7 +470,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-049",
@@ -484,7 +485,7 @@
       "schema_version": "1.0.0",
       "source_artifact_ids": [],
       "processing_provenance_id": null,
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-001",
@@ -534,7 +535,7 @@
         "ART-R03-006"
       ],
       "processing_provenance_id": "PROV-20260817T113756Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-002",
@@ -551,7 +552,7 @@
         "ART-R03-030"
       ],
       "processing_provenance_id": "PROV-20260817T113338Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-003",
@@ -568,7 +569,7 @@
         "ART-R03-030"
       ],
       "processing_provenance_id": "PROV-20260817T113338Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-004",
@@ -585,7 +586,7 @@
         "ART-R03-030"
       ],
       "processing_provenance_id": "PROV-20260817T113338Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-005",
@@ -603,7 +604,7 @@
         "ART-R03-030"
       ],
       "processing_provenance_id": "PROV-20260817T113615Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     },
     {
       "artifact_id": "ART-R03-006",
@@ -621,7 +622,7 @@
         "ART-R03-030"
       ],
       "processing_provenance_id": "PROV-20260817T113615Z-001",
-      "validation_status": "not_validated"
+      "validation_status": "valid"
     }
   ],
   "processing_provenance": [

@@ -1,0 +1,64 @@
+{
+  "archival_record": null,
+  "checksums": {
+    "algorithm": "SHA-256",
+    "coverage_policy": "all regular release files except SHA256SUMS itself",
+    "path": "checksums/SHA256SUMS"
+  },
+  "created_utc": "2026-08-18T09:28:47Z",
+  "dataset_freeze": {
+    "files_tsv_sha256": "00d034b6e3f22672034273fe9da83197c92129a8bfaf1d585a513146f87af9d7",
+    "freeze_env_sha256": "f1c20b45faeec290979e62a4fbea65f17d054e9e14e64246e19773c41363638b",
+    "freeze_utc": "2026-08-17T11:44:24Z",
+    "frozen_record_count": 57
+  },
+  "dataset_id": "DS-20260817-001-r03-prb-actuation",
+  "dataset_schema_version": "1.0.0",
+  "dataset_version": "v1.0.0",
+  "doi": null,
+  "experiment_id": "EXP-20260817-A11R50-PRB25-18MBIT-R03",
+  "known_limitations": [
+    "E2SM-KPM validation was not performed in R03",
+    "historical inline shell processing commands were not retained"
+  ],
+  "license": "CC-BY-4.0",
+  "manifest_schema_version": "1.0.0",
+  "prepublication_validation": {
+    "failed_gate_count": 0,
+    "failed_gates": [],
+    "gate": "ActionArchive.5O2",
+    "result": "PASS",
+    "validated_utc": "2026-08-18T09:45:34Z"
+  },
+  "release_state": "prepublication",
+  "repository_provenance": {
+    "branch": "feat/tb3-dell-reproducibility",
+    "dataset_registration_commit": "16cb4fec927bd7be5feeb689912a3de77a1232cd",
+    "release_preparation_base_commit": "a060202c764d14fc9ac73b441893188d5c5e37ff"
+  },
+  "scientific_payload": {
+    "accepted_artifact_count": 35,
+    "derived_artifact_count": 6,
+    "payload_bytes": 37278831,
+    "raw_artifact_count": 29
+  },
+  "software_provenance": {
+    "docker_archive_commit": "a060202c764d14fc9ac73b441893188d5c5e37ff",
+    "docker_archive_lock": "deploy/phase-2-flexric/tb3-runtime/locks/r03-docker-archive.lock",
+    "r03_software_commit": "8417f7b09db36a0121785f0cd6debf6fbea4d740",
+    "srsran_source_revision": "9d5dd742a70e82c0813c34f57982f9507f1b6d5d"
+  },
+  "supporting_records": {
+    "metadata_provenance_count": 15,
+    "rejected_evidence_count": 6,
+    "rejected_evidence_is_accepted_payload": false,
+    "software_binary_included_as_measurement_payload": false,
+    "software_reference_count": 1
+  },
+  "validation_status": "validated_prepublication",
+  "zenodo": {
+    "doi": null,
+    "doi_reserved": false,
+    "upload_performed": false
+  }
+}

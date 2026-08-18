@@ -12,7 +12,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-008",
@@ -27,7 +27,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-009",
@@ -42,7 +42,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-010",
@@ -57,7 +57,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-011",
@@ -72,7 +72,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-012",
@@ -87,7 +87,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-013",
@@ -102,7 +102,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-014",
@@ -117,7 +117,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-015",
@@ -132,7 +132,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-016",
@@ -147,7 +147,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-017",
@@ -162,7 +162,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-018",
@@ -177,7 +177,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-019",
@@ -192,7 +192,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-020",
@@ -207,7 +207,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-021",
@@ -222,7 +222,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-022",
@@ -237,7 +237,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-023",
@@ -252,7 +252,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-024",
@@ -267,7 +267,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-030",
@@ -282,7 +282,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-031",
@@ -297,7 +297,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-032",
@@ -312,7 +312,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-034",
@@ -327,7 +327,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-035",
@@ -342,7 +342,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-039",
@@ -357,7 +357,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-040",
@@ -372,7 +372,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-041",
@@ -387,7 +387,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-044",
@@ -402,7 +402,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-045",
@@ -417,7 +417,7 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-049",
@@ -432,6 +432,6 @@
     "schema_version": "1.0.0",
     "source_artifact_ids": [],
     "processing_provenance_id": null,
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   }
 ]

@@ -47,7 +47,7 @@
       "ART-R03-006"
     ],
     "processing_provenance_id": "PROV-20260817T113756Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-002",
@@ -64,7 +64,7 @@
       "ART-R03-030"
     ],
     "processing_provenance_id": "PROV-20260817T113338Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-003",
@@ -81,7 +81,7 @@
       "ART-R03-030"
     ],
     "processing_provenance_id": "PROV-20260817T113338Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-004",
@@ -98,7 +98,7 @@
       "ART-R03-030"
     ],
     "processing_provenance_id": "PROV-20260817T113338Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-005",
@@ -116,7 +116,7 @@
       "ART-R03-030"
     ],
     "processing_provenance_id": "PROV-20260817T113615Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   },
   {
     "artifact_id": "ART-R03-006",
@@ -134,6 +134,6 @@
       "ART-R03-030"
     ],
     "processing_provenance_id": "PROV-20260817T113615Z-001",
-    "validation_status": "not_validated"
+    "validation_status": "valid"
   }
 ]
