@@ -1,6 +1,7 @@
-REPOSITORY_READINESS_POLICY_VERSION=1
+REPOSITORY_READINESS_POLICY_VERSION=2
+REPOSITORY_PROFILE=prompt12-siso-identification
 
-EXPECTED_BRANCH=feat/tb3-dell-reproducibility
+EXPECTED_BRANCH=feat/prompt12-siso-identification
 
 RUNTIME_GATE_REQUIRE_GIT_REPOSITORY=true
 RUNTIME_GATE_REQUIRE_EXPECTED_BRANCH=true
@@ -9,14 +10,14 @@ RUNTIME_GATE_REQUIRE_TRACKED_DEPENDENCIES_CLEAN=true
 
 RUNTIME_GATE_REQUIRE_REMOTE_SYNC=false
 RUNTIME_GATE_REQUIRE_GLOBAL_CLEAN_WORKTREE=false
-RUNTIME_GATE_ALLOW_PROMPT11B_DEVELOPMENT_FILES_UNTRACKED=true
+RUNTIME_GATE_ALLOW_DEVELOPMENT_FILES_UNTRACKED=true
 
 FINAL_CHECKPOINT_REQUIRE_REMOTE_SYNC=true
-FINAL_CHECKPOINT_REQUIRE_PROMPT11B_SCOPE_TRACKED=true
-FINAL_CHECKPOINT_REQUIRE_PROMPT11B_SCOPE_CLEAN=true
+FINAL_CHECKPOINT_REQUIRE_DEVELOPMENT_SCOPE_TRACKED=true
+FINAL_CHECKPOINT_REQUIRE_DEVELOPMENT_SCOPE_CLEAN=true
 FINAL_CHECKPOINT_REQUIRE_GLOBAL_CLEAN_WORKTREE=false
 
-TRACKED_DEPENDENCY_COUNT=9
+TRACKED_DEPENDENCY_COUNT=20
 
 TRACKED_DEPENDENCY_01=deploy/phase-1-baseline/base-05-zmq/locks/base-05-zmq-runtime.lock
 TRACKED_DEPENDENCY_02=deploy/phase-1-baseline/base-05-zmq/profiles/tb3-dell-sandybridge.env
@@ -28,10 +29,22 @@ TRACKED_DEPENDENCY_07=deploy/phase-1-baseline/base-05-zmq/configs/ue_zmq_base05.
 TRACKED_DEPENDENCY_08=scripts/experiment-harness/run-experiment.sh
 TRACKED_DEPENDENCY_09=scripts/experiment-harness/lib/traffic-window.sh
 
-PROMPT11B_DEVELOPMENT_FILE_COUNT=5
+TRACKED_DEPENDENCY_10=datasets/schemas/sci-oran-prompt12-siso-v1.0.0.schema.json
+TRACKED_DEPENDENCY_11=deploy/phase-2-flexric/tb3-runtime/actuator/src/xapp_oran_slice_ctrl.prompt12.c
+TRACKED_DEPENDENCY_12=docs/12-siso-system-identification-design.md
+TRACKED_DEPENDENCY_13=scripts/experiment-harness/adapters/prompt12-siso-traffic.sh
+TRACKED_DEPENDENCY_14=scripts/experiment-harness/build-actuator-timeline.py
+TRACKED_DEPENDENCY_15=scripts/experiment-harness/canonicalize-iperf-receiver.py
+TRACKED_DEPENDENCY_16=scripts/experiment-harness/capture-iperf-receiver.py
+TRACKED_DEPENDENCY_17=scripts/experiment-harness/evaluate-output-stationarity.py
+TRACKED_DEPENDENCY_18=scripts/experiment-harness/parse-iperf-receiver.py
+TRACKED_DEPENDENCY_19=scripts/experiment-harness/prompt12-receiver-pipeline.sh
+TRACKED_DEPENDENCY_20=scripts/experiment-harness/prompt12-six-transition-orchestrator.py
 
-PROMPT11B_DEVELOPMENT_FILE_01=deploy/phase-2-flexric/tb3-runtime/locks/user-plane-readiness.policy
-PROMPT11B_DEVELOPMENT_FILE_02=deploy/phase-2-flexric/tb3-runtime/locks/host-resource-readiness.policy
-PROMPT11B_DEVELOPMENT_FILE_03=deploy/phase-2-flexric/tb3-runtime/locks/repository-readiness.policy
-PROMPT11B_DEVELOPMENT_FILE_04=scripts/sci-oran-doctor.sh
-PROMPT11B_DEVELOPMENT_FILE_05=scripts/sci-oran-user-plane-smoke.sh
+DEVELOPMENT_FILE_COUNT=5
+
+DEVELOPMENT_FILE_01=deploy/phase-2-flexric/tb3-runtime/locks/user-plane-readiness.policy
+DEVELOPMENT_FILE_02=deploy/phase-2-flexric/tb3-runtime/locks/host-resource-readiness.policy
+DEVELOPMENT_FILE_03=deploy/phase-2-flexric/tb3-runtime/locks/repository-readiness.policy
+DEVELOPMENT_FILE_04=scripts/sci-oran-doctor.sh
+DEVELOPMENT_FILE_05=scripts/sci-oran-user-plane-smoke.sh
