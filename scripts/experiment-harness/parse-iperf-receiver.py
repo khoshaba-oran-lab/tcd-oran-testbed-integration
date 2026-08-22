@@ -168,7 +168,8 @@ def main():
 
     parsed_rows = []
 
-    previous_sequence = -1
+    previous_sequence = None
+    raw_offset_base = None
     previous_wall_ns = None
     previous_mono_ns = None
 
@@ -180,14 +181,28 @@ def main():
 
         sequence = timestamp_row["sequence"]
 
-        assert sequence == previous_sequence + 1
+        if previous_sequence is not None:
+            assert sequence == previous_sequence + 1
 
         start_offset = timestamp_row["raw_offset_start"]
         end_offset = timestamp_row["raw_offset_end"]
 
-        assert 0 <= start_offset < end_offset <= len(raw_bytes)
+        if raw_offset_base is None:
+            raw_offset_base = start_offset
 
-        raw_line = raw_bytes[start_offset:end_offset]
+        local_start_offset = start_offset - raw_offset_base
+        local_end_offset = end_offset - raw_offset_base
+
+        assert (
+            0
+            <= local_start_offset
+            < local_end_offset
+            <= len(raw_bytes)
+        )
+
+        raw_line = raw_bytes[
+            local_start_offset:local_end_offset
+        ]
 
         assert len(raw_line) == timestamp_row["raw_line_length_bytes"]
 
