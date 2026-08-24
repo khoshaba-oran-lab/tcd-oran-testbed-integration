@@ -1,0 +1,72 @@
+{
+  "aggregate": {
+    "gain_population_cv_pct": 13.312655,
+    "mean_delta_y_kbit_s": 2460.066667,
+    "mean_post_kbit_s": 9541.066667,
+    "mean_pre_kbit_s": 7081.0,
+    "mean_static_gain_kbit_s_per_prb": 189.235897,
+    "median_static_gain_kbit_s_per_prb": 171.723077
+  },
+  "canonical_experiment_identities": {
+    "R01": {
+      "experiment_id": "EXP-20260822-DL-18000K-R01",
+      "run_id": "RUN-20260822T142755Z-009"
+    },
+    "R02": {
+      "experiment_id": "EXP-20260822-DL-18000K-R02",
+      "run_id": "RUN-20260822T143648Z-010"
+    },
+    "R03V2": {
+      "experiment_id": "EXP-20260822-DL-18000K-R03",
+      "run_id": "RUN-20260822T161918Z-014"
+    },
+    "R04": {
+      "experiment_id": "EXP-20260822-DL-18000K-R04",
+      "run_id": "RUN-20260822T164537Z-015"
+    }
+  },
+  "estimation_replications": [
+    "RUN-20260822T142755Z-009",
+    "RUN-20260822T143648Z-010",
+    "RUN-20260822T161918Z-014"
+  ],
+  "final_status": "VALIDATED_ON_TRUE_R04_HOLDOUT",
+  "holdout_validation": {
+    "dynamic_model_validation_gate": "PASS",
+    "dynamic_nrmse_acceptance_max_pct": 35.626969,
+    "dynamic_nrmse_formula": "RMSE/ABS(OBSERVED_DELTA_Y)*100",
+    "dynamic_nrmse_pct": 24.94997,
+    "dynamic_rmse_kbit_s": 581.234498,
+    "experiment_id": "EXP-20260822-DL-18000K-R04",
+    "model_validation_gate": "PASS",
+    "observed_delta_y_kbit_s": 2329.6,
+    "observed_static_gain_kbit_s_per_prb": 179.2,
+    "post_steady_kbit_s": 9614.8,
+    "pre_steady_kbit_s": 7285.2,
+    "replication": "R04",
+    "role": "TRUE_UNSEEN_VALIDATION",
+    "run_id": "RUN-20260822T164537Z-015",
+    "steady_gain_ape_acceptance_max_pct": 23.765052,
+    "steady_gain_ape_formula": "ABS(OBSERVED_GAIN-FROZEN_GAIN)/ABS(OBSERVED_GAIN)*100",
+    "steady_gain_ape_pct": 5.600389,
+    "steady_gain_validation_gate": "PASS"
+  },
+  "model": {
+    "a": 0.5235206985110815,
+    "b": 0.4826205807797367,
+    "equivalent_discrete_pole_time_constant_s": 0.309055535,
+    "equivalent_time_constant_semantics": "ARX discrete-pole equivalent; not a separately identified FOPDT tau.",
+    "family": "ARX1",
+    "max_loo_nrmse_pct": 35.626969,
+    "mean_loo_nrmse_pct": 27.268449,
+    "median_gain_kbit_s_per_prb": 171.723077,
+    "normalized_steady": 1.0128888689847129,
+    "predicted_delta_y_kbit_s": 2460.066667,
+    "selection_method": "LEAVE_ONE_REPLICATION_OUT",
+    "selection_metric": "NORMALIZED_RMSE",
+    "static_gain_kbit_s_per_prb": 189.235897
+  },
+  "schema_version": "1.0.0",
+  "transition": "T1_13_TO_26_PRB",
+  "true_holdout_run": "RUN-20260822T164537Z-015"
+}

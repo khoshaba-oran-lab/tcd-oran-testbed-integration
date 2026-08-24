@@ -1,0 +1,37 @@
+{
+  "canonical_identity_policy": "R03V2 is the replication role; its historical experiment ID remains EXP-20260822-DL-18000K-R03.",
+  "controller_synthesis_authorized": false,
+  "dataset_record": "datasets/records/DS-20260822-001-prompt12-t1-13to26",
+  "manifest_type": "prompt12_siso_transition_closeout",
+  "model_family": "ARX1",
+  "model_status": "FROZEN_AND_HOLDOUT_VALIDATED",
+  "next_candidate_execution_authorized": false,
+  "next_candidate_transition": "T2_26_TO_39_PRB",
+  "runs": [
+    {
+      "experiment_id": "EXP-20260822-DL-18000K-R01",
+      "role": "ESTIMATION_R01",
+      "run_id": "RUN-20260822T142755Z-009"
+    },
+    {
+      "experiment_id": "EXP-20260822-DL-18000K-R02",
+      "role": "ESTIMATION_R02",
+      "run_id": "RUN-20260822T143648Z-010"
+    },
+    {
+      "experiment_id": "EXP-20260822-DL-18000K-R03",
+      "role": "ESTIMATION_R03V2",
+      "run_id": "RUN-20260822T161918Z-014"
+    },
+    {
+      "experiment_id": "EXP-20260822-DL-18000K-R04",
+      "role": "TRUE_UNSEEN_VALIDATION_R04",
+      "run_id": "RUN-20260822T164537Z-015"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "scientific_status": "VALIDATED_ON_TRUE_R04_HOLDOUT",
+  "transition": "13_TO_26_PRB",
+  "transition_id": "T1",
+  "workload": "UDP_DL_18_MBIT_S"
+}
