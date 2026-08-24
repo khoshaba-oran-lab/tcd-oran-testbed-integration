@@ -1,0 +1,305 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "prompt12_t2_scientific_protocol",
+  "protocol_id": "PROMPT12-T2-26TO39-V1.0.0",
+  "protocol_status": "FROZEN_OFFLINE_PENDING_GIT_CHECKPOINT",
+  "frozen_at_utc": "2026-08-24T16:06:46Z",
+  "repository_source_of_truth": {
+    "repository": "/home/khoshaba/project/tcd-oran-testbed-integration",
+    "branch": "feat/prompt12-siso-identification",
+    "parent_head": "e4c244e0e707c806aef32b5fa5172ce8b90e9cf9",
+    "source_file_sha256": {
+      "docs/12-siso-system-identification-design.md": "26fe71bbc012b49b6c7a90a0946c49e8d1ac8f09372ca933470eb34515099630",
+      "datasets/schemas/sci-oran-prompt12-siso-v1.0.0.schema.json": "49a84d4dc5f59954f6985dbd218bac281ca655ba13c33af36943f12091be2bd6",
+      "datasets/records/DS-20260822-001-prompt12-t1-13to26/t1-scientific-result-v1.0.0.json": "95393c7033c4d31020c764c77b68573b18cb0b33f738d8e2724a6b3ca587094c",
+      "datasets/records/DS-20260822-001-prompt12-t1-13to26/dataset-metadata-v1.0.0.json": "3e1351aaec4d308b92873fc52462a534cf4036ed9a16c6ac69c55101063e847b",
+      "docs/12-t1-13to26-identification-closeout.md": "6152105cdab6cf204326dbd010d18b09a7c972556d429059afc5fe9cdfb9c325",
+      "experiments/manifests/prompt12-t1-13to26-closeout-v1.0.0.json": "7e14b3868e6228c98b8cd98026f2bfe4fe655812d7e25deb083cdc32e45e3fd8"
+    }
+  },
+  "transition_identity": {
+    "transition_label": "T2",
+    "direction": "UP",
+    "from_ratio_pct": 50,
+    "to_ratio_pct": 75,
+    "from_prbs": 26,
+    "to_prbs": 39,
+    "delta_u_prbs": 13,
+    "initial_state_prbs": 26,
+    "target_state_prbs": 39
+  },
+  "scientific_scope": {
+    "objective": "open-loop SISO plant identification before PI/PID synthesis",
+    "input_u": "DL PRB allocation",
+    "disturbance_w": "UDP DL synthetic workload",
+    "output_y": "receiver throughput_kbit_s",
+    "workload_udp_dl_kbit_s": 18000,
+    "primary_output": "receiver throughput_kbit_s",
+    "t1_parameters_transferred_to_t2": false,
+    "t1_acceptance_threshold_numbers_transferred_to_t2": false,
+    "global_linearity_assumed": false
+  },
+  "measurement_contract": {
+    "sampling_interval_s": 0.2,
+    "plant_step_origin": "U_APPLIED_READBACK",
+    "timing_fields": [
+      "rx_mono_ns",
+      "rx_wall_ns",
+      "gnb_timestamp_s"
+    ],
+    "actuator_events_kept_separate": [
+      "u_cmd",
+      "u_ack",
+      "u_applied/readback"
+    ],
+    "kpm_required": false,
+    "transition_crossing_samples_preserved": true,
+    "transition_crossing_samples_allowed_in_steady_windows": false,
+    "startup_guard_samples_allowed_in_steady_windows": false,
+    "partial_terminal_samples_allowed_in_steady_windows": false
+  },
+  "stationarity_contract": {
+    "startup_guard_min_s": 1.0,
+    "pre_step_observation_min_s": 11.0,
+    "post_step_observation_min_s": 10.0,
+    "post_step_extension_s": 5.0,
+    "window_duration_s": 5.0,
+    "samples_per_window": 25,
+    "required_consecutive_nonoverlapping_windows": 2,
+    "cv_max_pct_each_window": 5.0,
+    "mean_shift_max_pct": 5.0,
+    "pre_step_stationarity_required_before_trigger": true,
+    "post_step_stationarity_required_before_completion": true
+  },
+  "timing_contract": {
+    "PRECONTROL_FRESHNESS_MAX_MS": 800,
+    "TRIGGER_TO_APPLIED_MAX_MS": 2800,
+    "FINAL_SAMPLE_TO_APPLIED_MAX_MS": 3600
+  },
+  "prearmed_actuator_v2": {
+    "mandatory": true,
+    "source_sha256": "ca12da2df05989e38d38c4a374091745f1550f87837bc88484963178776e1185",
+    "binary_sha256": "652001a0893b2f65d6ccdd77aac3794bea998d0beaa54781882006d64c47a0c6",
+    "build_evidence_root": "/home/khoshaba/sci-oran-evidence/prompt12/prearmed-actuator-v2-build-r1",
+    "required_pretrigger_state": {
+      "e2_initialized": true,
+      "exactly_one_e2_node": true,
+      "rc_message_prebuilt": true,
+      "local_fifo_waiting": true,
+      "SCI_ORAN_ACTUATOR_ARMED": "YES",
+      "control_request_count": 0
+    },
+    "trigger_token": "TRIGGER",
+    "tokens_accepted_exactly": 1,
+    "control_sm_xapp_api_calls_exactly": 1,
+    "required_final_control_request_count": 1,
+    "trigger_becomes_never_repeat_after_successful_fifo_write": true
+  },
+  "initial_state_contract": {
+    "required_initial_state_prbs": 26,
+    "previous_experiment_state_may_be_assumed": false,
+    "day_start_state_may_be_assumed": false,
+    "authoritative_state_verification_required": true,
+    "workload_may_start_before_state_verified": false,
+    "t2_trigger_may_occur_before_state_verified": false
+  },
+  "reset_policy": {
+    "reset_is_part_of_t2_estimation_data": false,
+    "reset_target_ratio_pct": 50,
+    "reset_target_prbs": 26,
+    "reset_required_when_current_state_26_cannot_be_proven": true,
+    "reset_uses_prearmed_v2": true,
+    "reset_has_own_operation_id_run_id_evidence_and_trigger": true,
+    "reset_requires_applied_readback_prbs": 26,
+    "reset_trigger_becomes_never_repeat_when_consumed": true,
+    "tooling_failure_after_reset_trigger_allows_same_trigger_replay": false,
+    "uncertain_reset_outcome_policy": "BLOCK until plant state is independently established; never replay the consumed reset trigger",
+    "between_replications": "Because a valid T2 replication ends at 39 PRB, the next T2 replication requires a separately evidenced return to 26 PRB unless 26 PRB is independently proven by authoritative runtime evidence."
+  },
+  "replication_plan": {
+    "estimation_replications": 3,
+    "estimation_roles": [
+      "ESTIMATION_R01",
+      "ESTIMATION_R02",
+      "ESTIMATION_R03"
+    ],
+    "holdout_replications": 1,
+    "holdout_role": "TRUE_UNSEEN_VALIDATION_R04",
+    "holdout_acquired_only_after_model_and_threshold_freeze": true,
+    "each_scientific_replication_has_unique_run_id": true,
+    "each_scientific_replication_has_unique_trigger": true,
+    "successful_trigger_repetition_permitted": false,
+    "failed_pretrigger_attempt_retry_policy": "A fresh run may be created only after evidence proves CONTROL_REQUEST_COUNT=0; the abandoned run/token is not reused."
+  },
+  "steady_state_gain_estimation": {
+    "per_replication_formula": "K_i = (post_mean_kbit_s - pre_mean_kbit_s) / 13 PRB",
+    "aggregate_gain": "arithmetic mean of K_i over the three valid estimation replications",
+    "outlier_rejection_planned": false,
+    "automatic_outlier_exclusion_permitted": false
+  },
+  "model_identification": {
+    "candidate_families_fixed_before_t2_data": [
+      "ARX1",
+      "FOPDT",
+      "DISCRETE_FIRST_ORDER",
+      "STATIC_QUASISTATIC"
+    ],
+    "candidate_family_addition_after_t2_trigger_permitted": false,
+    "t1_frozen_parameters_used_as_t2_parameters": false,
+    "selection_method": "leave-one-replication-out",
+    "selection_folds": 3,
+    "primary_selection_metric": "mean leave-one-replication-out NRMSE",
+    "nrmse_definition": "100 * RMSE_kbit_s / abs(observed held-out post_mean_kbit_s - pre_mean_kbit_s)",
+    "winner_rule": "candidate family having the smallest mean leave-one-replication-out NRMSE",
+    "winner_parameters": "refit selected family using all three T2 estimation replications, then freeze before holdout",
+    "holdout_used_for_model_selection": false,
+    "holdout_used_for_parameter_estimation": false
+  },
+  "validation_threshold_contract": {
+    "numeric_t1_thresholds_reused": false,
+    "thresholds_tuned_using_t2_holdout": false,
+    "steady_gain_holdout_limit_derivation": {
+      "method": "T2 estimation leave-one-replication-out",
+      "fold_prediction": "for held-out gain K_i, predict with arithmetic mean of the other two T2 estimation gains",
+      "fold_ape_pct": "100 * abs(K_i - K_pred_i) / abs(K_i)",
+      "frozen_holdout_limit": "maximum fold APE across the three T2 estimation replications"
+    },
+    "dynamic_holdout_limit_derivation": {
+      "method": "T2 estimation leave-one-replication-out",
+      "model_family": "the model family selected by minimum mean LOO NRMSE",
+      "frozen_holdout_limit": "maximum LOO NRMSE of the selected family across the three estimation folds"
+    },
+    "freeze_order": [
+      "complete three valid T2 estimation replications",
+      "compute per-replication steady gains",
+      "perform model-family LOO selection",
+      "fit selected model on all estimation replications",
+      "freeze selected family and model parameters",
+      "derive and freeze T2 steady-gain APE limit",
+      "derive and freeze T2 dynamic NRMSE limit",
+      "only then authorize true unseen holdout acquisition"
+    ],
+    "holdout_acceptance": "PASS only when steady-gain APE <= frozen T2 gain limit AND dynamic NRMSE <= frozen T2 dynamic limit"
+  },
+  "t1_comparison_contract": {
+    "t1_transition": "13->26 PRB",
+    "t1_frozen_static_gain_kbit_s_per_prb": 189.235897,
+    "t1_frozen_model_family": "ARX1",
+    "t1_frozen_arx1": {
+      "a": 0.5235206985110815,
+      "b": 0.4826205807797367,
+      "normalized_steady": 1.0128888689847129,
+      "equivalent_discrete_pole_tau_s": 0.309055535
+    },
+    "comparison_items": [
+      "T2 mean static gain versus frozen T1 mean static gain",
+      "gain relative difference",
+      "selected model family",
+      "dynamic prediction error",
+      "if both select ARX1: compare a, b and equivalent discrete-pole tau",
+      "cross-transition prediction without parameter refit"
+    ],
+    "similar_gain_alone_proves_global_linearity": false
+  },
+  "global_vs_piecewise_contract": {
+    "global_13_to_52_model_can_be_claimed_after_t2": false,
+    "maximum_positive_claim_after_t2": "regional shared-model compatibility candidate over 13..39 PRB",
+    "regional_shared_model_candidate_requires": [
+      "T1 remains validated on its frozen R04",
+      "T2 passes its true unseen R04",
+      "T1 and T2 select the same model family",
+      "frozen T1 model predicts T2 holdout without refit within T2 frozen validation limits",
+      "frozen T2 model predicts T1 R04 without refit within T1 frozen validation limits"
+    ],
+    "if_any_regional_requirement_fails": "use local/piecewise interpretation for 13..39 PRB",
+    "t3_required_before_any_13_to_52_global_claim": true,
+    "reverse_direction_equivalence_proven_by_t2": false,
+    "hysteresis_absence_proven_by_t2": false
+  },
+  "holdout_contract": {
+    "role": "TRUE_UNSEEN_VALIDATION",
+    "count": 1,
+    "must_not_exist_before_estimation_model_threshold_freeze": true,
+    "model_family_change_after_holdout": false,
+    "model_parameter_change_after_holdout": false,
+    "acceptance_threshold_change_after_holdout": false,
+    "failed_holdout_may_be_relabelled_as_estimation": false,
+    "failed_holdout_may_be_repeated": false
+  },
+  "closure_contract": {
+    "scientific_control_count_planned": 4,
+    "reset_controls_not_counted_as_t2_scientific_transition_replications": true,
+    "t2_acquisition_can_close_with_negative_scientific_result": true,
+    "validated_status_requires_true_holdout_pass": true,
+    "possible_final_statuses": [
+      "VALIDATED_ON_TRUE_R04_HOLDOUT",
+      "CLOSED_NOT_VALIDATED_ON_TRUE_R04_HOLDOUT"
+    ],
+    "T2_CLOSED_requires": [
+      "all planned scientific triggers have immutable exactly-once evidence",
+      "all consumed reset triggers are recorded as NEVER_REPEAT",
+      "estimation data are frozen",
+      "model selection and parameter freeze are recorded",
+      "T2-specific validation thresholds are frozen before holdout",
+      "true unseen holdout outcome is recorded without post-hoc retuning",
+      "raw evidence provenance and SHA-256 inventory are recorded",
+      "dataset metadata and scientific result are recorded in Git",
+      "experiment manifest and registry are updated",
+      "local Git checkpoint is clean",
+      "remote branch checkpoint is verified"
+    ]
+  },
+  "forbidden_post_hoc_actions": [
+    "repeat a consumed T2 scientific trigger",
+    "repeat a consumed reset trigger",
+    "exclude an estimation replication merely because its result is inconvenient",
+    "change candidate model families after the first T2 scientific trigger",
+    "change model-selection metric after the first T2 scientific trigger",
+    "use T2 holdout for model-family selection",
+    "use T2 holdout for parameter estimation",
+    "change frozen model parameters after seeing T2 holdout",
+    "change frozen validation thresholds after seeing T2 holdout",
+    "reinterpret a failed holdout as an estimation replication",
+    "claim global 13..52 linearity from T1 and T2 alone",
+    "start PI/PID synthesis inside T2 acquisition workflow"
+  ],
+  "repository_and_evidence_layout": {
+    "protocol_document": "docs/12-t2-26to39-scientific-protocol.md",
+    "protocol_manifest": "experiments/manifests/prompt12-t2-26to39-scientific-protocol-v1.0.0.json",
+    "raw_evidence_base": "/home/khoshaba/sci-oran-evidence/prompt12/t2-26to39/",
+    "raw_evidence_copied_wholesale_into_git": false,
+    "each_acquisition_or_reset_requires_own_evidence_root": true,
+    "each_evidence_root_should_have_sha256_inventory": true,
+    "future_git_dataset_record_template": "datasets/records/DS-<date>-<sequence>-prompt12-t2-26to39/",
+    "future_dataset_record_should_mirror_t1_closeout": [
+      "dataset-metadata-v1.0.0.json",
+      "t2-scientific-result-v1.0.0.json",
+      "frozen-evidence-roots-v1.0.0.tsv",
+      "evidence-file-inventory-v1.0.0.tsv",
+      "release-checksums-v1.0.0.sha256"
+    ],
+    "future_closeout_document": "docs/12-t2-26to39-identification-closeout.md",
+    "future_closeout_manifest": "experiments/manifests/prompt12-t2-26to39-closeout-v1.0.0.json",
+    "registry": "experiments/registry.csv"
+  },
+  "never_repeat_contract": {
+    "preexisting_t1_never_repeat": [
+      "T1 R01 scientific trigger",
+      "T1 R02 scientific trigger",
+      "T1 R03V2 scientific trigger",
+      "T1 R04 scientific trigger",
+      "R04 reset 26->13 trigger"
+    ],
+    "t2_rule": "Every T2 scientific or reset trigger becomes NEVER_REPEAT immediately after successful TRIGGER delivery, irrespective of subsequent tooling outcome.",
+    "same_operation_trigger_replay_allowed": false
+  },
+  "execution_boundary": {
+    "day_start_authorized_by_this_protocol_freeze": false,
+    "workload_authorized_by_this_protocol_freeze": false,
+    "reset_authorized_by_this_protocol_freeze": false,
+    "e2sm_rc_control_authorized_by_this_protocol_freeze": false,
+    "pi_pid_authorized": false,
+    "t2_execution_authorized": false,
+    "authorization_condition": "A separate Git checkpoint and authoritative remote-sync verification of this frozen protocol are required before runtime admission."
+  }
+}
