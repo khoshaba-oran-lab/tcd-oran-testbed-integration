@@ -1,0 +1,800 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sci-oran:schema:prompt12-siso:1.0.0",
+  "title": "Sci_O-RAN Prompt 12 SISO Identification Schema",
+  "description": "Prompt-12-specific machine-readable contract complementing the Sci_O-RAN unified metadata schema and data dictionary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "repeat_id",
+    "model_use_class",
+    "identification_plan",
+    "transition_plan"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "experiment_id": {
+      "$ref": "#/$defs/prompt12ExperimentId"
+    },
+    "repeat_id": {
+      "$ref": "#/$defs/repeatId"
+    },
+    "model_use_class": {
+      "$ref": "#/$defs/modelUseClass"
+    },
+    "identification_plan": {
+      "$ref": "#/$defs/identificationPlan"
+    },
+    "transition_plan": {
+      "$ref": "#/$defs/transitionPlan"
+    },
+    "actuator_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/actuatorEvent"
+      }
+    },
+    "iperf_intervals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/iperfInterval"
+      }
+    },
+    "transition_records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transitionRecord"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "repeat_id": {
+            "const": "R01"
+          }
+        },
+        "required": [
+          "repeat_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "experiment_id": {
+            "pattern": "^EXP-[0-9]{8}-T2-26TO39-DL-18000K-R01$"
+          },
+          "model_use_class": {
+            "const": "estimation"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repeat_id": {
+            "const": "R02"
+          }
+        },
+        "required": [
+          "repeat_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "experiment_id": {
+            "pattern": "^EXP-[0-9]{8}-T2-26TO39-DL-18000K-R02$"
+          },
+          "model_use_class": {
+            "const": "estimation"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repeat_id": {
+            "const": "R03"
+          }
+        },
+        "required": [
+          "repeat_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "experiment_id": {
+            "pattern": "^EXP-[0-9]{8}-T2-26TO39-DL-18000K-R03$"
+          },
+          "model_use_class": {
+            "const": "estimation"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repeat_id": {
+            "const": "R04"
+          }
+        },
+        "required": [
+          "repeat_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "experiment_id": {
+            "pattern": "^EXP-[0-9]{8}-T2-26TO39-DL-18000K-R04$"
+          },
+          "model_use_class": {
+            "const": "holdout_validation"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "prompt12ExperimentId": {
+      "type": "string",
+      "pattern": "^EXP-[0-9]{8}-T2-26TO39-DL-18000K-R0[1-4]$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^RUN-[0-9]{8}T[0-9]{6}Z-[0-9]{3}$"
+    },
+    "recordId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repeatId": {
+      "type": "string",
+      "enum": [
+        "R01",
+        "R02",
+        "R03",
+        "R04"
+      ]
+    },
+    "modelUseClass": {
+      "type": "string",
+      "enum": [
+        "estimation",
+        "holdout_validation"
+      ]
+    },
+    "transitionLabel": {
+      "type": "string",
+      "enum": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6"
+      ]
+    },
+    "timestampUtcNs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "identificationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "traffic_protocol",
+        "traffic_direction",
+        "offered_rate_kbit_s",
+        "load_mode",
+        "physical_cell_prbs",
+        "identification_levels",
+        "primary_output_source",
+        "primary_output_field",
+        "primary_output_sampling_period_s",
+        "startup_guard_s",
+        "stationarity_window_s",
+        "stationarity_cv_max_pct",
+        "stationarity_mean_shift_max_pct",
+        "pre_step_minimum_duration_s",
+        "post_step_minimum_duration_s",
+        "extension_window_s",
+        "valid_repetitions_per_directed_step",
+        "estimation_repetitions_per_directed_step",
+        "validation_repetitions_per_directed_step",
+        "total_valid_transitions",
+        "plant_step_time_origin",
+        "holdout_validation_repeat"
+      ],
+      "properties": {
+        "traffic_protocol": {
+          "const": "UDP"
+        },
+        "traffic_direction": {
+          "const": "DOWNLINK"
+        },
+        "offered_rate_kbit_s": {
+          "const": 18000
+        },
+        "load_mode": {
+          "const": "DURATION_BASED_CONTINUOUS"
+        },
+        "physical_cell_prbs": {
+          "const": 52
+        },
+        "identification_levels": {
+          "const": [
+            {
+              "ratio_pct": 25,
+              "prbs": 13
+            },
+            {
+              "ratio_pct": 50,
+              "prbs": 26
+            },
+            {
+              "ratio_pct": 75,
+              "prbs": 39
+            },
+            {
+              "ratio_pct": 100,
+              "prbs": 52
+            }
+          ]
+        },
+        "primary_output_source": {
+          "const": "IPERF_RECEIVER"
+        },
+        "primary_output_field": {
+          "const": "throughput_kbit_s"
+        },
+        "primary_output_sampling_period_s": {
+          "const": 0.2
+        },
+        "startup_guard_s": {
+          "const": 1
+        },
+        "stationarity_window_s": {
+          "const": 5
+        },
+        "stationarity_cv_max_pct": {
+          "const": 5
+        },
+        "stationarity_mean_shift_max_pct": {
+          "const": 5
+        },
+        "pre_step_minimum_duration_s": {
+          "const": 11
+        },
+        "post_step_minimum_duration_s": {
+          "const": 10
+        },
+        "extension_window_s": {
+          "const": 5
+        },
+        "valid_repetitions_per_directed_step": {
+          "const": 4
+        },
+        "estimation_repetitions_per_directed_step": {
+          "const": 3
+        },
+        "validation_repetitions_per_directed_step": {
+          "const": 1
+        },
+        "total_valid_transitions": {
+          "const": 24
+        },
+        "plant_step_time_origin": {
+          "const": "U_APPLIED_READBACK"
+        },
+        "holdout_validation_repeat": {
+          "const": "R04"
+        }
+      }
+    },
+    "transitionPlan": {
+      "const": [
+        {
+          "transition_label": "T1",
+          "from_ratio_pct": 25,
+          "to_ratio_pct": 50,
+          "from_prbs": 13,
+          "to_prbs": 26
+        },
+        {
+          "transition_label": "T2",
+          "from_ratio_pct": 50,
+          "to_ratio_pct": 75,
+          "from_prbs": 26,
+          "to_prbs": 39
+        },
+        {
+          "transition_label": "T3",
+          "from_ratio_pct": 75,
+          "to_ratio_pct": 100,
+          "from_prbs": 39,
+          "to_prbs": 52
+        },
+        {
+          "transition_label": "T4",
+          "from_ratio_pct": 100,
+          "to_ratio_pct": 75,
+          "from_prbs": 52,
+          "to_prbs": 39
+        },
+        {
+          "transition_label": "T5",
+          "from_ratio_pct": 75,
+          "to_ratio_pct": 50,
+          "from_prbs": 39,
+          "to_prbs": 26
+        },
+        {
+          "transition_label": "T6",
+          "from_ratio_pct": 50,
+          "to_ratio_pct": 25,
+          "from_prbs": 26,
+          "to_prbs": 13
+        }
+      ]
+    },
+    "actuatorEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_id",
+        "run_id",
+        "record_id",
+        "timestamp_utc_ns",
+        "event_type"
+      ],
+      "properties": {
+        "experiment_id": {
+          "$ref": "#/$defs/prompt12ExperimentId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/runId"
+        },
+        "record_id": {
+          "$ref": "#/$defs/recordId"
+        },
+        "timestamp_utc_ns": {
+          "$ref": "#/$defs/timestampUtcNs"
+        },
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "command",
+            "acknowledgement",
+            "applied_readback"
+          ]
+        },
+        "requested_max_prb_ratio_pct": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "acknowledgement_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "FAIL"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applied_min_prbs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 52
+        },
+        "applied_max_prbs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 52
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "command"
+              }
+            },
+            "required": [
+              "event_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "requested_max_prb_ratio_pct"
+            ],
+            "properties": {
+              "requested_max_prb_ratio_pct": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "acknowledgement"
+              }
+            },
+            "required": [
+              "event_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "acknowledgement_status"
+            ],
+            "properties": {
+              "acknowledgement_status": {
+                "type": "string",
+                "enum": [
+                  "PASS",
+                  "FAIL"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_type": {
+                "const": "applied_readback"
+              }
+            },
+            "required": [
+              "event_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "applied_min_prbs",
+              "applied_max_prbs"
+            ],
+            "properties": {
+              "applied_min_prbs": {
+                "type": "integer"
+              },
+              "applied_max_prbs": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "iperfInterval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_id",
+        "run_id",
+        "record_id",
+        "timestamp_utc_ns",
+        "rx_wall_ns",
+        "rx_mono_ns",
+        "interval_start_s",
+        "interval_end_s",
+        "interval_duration_s",
+        "throughput_kbit_s",
+        "interval_class"
+      ],
+      "properties": {
+        "experiment_id": {
+          "$ref": "#/$defs/prompt12ExperimentId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/runId"
+        },
+        "record_id": {
+          "$ref": "#/$defs/recordId"
+        },
+        "timestamp_utc_ns": {
+          "$ref": "#/$defs/timestampUtcNs"
+        },
+        "rx_wall_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rx_mono_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interval_start_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "interval_end_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "interval_duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 0.2
+        },
+        "throughput_kbit_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "loss_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "jitter_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "bytes_transferred": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "interval_class": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "transition_crossing",
+            "partial_terminal",
+            "startup_guard"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "interval_class": {
+                "enum": [
+                  "complete",
+                  "transition_crossing",
+                  "startup_guard"
+                ]
+              }
+            },
+            "required": [
+              "interval_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "interval_duration_s": {
+                "const": 0.2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "interval_class": {
+                "const": "partial_terminal"
+              }
+            },
+            "required": [
+              "interval_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "interval_duration_s": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "exclusiveMaximum": 0.2
+              }
+            }
+          }
+        }
+      ]
+    },
+    "transitionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_id",
+        "run_id",
+        "transition_label",
+        "from_ratio_pct",
+        "to_ratio_pct",
+        "from_prbs",
+        "to_prbs",
+        "t_cmd_utc_ns",
+        "t_ack_utc_ns",
+        "t_applied_readback_utc_ns",
+        "transition_validity"
+      ],
+      "properties": {
+        "experiment_id": {
+          "$ref": "#/$defs/prompt12ExperimentId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/runId"
+        },
+        "transition_label": {
+          "$ref": "#/$defs/transitionLabel"
+        },
+        "from_ratio_pct": {
+          "type": "integer"
+        },
+        "to_ratio_pct": {
+          "type": "integer"
+        },
+        "from_prbs": {
+          "type": "integer"
+        },
+        "to_prbs": {
+          "type": "integer"
+        },
+        "t_cmd_utc_ns": {
+          "$ref": "#/$defs/timestampUtcNs"
+        },
+        "t_ack_utc_ns": {
+          "$ref": "#/$defs/timestampUtcNs"
+        },
+        "t_applied_readback_utc_ns": {
+          "$ref": "#/$defs/timestampUtcNs"
+        },
+        "transition_validity": {
+          "type": "string",
+          "enum": [
+            "valid",
+            "invalid"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T1"
+            },
+            "from_ratio_pct": {
+              "const": 25
+            },
+            "to_ratio_pct": {
+              "const": 50
+            },
+            "from_prbs": {
+              "const": 13
+            },
+            "to_prbs": {
+              "const": 26
+            }
+          }
+        },
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T2"
+            },
+            "from_ratio_pct": {
+              "const": 50
+            },
+            "to_ratio_pct": {
+              "const": 75
+            },
+            "from_prbs": {
+              "const": 26
+            },
+            "to_prbs": {
+              "const": 39
+            }
+          }
+        },
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T3"
+            },
+            "from_ratio_pct": {
+              "const": 75
+            },
+            "to_ratio_pct": {
+              "const": 100
+            },
+            "from_prbs": {
+              "const": 39
+            },
+            "to_prbs": {
+              "const": 52
+            }
+          }
+        },
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T4"
+            },
+            "from_ratio_pct": {
+              "const": 100
+            },
+            "to_ratio_pct": {
+              "const": 75
+            },
+            "from_prbs": {
+              "const": 52
+            },
+            "to_prbs": {
+              "const": 39
+            }
+          }
+        },
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T5"
+            },
+            "from_ratio_pct": {
+              "const": 75
+            },
+            "to_ratio_pct": {
+              "const": 50
+            },
+            "from_prbs": {
+              "const": 39
+            },
+            "to_prbs": {
+              "const": 26
+            }
+          }
+        },
+        {
+          "properties": {
+            "transition_label": {
+              "const": "T6"
+            },
+            "from_ratio_pct": {
+              "const": 50
+            },
+            "to_ratio_pct": {
+              "const": 25
+            },
+            "from_prbs": {
+              "const": 26
+            },
+            "to_prbs": {
+              "const": 13
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "record_version": "1.0.0",
+  "record_type": "prompt12_t2_acquisition_tooling_compatibility_repair",
+  "transition": "T2_26_TO_39_PRB",
+  "scientific_trigger_count_at_freeze": 0,
+  "scientific_protocol_modified": false,
+  "root_causes": [
+    "legacy T1 experiment-ID namespace rejected transition-qualified T2 experiment IDs",
+    "legacy atomic-prestart live path assumes docker-created actuator instead of persistent prearmed FIFO V2"
+  ],
+  "legacy_t1_immutability": {
+    "schema": {
+      "path": "datasets/schemas/sci-oran-prompt12-siso-v1.0.0.schema.json",
+      "sha256": "49a84d4dc5f59954f6985dbd218bac281ca655ba13c33af36943f12091be2bd6",
+      "modified": false
+    },
+    "canonicalizer": {
+      "path": "scripts/experiment-harness/canonicalize-iperf-receiver.py",
+      "sha256": "69f76c5b3dc78b26f063557e6a6727327fb3cc0448fc5c99d33e058a43a90f47",
+      "modified": false
+    },
+    "receiver_pipeline": {
+      "path": "scripts/experiment-harness/prompt12-receiver-pipeline.sh",
+      "sha256": "fddc7a6dec2858961728b30fff4e92fb9eab050c3340d457178609f6eac3e7c7",
+      "modified": false
+    },
+    "atomic_prestart": {
+      "path": "scripts/experiment-harness/prompt12-atomic-prestart.py",
+      "use_for_t2_persistent_prearmed_trigger": false
+    }
+  },
+  "t2_artifacts": {
+    "schema": {
+      "path": "datasets/schemas/sci-oran-prompt12-t2-26to39-v1.0.0.schema.json",
+      "sha256": "87024010d5d9f39a99f8d7db4d12b27c03eee7678e3e8f376ffc34a24c2438bc"
+    },
+    "canonicalizer": {
+      "path": "scripts/experiment-harness/canonicalize-iperf-receiver-t2.py",
+      "sha256": "94c6bc093ec670ee3174f6fecaeb0011b89360377da283e65ae9fa97477a69fe"
+    },
+    "receiver_pipeline": {
+      "path": "scripts/experiment-harness/prompt12-t2-receiver-pipeline.sh",
+      "sha256": "0bb126ada77853bf16647413829835ffef01e368e875560af253af9eab0b513a"
+    },
+    "experiment_id_pattern": "EXP-YYYYMMDD-T2-26TO39-DL-18000K-R0[1-4]"
+  },
+  "invariants": {
+    "workload_udp_dl_kbit_s": 18000,
+    "sampling_interval_s": 0.2,
+    "primary_output": "receiver_throughput_kbit_s",
+    "pre_step_observation_min_s": 11,
+    "stationarity_window_s": 5,
+    "stationarity_samples_per_window": 25,
+    "stationarity_required_window_count": 2,
+    "cv_max_pct": 5,
+    "mean_shift_max_pct": 5,
+    "precontrol_freshness_max_ms": 800,
+    "trigger_to_applied_max_ms": 2800,
+    "final_sample_to_applied_max_ms": 3600,
+    "scientific_t0": "U_APPLIED_READBACK",
+    "candidate_model_families_changed": false,
+    "model_selection_metric_changed": false
+  },
+  "trigger_contract": {
+    "architecture": "persistent_prearmed_fifo_v2",
+    "legacy_atomic_prestart_live_path_allowed": false,
+    "trigger_token": "TRIGGER",
+    "successful_trigger_repeat_policy": "NEVER_REPEAT",
+    "scientific_t0_source": "PRB_ACTUATOR_APPLIED",
+    "required_native_order": [
+      "Control Request",
+      "PRB_ACTUATOR_APPLIED",
+      "Control Acknowledge"
+    ]
+  },
+  "repository_record": "docs/12-t2-26to39-acquisition-tooling-repair.md"
+}
