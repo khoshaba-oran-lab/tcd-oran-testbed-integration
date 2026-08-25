@@ -1,0 +1,36 @@
+{
+  "schema": "sci_oran_prompt12_t2_r01_pretrigger_day_end_handoff_v1",
+  "date_utc": "2026-08-25",
+  "branch": "feat/prompt12-siso-identification",
+  "head_before_handoff": "0b3685d1402dad85bc20190ecd8d20b73d5faa54",
+  "r01_operation_id": "prompt12-t2-r01-26to39-20260825T165718Z-64af2589",
+  "experiment_id": "EXP-20260825-T2-26TO39-DL-18000K-R01",
+  "run_id": "RUN-20260825T165718Z-017",
+  "transition": "26_to_39_prb",
+  "scientific_trigger_consumed": false,
+  "t2_scientific_trigger_count": 0,
+  "current_applied_max_prbs": 26,
+  "prestep_stationarity_gate": "PASS",
+  "t2r_root_cause": "LIVE_GATE_PROCESSING_OR_SNAPSHOT_LATENCY_EXCEEDS_800MS",
+  "frozen_precontrol_freshness_max_ms": 800,
+  "next_technical_objective": "implement_and_offline_validate_single_process_exact_latest50_precontrol_gate",
+  "pi_pid_status": "NOT_STARTED",
+  "repository_handoff_document": "docs/12-t2-r01-pretrigger-day-end-handoff-2026-08-25.md",
+  "repository_handoff_document_sha256": "9001a5b83a8688b367840c8fd09ea81161de98a49096796678011838e68616b1",
+  "external_handoff_evidence": "/home/khoshaba/sci-oran-evidence/prompt12/t2-26to39/prompt12-t2-r01-26to39-20260825T165718Z-64af2589-v1/day-end-handoff-2026-08-25-v1/HANDOFF.env",
+  "external_handoff_evidence_sha256": "2469e5c5ae4c46faee25d30257f1927321bc6c8e5958ff2cc7ac1529a31758e7",
+  "source_sha256": {
+    "parse_iperf_receiver": "282dc38ef3793e580cc9734b5d6bf5d7b6cbcbcde2b57790acb07acdb910447c",
+    "canonicalize_iperf_receiver_t2": "94c6bc093ec670ee3174f6fecaeb0011b89360377da283e65ae9fa97477a69fe",
+    "evaluate_output_stationarity": "72bf170891e597a2d001adadeb4d9a872608c45c1f4506424b757ac2d151c3dd",
+    "prompt12_precontrol_freshness": "9b630dfa729266a6ad85c8d044931e584f6756d1f13709a09aee4c4bc86d3012"
+  },
+  "evidence_sha256": {
+    "no_trigger_result": "ad6d6d71062dd9dbc40f1680611c1f0294213209d8828289e52495b131205bb1",
+    "prestep_readiness": "68aceb6272031557a372b845570f1cb9eca680d962578e96e8ffbe9711c242fb",
+    "d3_bounded_benchmark": "5169a491b596f97476ee9dde49cfae1c867360f6aef7044eb23bd0c478b7777f",
+    "d4_tail60_benchmark": "3f39068b4c4f6555c214a796393fc8821da6545f1b7dbfe0348efa6ce896fe4a",
+    "d5_stationarity_fastpath_benchmark": "b15d9d161b2dd2c0cbf8ede7121b52161cf0c64b7c26bc74aaf76d14f0947d5a",
+    "d6_exact50_benchmark": "d832f8d4f6553b5a81f21bc7fdace4f6adbbeaf6c1d9ba501b309616ca0b2722"
+  }
+}
