@@ -1,0 +1,45 @@
+{
+  "action11_naming_drift_coverage": false,
+  "active_ric_contract_must_be_protected": true,
+  "affected_source": "ansible/playbooks/tb3-teardown.yml",
+  "affected_source_sha256": "2e52af6087502785554afac509578e84837f31b24fbf4f63e3d80e33340e4e36",
+  "canonical_installation": "/home/khoshaba/sci-oran/ansible/lifecycle",
+  "canonical_installation_is_git_checkout": false,
+  "controlled_release_evidence": {
+    "path": "/home/khoshaba/sci-oran-evidence/prompt12/t2-26to39/prompt12-t2-r01-26to39-20260825T165718Z-64af2589-v1/day-stop-orphan-actuator-release-2026-08-26-v1",
+    "sha256sums_sha256": "eaa9242704c5ddb3156f7ae274efbad71556b59005aca1fcd2eca5d787105e78"
+  },
+  "current_discovery_predicate": "^action11_",
+  "date_utc": "2026-08-26",
+  "final_teardown_evidence": {
+    "checksums_sha256": "3812ab6cf22323c4dae7f4b6b091a9af8f9d2e22f1efedb308f9d08878ea4aad",
+    "manifest_sha256": "454f3626472c8efa5bce035a5826d7405add942d9a0c30b2166df5a7c1bf7f56",
+    "operation_result": "PASS",
+    "path": "/home/khoshaba/project/tcd-oran-testbed-integration/artifacts/lifecycle/lifecycle-teardown-20260826T070014Z-34ae3a77"
+  },
+  "fresh_day_start_authorized": false,
+  "generic_docker_cleanup_authorized": false,
+  "next_authorized_work": "design_fail_closed_auxiliary_container_ownership_policy",
+  "pi_pid_status": "NOT_STARTED",
+  "pre_removal_logs_and_provenance_required": true,
+  "prompt12_helper_coverage": false,
+  "repair_status": "NOT_STARTED",
+  "repository_branch_before_freeze": "feat/prompt12-siso-identification",
+  "repository_document": "docs/12-lifecycle-auxiliary-container-ownership-gap-2026-08-26.md",
+  "repository_document_sha256": "93422d4aecdcfe82fccce66bc951dbe03ebe7802f9b296d9539cbe64f4943bc1",
+  "repository_head_before_freeze": "f394a21fb33c95247ff3f72e2cc3c1dd4cbe861f",
+  "root_cause_class": "LIFECYCLE_AUXILIARY_CONTAINER_OWNERSHIP_GAP",
+  "schema": "sci_oran_prompt12_lifecycle_auxiliary_container_ownership_gap_v1",
+  "scientific": {
+    "experiment_id": "EXP-20260825-T2-26TO39-DL-18000K-R01",
+    "r01_operation_id": "prompt12-t2-r01-26to39-20260825T165718Z-64af2589",
+    "run_id": "RUN-20260825T165718Z-017",
+    "scientific_trigger_consumed": false,
+    "t2_scientific_trigger_count": 0,
+    "transition": "26_to_39_prb",
+    "trigger_write_attempt_count": 0,
+    "trigger_write_success_count": 0
+  },
+  "status": "PROVEN",
+  "unknown_network_container_policy": "FAIL_CLOSED"
+}
