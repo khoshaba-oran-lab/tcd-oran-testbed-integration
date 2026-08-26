@@ -1,0 +1,51 @@
+{
+  "date_utc": "2026-08-26",
+  "documentation": {
+    "path": "docs/12-t2-precontrol-fastpath-live-qualification.md",
+    "sha256": "b896f143c0d5683436539648466a15611d789adcbc3cbb711e73740ef2d2c3ef"
+  },
+  "evidence": {
+    "closure_env_sha256": "55135532c722ad4a13808ebc43e2672524647ed5b5b43b875c1d7613c175d210",
+    "closure_sha256sums_sha256": "3f769bf41f653f09242d385139111d3c83148898e6a21f709293ef44efe0fbda",
+    "root": "/home/khoshaba/sci-oran-evidence/prompt12/t2-26to39/prompt12-t2-precontrol-fastpath-live-qualification-20260826T095752Z-7ba5b7a2-v1"
+  },
+  "frozen_contract": {
+    "maximum_freshness_ms": 800,
+    "samples_per_window": 25,
+    "selection": "LATEST_50_COMPLETE_CONTIGUOUS_SAMPLES",
+    "window_count": 2,
+    "window_duration_s": 5
+  },
+  "implementation": {
+    "official_evaluator_sha256": "72bf170891e597a2d001adadeb4d9a872608c45c1f4506424b757ac2d151c3dd",
+    "policy_sha256": "96453b8248c0c2497311b1e2f196a78078e84d16d18ad79d6725fe4288c2b0f8",
+    "precontrol_path": "scripts/experiment-harness/prompt12-precontrol-freshness.py",
+    "precontrol_sha256": "d12e39ee9e222aed175c26c25d60dfe785da2e23243212a548c6cd359e758a38",
+    "repair": "in-process official evaluator reuse plus edge-synchronised bounded TAIL60 acquisition envelope",
+    "schema_sha256": "87024010d5d9f39a99f8d7db4d12b27c03eee7678e3e8f376ffc34a24c2438bc"
+  },
+  "next_stage": "terminate qualification workload and verify clean runtime; 26-PRB preparation requires separate explicit authorisation",
+  "repository_parent_commit": "4a488ed283a679139e9065575bd24ac1b70d98a8",
+  "schema": "sci_oran_prompt12_t2_precontrol_fastpath_live_qualification_manifest_v1",
+  "scientific_boundary": {
+    "actuator_preparation_performed": false,
+    "scientific_control_performed": false,
+    "scientific_trigger_consumed": false,
+    "t2_scientific_trigger_count": 0,
+    "trigger_write_attempt_count": 0
+  },
+  "scientific_transition": "26_TO_39",
+  "scope": "T2_PRECONTROL_FASTPATH_ONLY",
+  "status": "LIVE_QUALIFIED",
+  "validation": {
+    "live_tail60_edge_to_precontrol_end_ms": "600.111",
+    "live_tail60_freshness_gate": "PASS",
+    "live_tail60_latest_sample_age_ms": "580.718284",
+    "live_tail60_output_stationarity_gate": "PASS",
+    "live_tail60_precontrol_admission_gate": "PASS",
+    "live_tail60_selected_complete_count": 50,
+    "live_tail60_window_binding_gate": "PASS",
+    "offline_latency_improvement_gate": "PASS",
+    "semantic_equivalence_gate": "PASS"
+  }
+}

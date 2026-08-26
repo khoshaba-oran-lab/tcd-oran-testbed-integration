@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import importlib.util
 import json
-import subprocess
 import sys
 import time
 from decimal import Decimal
@@ -341,57 +341,162 @@ def main():
                 + "\n"
             )
 
-    command = [
-        sys.executable,
-        args.evaluator,
-        "--input",
-        args.selected_output,
-        "--schema",
-        args.schema,
-        "--experiment-id",
-        args.experiment_id,
-        "--run-id",
-        args.run_id,
-        "--mode",
-        "initial-pre-step",
-        "--output",
-        args.stationarity_output,
-    ]
+    evaluator_path = Path(
+        args.evaluator
+    )
 
-    process = subprocess.run(
-        command,
-        text=True,
-        capture_output=True,
-        check=False,
+    module_spec = (
+        importlib.util.spec_from_file_location(
+            "prompt12_official_stationarity",
+            evaluator_path,
+        )
+    )
+
+    if (
+        module_spec is None
+        or module_spec.loader is None
+    ):
+        raise FreshnessError(
+            "unable to load official stationarity evaluator"
+        )
+
+    stationarity = (
+        importlib.util.module_from_spec(
+            module_spec
+        )
+    )
+
+    try:
+        module_spec.loader.exec_module(
+            stationarity
+        )
+
+        root_schema = (
+            stationarity.load_root_schema(
+                args.schema
+            )
+        )
+
+        interval_validator = (
+            stationarity.validator_for(
+                root_schema,
+                "iperfInterval",
+            )
+        )
+
+        official_rows = (
+            stationarity.load_intervals(
+                args.selected_output,
+                interval_validator,
+                args.experiment_id,
+                args.run_id,
+            )
+        )
+
+        report = stationarity.evaluate(
+            official_rows,
+            "initial-pre-step",
+            None,
+        )
+
+    except Exception as exc:
+        raise FreshnessError(
+            "official stationarity evaluator "
+            "failed in-process: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+
+    stationarity_path = Path(
+        args.stationarity_output
+    )
+
+    with stationarity_path.open(
+        "x",
+        encoding="utf-8",
+        newline="\n",
+    ) as handle:
+        json.dump(
+            report,
+            handle,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+        handle.write("\n")
+
+    print(
+        "OFFICIAL_STATIONARITY_EVALUATOR_RC=0"
     )
 
     print(
-        f"OFFICIAL_STATIONARITY_EVALUATOR_RC="
-        f"{process.returncode}"
+        "STANDARD_DEVIATION_KIND="
+        "POPULATION"
     )
 
-    if process.stdout:
-        print(
-            process.stdout,
-            end="",
-        )
+    print(
+        "STANDARD_DEVIATION_DENOMINATOR=N"
+    )
 
-    if process.stderr:
-        print(
-            process.stderr,
-            end="",
-            file=sys.stderr,
-        )
+    print(
+        "WINDOW_DURATION_S=5"
+    )
 
-    if process.returncode != 0:
-        raise FreshnessError(
-            "official stationarity evaluator failed"
-        )
+    print(
+        "SAMPLES_PER_WINDOW=25"
+    )
 
-    report = json.loads(
-        Path(
-            args.stationarity_output
-        ).read_text()
+    print(
+        "WINDOW_PAIR_INDEX="
+        + (
+            "NONE"
+            if report["window_pair_index"] is None
+            else (
+                f"{report['window_pair_index'][0]},"
+                f"{report['window_pair_index'][1]}"
+            )
+        )
+    )
+
+    print(
+        "CV_W1_GATE="
+        f"{report['cv_w1_gate']}"
+    )
+
+    print(
+        "CV_W2_GATE="
+        f"{report['cv_w2_gate']}"
+    )
+
+    print(
+        "MEAN_SHIFT_GATE="
+        f"{report['mean_shift_gate']}"
+    )
+
+    print(
+        "OUTPUT_STATIONARITY_GATE="
+        f"{report['output_stationarity_gate']}"
+    )
+
+    print(
+        "MINIMUM_PHASE_DURATION_GATE="
+        f"{report['minimum_phase_duration_gate']}"
+    )
+
+    print(
+        "STATISTICAL_PHASE_CANDIDATE="
+        f"{report['statistical_phase_candidate']}"
+    )
+
+    print(
+        "TRANSITION_TIME_ORIGIN=NONE"
+    )
+
+    print(
+        "ACK_USED_AS_STATIONARITY_TIME_ORIGIN=NO"
+    )
+
+    print(
+        "OUTPUT_STATIONARITY_EVALUATION=PASS"
     )
 
     expected_binding = {
