@@ -26,6 +26,11 @@
 
     sci_oran_network: "tcd-base05-zmq_ran"
 
+    # Fail-closed lifecycle auxiliary-container ownership namespace.
+    # Keep this anchored and explicit. Unknown network members are not removed.
+    sci_oran_auxiliary_ownership_regex: >-
+      ^(action11_|action11r|prompt12[-_])[A-Za-z0-9][A-Za-z0-9_.-]*$
+
     sci_oran_ue_container: "base05_srsran_srsue"
     sci_oran_gnb_container: "base05_srsran_gnb"
     sci_oran_5gc_container: "base05_open5gs_5gc"
@@ -81,25 +86,101 @@
             fail_msg: >-
               RIC container identity could not be resolved from the runtime lock.
 
-        - name: Discover Action11 containers
+        - name: Discover lifecycle-owned auxiliary containers
           ansible.builtin.shell: |
             docker ps -a \
               --format '{% raw %}{{.Names}}{% endraw %}' |
-            grep '^action11_' |
-            sort || true
+            grep -E '{{ sci_oran_auxiliary_ownership_regex }}' |
+            LC_ALL=C sort || true
           args:
             executable: /bin/bash
-          register: sci_oran_action11_discovery
+          register: sci_oran_auxiliary_discovery
           changed_when: false
 
-        - name: Define Action11 helper containers excluding active RIC contract
+        - name: Define lifecycle-owned auxiliary helpers excluding active RIC contract
           ansible.builtin.set_fact:
-            sci_oran_action11_helpers: >-
+            sci_oran_auxiliary_helpers: >-
               {{
-                sci_oran_action11_discovery.stdout_lines
+                sci_oran_auxiliary_discovery.stdout_lines
                 | reject('equalto', sci_oran_ric_container)
                 | list
               }}
+
+        - name: Discover BASE-05 network member names
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            NETWORK="{{ sci_oran_network }}"
+
+            if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
+              exit 0
+            fi
+
+            docker network inspect \
+              --format \
+              '{% raw %}{{range .Containers}}{{println .Name}}{{end}}{% endraw %}' \
+              "$NETWORK" |
+            sed '/^[[:space:]]*$/d' |
+            LC_ALL=C sort -u
+          args:
+            executable: /bin/bash
+          register: sci_oran_network_member_discovery
+          changed_when: false
+
+        - name: Define BASE-05 network ownership classification
+          ansible.builtin.set_fact:
+            sci_oran_network_members: >-
+              {{
+                sci_oran_network_member_discovery.stdout_lines
+                | reject('equalto', '')
+                | list
+              }}
+            sci_oran_unknown_network_members: >-
+              {{
+                sci_oran_network_member_discovery.stdout_lines
+                | reject('equalto', '')
+                | reject('equalto', sci_oran_ue_container)
+                | reject('equalto', sci_oran_gnb_container)
+                | reject('equalto', sci_oran_5gc_container)
+                | reject('equalto', sci_oran_ric_container)
+                | reject('match', sci_oran_auxiliary_ownership_regex)
+                | list
+              }}
+
+        - name: Persist auxiliary ownership classification evidence
+          ansible.builtin.copy:
+            dest: >-
+              {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/auxiliary-ownership.txt
+            mode: "0644"
+            content: |
+              SCI_ORAN_AUXILIARY_OWNERSHIP_V1
+
+              OPERATION_ID={{ operation_id }}
+              NETWORK={{ sci_oran_network }}
+              ACTIVE_RIC={{ sci_oran_ric_container }}
+              AUXILIARY_OWNERSHIP_REGEX={{ sci_oran_auxiliary_ownership_regex }}
+              AUXILIARY_DISCOVERED={{ sci_oran_auxiliary_discovery.stdout_lines | to_json }}
+              AUXILIARY_REMOVAL_LIST={{ sci_oran_auxiliary_helpers | to_json }}
+              NETWORK_MEMBERS={{ sci_oran_network_members | to_json }}
+              UNKNOWN_NETWORK_MEMBERS={{ sci_oran_unknown_network_members | to_json }}
+              UNKNOWN_NETWORK_MEMBER_COUNT={{ sci_oran_unknown_network_members | length }}
+              ACTIVE_RIC_EXCLUDED_FROM_AUXILIARY_REMOVAL={{ sci_oran_ric_container not in sci_oran_auxiliary_helpers }}
+              ACTIVE_RIC_EXCLUSION_GATE={{ 'PASS' if (sci_oran_ric_container not in sci_oran_auxiliary_helpers) else 'FAIL' }}
+              UNKNOWN_NETWORK_CONTAINER_GATE={{ 'PASS' if ((sci_oran_unknown_network_members | length) == 0) else 'FAIL' }}
+              AUXILIARY_OWNERSHIP_ADMISSION_GATE={{ 'PASS' if ((sci_oran_ric_container not in sci_oran_auxiliary_helpers) and ((sci_oran_unknown_network_members | length) == 0)) else 'FAIL' }}
+
+        - name: Require fail-closed auxiliary ownership admission
+          ansible.builtin.assert:
+            that:
+              - sci_oran_ric_container not in sci_oran_auxiliary_helpers
+              - (sci_oran_unknown_network_members | length) == 0
+            fail_msg: >-
+              Refusing destructive teardown because auxiliary ownership
+              classification failed. Active RIC={{ sci_oran_ric_container }};
+              unknown BASE-05 network members={{
+                sci_oran_unknown_network_members | join(',')
+              }}.
+            success_msg: "AUXILIARY_OWNERSHIP_ADMISSION_GATE=PASS"
 
         - name: Capture bounded pre-teardown logs
           ansible.builtin.shell: |
@@ -108,7 +189,8 @@
             OP_DIR="{{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}"
 
             for C in \
-              {{ sci_oran_action11_discovery.stdout_lines | join(' ') }} \
+              {{ sci_oran_auxiliary_helpers | join(' ') }} \
+              {{ sci_oran_ric_container }} \
               {{ sci_oran_ue_container }} \
               {{ sci_oran_gnb_container }} \
               {{ sci_oran_5gc_container }}
@@ -125,32 +207,35 @@
             executable: /bin/bash
           changed_when: true
 
-        - name: Inspect Action11 helper containers before removal
-          ansible.builtin.command:
-            argv:
-              - docker
-              - inspect
-              - "{{ item }}"
-          loop: "{{ sci_oran_action11_helpers }}"
+        - name: Persist lifecycle-owned auxiliary helper inspect provenance
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            C="{{ item }}"
+            OP_DIR="{{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}"
+
+            docker inspect "$C" > "$OP_DIR/inspect-${C}.json"
+          args:
+            executable: /bin/bash
+          loop: "{{ sci_oran_auxiliary_helpers }}"
           loop_control:
             label: "{{ item }}"
-          register: sci_oran_helper_inspect
-          changed_when: false
-          when: sci_oran_action11_helpers | length > 0
+          changed_when: true
+          when: sci_oran_auxiliary_helpers | length > 0
 
-        - name: Remove owned Action11 helper containers
+        - name: Remove lifecycle-owned auxiliary helper containers
           ansible.builtin.command:
             argv:
               - docker
               - rm
               - -f
               - "{{ item }}"
-          loop: "{{ sci_oran_action11_helpers }}"
+          loop: "{{ sci_oran_auxiliary_helpers }}"
           loop_control:
             label: "{{ item }}"
-          register: sci_oran_helper_remove
+          register: sci_oran_auxiliary_remove
           changed_when: true
-          when: sci_oran_action11_helpers | length > 0
+          when: sci_oran_auxiliary_helpers | length > 0
 
         - name: Inspect UE container
           ansible.builtin.command:
@@ -316,9 +401,9 @@
 
             if docker ps -a \
               --format '{% raw %}{{.Names}}{% endraw %}' |
-              grep -q '^action11_'
+              grep -Eq '{{ sci_oran_auxiliary_ownership_regex }}'
             then
-              echo "UNEXPECTED_ACTION11_CONTAINER=yes"
+              echo "UNEXPECTED_AUXILIARY_CONTAINER=yes"
               FAIL=1
             fi
 
@@ -398,7 +483,7 @@
     changed_components: >-
       {{
         [
-          'action11-helper-containers',
+          'auxiliary-helper-containers',
           'srsue',
           'gnb',
           'near-rt-ric',
