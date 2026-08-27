@@ -1,0 +1,68 @@
+{
+  "affected_run": {
+    "counts_as_estimation_repetition": false,
+    "experiment_id": "EXP-20260826-T2-26TO39-DL-18000K-R01",
+    "failure_adjudication_sha256": "595a08a77801ca13db1ea9f4037fbb8ecb249e2837497c7861c18869e679dc23",
+    "final_applied_max_prbs": 26,
+    "final_closeout_sha256": "9e814892ffe48dd6c20bd6dd399247c13ad0bb4629426c8b977797ac4734ec58",
+    "logical_slot": "R01",
+    "run_id": "RUN-20260827T171926Z-788",
+    "scientific_label": "R01V2",
+    "scientific_trigger_consumed": false
+  },
+  "current_valid_estimation_count": 1,
+  "final_validation": {
+    "adapter_contract_gate": true,
+    "bash_syntax_gate": true,
+    "negative_stopped_receiver_exit_code": 78,
+    "negative_stopped_receiver_fail_closed": true,
+    "positive_receiver_only_live_selftest": true,
+    "positive_selftest_client_executed": false,
+    "positive_selftest_consistent_running_state": true,
+    "positive_selftest_timestamped_ready_marker": true,
+    "scientific_control_side_effect": false,
+    "scientific_prb_state_after_validation": 26,
+    "selftest_cleanup_gate": true
+  },
+  "next_requirement": "fresh logical R01 replacement with new run, namespace and trigger and timestamped receiver-ready PASS before client launch",
+  "prompt": 12,
+  "r04_authorized": false,
+  "record_type": "receiver_readiness_race_repair",
+  "repair": {
+    "created_state_treated_as_transient": true,
+    "new_subcommand": "wait-receiver-ready",
+    "poll_s": 0.02,
+    "ready_requires_running_true": true,
+    "ready_requires_timestamped_marker": true,
+    "sha256_after": "38d602c612547c4cd7fcee3110286eac0d5142da9c4b4199b5f353d1f405fad7",
+    "sha256_before": "706f60fceae6fb223f842e8bbd24287065d946e68601a0161761065467ebf03f",
+    "sha256_first_unvalidated_patch": "a7b7d97bba978226fd248cbb7973078f8e3dcfe07b5d9436c7b50b5bbd8db53a",
+    "stale_marker_with_stopped_receiver_rejected": true,
+    "state_snapshot_mode": "single_docker_inspect",
+    "timeout_ms": 5000,
+    "tool": "scripts/experiment-harness/adapters/prompt12-siso-traffic.sh"
+  },
+  "repair_record_document_sha256": "4ba259abdccae1e91ead3cdb1ee0535416d0fcb5d53aae34bd52e75cdb739512",
+  "repair_validation_finding": {
+    "first_patch_committed": false,
+    "first_patch_used_for_scientific_acquisition": false,
+    "first_positive_selftest_failure_class": "SEPARATE_DOCKER_STATE_READ_TRANSITION_RACE",
+    "first_positive_selftest_passed": false,
+    "observed_running": false,
+    "observed_status": "running",
+    "timestamped_ready_marker_was_present": true
+  },
+  "repository_parent_head": "cf72ba2e9724b01afe6dbf4bfcc448104c91c565",
+  "required_valid_estimation_count": 3,
+  "root_cause": {
+    "class": "WORKLOAD_STARTUP_TOOLING_READINESS_RACE",
+    "docker_running_was_sufficient": false,
+    "failed_r01v2_client_preceded_ready_ms": 3.786537,
+    "required_marker": "Server listening on 5201",
+    "required_marker_source": "timestamped_receiver_capture",
+    "successful_r03_ready_preceded_workload_ms": 43.594355
+  },
+  "schema_version": "1.0.0",
+  "scientific_contract_changed": false,
+  "transition": "T2_26_TO_39_PRB"
+}
