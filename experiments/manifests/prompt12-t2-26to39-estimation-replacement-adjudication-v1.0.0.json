@@ -1,0 +1,51 @@
+{
+  "candidate_model_families_changed": false,
+  "holdout_contract_changed": false,
+  "model_selection_metric_changed": false,
+  "next_acquisition_class": "EXPLICIT_REPLACEMENT_RUN",
+  "next_unfilled_estimation_slot": "R01",
+  "protocol_changed": false,
+  "record_type": "prompt12_t2_estimation_replacement_adjudication",
+  "schema_version": "1.0.0",
+  "scientific_control_authorized_by_this_record": false,
+  "slots": {
+    "R01": {
+      "counts_as_valid_estimation": false,
+      "historical_status": "INVALID_DIAGNOSTIC_REPETITION_NEVER_REPEAT",
+      "historical_trigger_consumed": true,
+      "historical_trigger_replay_allowed": false,
+      "replacement_preserves_canonical_logical_slot": "R01",
+      "replacement_required": true,
+      "replacement_requires_new_run_id": true,
+      "replacement_requires_new_trigger": true,
+      "role": "ESTIMATION_R01"
+    },
+    "R02": {
+      "abandoned_run_or_token_reuse_allowed": false,
+      "counts_as_valid_estimation": false,
+      "fresh_run_preserves_canonical_logical_slot": "R02",
+      "fresh_run_required": true,
+      "fresh_run_requires_new_run_id": true,
+      "fresh_run_requires_new_trigger": true,
+      "historical_status": "ABANDONED_PRETRIGGER_DIAGNOSTIC_ATTEMPT",
+      "historical_trigger_consumed": false,
+      "role": "ESTIMATION_R02"
+    },
+    "R03": {
+      "counts_as_valid_estimation": true,
+      "historical_status": "CLOSED_VALIDATED",
+      "historical_trigger_consumed": true,
+      "historical_trigger_replay_decision": "NEVER_REPEAT",
+      "replacement_required": false,
+      "role": "ESTIMATION_R03"
+    },
+    "R04": {
+      "authorized": false,
+      "reason": "Three valid estimation replications and model/threshold freeze do not yet exist.",
+      "role": "TRUE_UNSEEN_VALIDATION_R04"
+    }
+  },
+  "transition": "T2_26_TO_39_PRB",
+  "valid_estimation_repetitions_current": 1,
+  "valid_estimation_repetitions_required": 3
+}
