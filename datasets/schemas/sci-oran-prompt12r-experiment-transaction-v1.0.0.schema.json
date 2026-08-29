@@ -150,7 +150,12 @@
       "maximum": 1
     },
     "scientific_trigger_consumed": {
-      "type": "boolean"
+      "enum": [
+        "NO",
+        "YES",
+        "UNKNOWN"
+      ],
+      "description": "Scientific trigger consumption status. UNKNOWN is permitted only after a trigger write attempt whose delivery cannot be proved."
     },
     "replay_decision": {
       "enum": [
@@ -262,7 +267,7 @@
             "type": "null"
           },
           "scientific_trigger_consumed": {
-            "const": false
+            "const": "NO"
           },
           "trigger_write_attempt_count": {
             "const": 0
@@ -299,9 +304,12 @@
       "then": {
         "properties": {
           "scientific_trigger_consumed": {
-            "const": false
+            "const": "NO"
           },
           "trigger_write_success_count": {
+            "const": 0
+          },
+          "trigger_write_attempt_count": {
             "const": 0
           }
         }
@@ -325,7 +333,7 @@
       "then": {
         "properties": {
           "scientific_trigger_consumed": {
-            "const": true
+            "const": "YES"
           },
           "trigger_write_attempt_count": {
             "const": 1
@@ -352,16 +360,68 @@
       },
       "then": {
         "properties": {
-          "scientific_trigger_consumed": {
-            "const": true
+          "trigger_write_attempt_count": {
+            "const": 1
           },
-          "replay_decision": {
+          "scientific_trigger_consumed": {
             "enum": [
-              "NEVER_REPEAT",
-              "NEVER_AUTOMATICALLY_REPLAY"
+              "YES",
+              "UNKNOWN"
+            ]
+          },
+          "failure_class": {
+            "enum": [
+              "PLATFORM_FAILURE",
+              "TOOLING_FAILURE"
             ]
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scientific_trigger_consumed": {
+                  "const": "YES"
+                }
+              },
+              "required": [
+                "scientific_trigger_consumed"
+              ]
+            },
+            "then": {
+              "properties": {
+                "trigger_write_success_count": {
+                  "const": 1
+                },
+                "replay_decision": {
+                  "const": "NEVER_REPEAT"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scientific_trigger_consumed": {
+                  "const": "UNKNOWN"
+                }
+              },
+              "required": [
+                "scientific_trigger_consumed"
+              ]
+            },
+            "then": {
+              "properties": {
+                "trigger_write_success_count": {
+                  "const": 0
+                },
+                "replay_decision": {
+                  "const": "NEVER_AUTOMATICALLY_REPLAY"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {

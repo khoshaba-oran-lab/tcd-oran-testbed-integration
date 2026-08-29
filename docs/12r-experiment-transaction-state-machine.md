@@ -178,9 +178,13 @@ Canonical failure classes are:
 `PLATFORM_FAILURE`
 `TOOLING_FAILURE`
 
-Scientific model rejection after a trigger is represented by the
+Once the irreversible trigger-attempt boundary has been crossed, an
+invalid or ambiguous acquisition is represented by the
 `INVALID_POSTTRIGGER` transaction state, with the causal failure class
 preserved separately.
+
+This includes both a confirmed consumed trigger followed by failure and an
+ambiguous trigger-write attempt whose consumption status is `UNKNOWN`.
 
 This avoids ambiguous values such as treating `PLATFORM_FAILURE` sometimes as
 a state and sometimes as a cause.
@@ -190,7 +194,9 @@ a state and sometimes as a cause.
 The most important transaction boundary is the first scientific trigger write
 attempt.
 
-Before that boundary:
+This is an irreversible replay-risk boundary.
+
+Before any trigger write attempt:
 
 `SCIENTIFIC_TRIGGER_CONSUMED=NO`
 
@@ -202,10 +208,21 @@ and:
 
 `SCIENTIFIC_TRIGGER_REPLAY_DECISION=NEVER_REPEAT`
 
-If a write attempt occurs but the outcome is not safely replayable, the
-transaction must preserve:
+If a write attempt occurs but software cannot prove whether delivery
+completed, the transaction must preserve:
+
+`SCIENTIFIC_TRIGGER_CONSUMED=UNKNOWN`
+
+and:
 
 `SCIENTIFIC_TRIGGER_REPLAY_DECISION=NEVER_AUTOMATICALLY_REPLAY`
+
+Such an ambiguous write-attempt outcome must not be classified as
+`ABORTED_PRETRIGGER` and must not pass through
+`TRIGGERED_EXACTLY_ONCE`, because successful exactly-once delivery was not
+proved.
+
+It moves directly from `PRESTEP_ADMITTED` to `INVALID_POSTTRIGGER`.
 
 Human or automated logic must never infer replay safety merely because later
 processing failed.
@@ -632,16 +649,20 @@ Examples include:
 Pretrigger abort permits creation of a future fresh transaction, but does not
 permit mutation/reuse of the failed transaction identity.
 
-## 31. Post-trigger failure path
+## 31. Confirmed post-trigger failure path
 
-Any failure after the scientific trigger is consumed must never be represented
-as `ABORTED_PRETRIGGER`.
+Any failure after the scientific trigger is confirmed consumed must never be
+represented as `ABORTED_PRETRIGGER`.
 
 The transaction must enter:
 
 `TRANSACTION_STATE=INVALID_POSTTRIGGER`
 
-with the causal class retained.
+with:
+
+`SCIENTIFIC_TRIGGER_CONSUMED=YES`
+
+and the causal class retained.
 
 Examples:
 
@@ -653,22 +674,38 @@ or:
 
 The consumed trigger remains:
 
-`NEVER_REPEAT`
+`SCIENTIFIC_TRIGGER_REPLAY_DECISION=NEVER_REPEAT`
 
 The invalid acquisition must remain as diagnostic/evidence material but must
 not silently enter the model estimation set.
 
 ## 32. Ambiguous write-attempt outcome
 
-If a trigger write was attempted but software cannot prove whether repeating
-it is safe, the transaction must fail closed.
+If a trigger write was attempted but software cannot prove whether delivery
+completed, successful exactly-once triggering has not been established.
 
-Required replay policy:
+The transaction must fail closed directly as:
 
-`NEVER_AUTOMATICALLY_REPLAY`
+`PRESTEP_ADMITTED -> INVALID_POSTTRIGGER`
 
-This rule is stronger than ordinary retry semantics because duplicate
-scientific input steps corrupt experimental causality.
+with:
+
+`TRIGGER_WRITE_ATTEMPT_COUNT=1`
+
+`TRIGGER_WRITE_SUCCESS_COUNT=0`
+
+`SCIENTIFIC_TRIGGER_CONSUMED=UNKNOWN`
+
+`SCIENTIFIC_TRIGGER_REPLAY_DECISION=NEVER_AUTOMATICALLY_REPLAY`
+
+The transaction must not enter `ABORTED_PRETRIGGER`, because a plant-side
+effect may already have occurred.
+
+It must also not enter `TRIGGERED_EXACTLY_ONCE`, because successful delivery
+was not proved.
+
+This conservative rule prevents duplicate scientific input steps when the
+write outcome is uncertain.
 
 ## 33. Recovery separation
 
@@ -871,13 +908,25 @@ Pretrigger failure path:
 `-> CLOSED`
 `-> DESTROYED`
 
-Post-trigger invalid path:
+Confirmed post-trigger invalid path:
 
 `TRIGGERED_EXACTLY_ONCE|APPLIED_VERIFIED|POSTSTEP_COMPLETE`
 `-> INVALID_POSTTRIGGER`
 `-> SCIENTIFICALLY_ADJUDICATED`
 `-> CLOSED`
 `-> DESTROYED`
+
+Ambiguous trigger-write path:
+
+`PRESTEP_ADMITTED`
+`-> INVALID_POSTTRIGGER`
+`-> SCIENTIFICALLY_ADJUDICATED`
+`-> CLOSED`
+`-> DESTROYED`
+
+The ambiguous path is legal only after exactly one trigger write attempt whose
+successful delivery cannot be proved. Its required consumption status is
+`UNKNOWN` and its replay decision is `NEVER_AUTOMATICALLY_REPLAY`.
 
 No other state transition is implicitly legal.
 
