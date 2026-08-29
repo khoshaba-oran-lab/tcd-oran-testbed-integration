@@ -47,6 +47,10 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--executor-start-utc-ns",
+    )
+
+    parser.add_argument(
         "--fifo-path",
     )
 
@@ -140,6 +144,13 @@ def main():
 
         "MAX_AGE_MS_ARGUMENT":
             args.max_age_ms,
+
+        "EXECUTOR_START_UTC_NS_ARGUMENT":
+            (
+                args.executor_start_utc_ns
+                if args.executor_start_utc_ns is not None
+                else "NONE"
+            ),
 
         "FINAL_RUNTIME_PROBE_AFTER_AGE_GATE":
             "NO",
@@ -289,6 +300,37 @@ def main():
             25,
         )
 
+    injected_executor_start_ns = None
+
+    if args.executor_start_utc_ns is not None:
+        if args.mode != "no-control":
+            return fail_closed(
+                args,
+                result,
+                "EXECUTOR_START_OVERRIDE_FORBIDDEN_IN_FIFO_MODE",
+                33,
+            )
+
+        try:
+            injected_executor_start_ns = int(
+                args.executor_start_utc_ns
+            )
+        except Exception:
+            return fail_closed(
+                args,
+                result,
+                "EXECUTOR_START_UTC_NS_ARGUMENT_INVALID",
+                34,
+            )
+
+        if injected_executor_start_ns <= 0:
+            return fail_closed(
+                args,
+                result,
+                "EXECUTOR_START_UTC_NS_ARGUMENT_INVALID",
+                34,
+            )
+
     fifo_path = None
 
     if args.mode == "no-control":
@@ -385,7 +427,14 @@ def main():
     # No runtime inspection or external process is used.
     #
 
-    executor_start_ns = time.time_ns()
+    if injected_executor_start_ns is None:
+        executor_start_ns = time.time_ns()
+        executor_start_time_source = "SYSTEM_CLOCK"
+    else:
+        executor_start_ns = injected_executor_start_ns
+        executor_start_time_source = (
+            "EXPLICIT_NO_CONTROL_ARGUMENT"
+        )
 
     age_ns = (
         executor_start_ns
@@ -406,12 +455,31 @@ def main():
         "EXECUTOR_START_UTC_NS":
             executor_start_ns,
 
+        "EXECUTOR_START_TIME_SOURCE":
+            executor_start_time_source,
+
         "EXECUTOR_START_SAMPLE_AGE_MS":
             str(age_ms),
 
         "EXECUTOR_START_MAX_ALLOWED_AGE_MS":
             str(requested_max_age_ms),
     })
+
+    if executor_start_ns < decision_ns:
+        result[
+            "EXECUTOR_START_AFTER_SOURCE_DECISION_GATE"
+        ] = "FAIL"
+
+        return fail_closed(
+            args,
+            result,
+            "EXECUTOR_START_PRECEDES_SOURCE_DECISION",
+            35,
+        )
+
+    result[
+        "EXECUTOR_START_AFTER_SOURCE_DECISION_GATE"
+    ] = "PASS"
 
     if (
         age_ns < 0
