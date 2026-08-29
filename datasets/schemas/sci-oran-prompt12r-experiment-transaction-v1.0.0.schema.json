@@ -1,0 +1,486 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sci-oran:schema:prompt12r-experiment-transaction:1.0.0",
+  "title": "Sci_O-RAN Prompt 12R Experiment Transaction Schema",
+  "description": "Prospective machine-readable Prompt 12R transaction record. Structural validation is provided by this schema; legal state-transition semantics are enforced by the dedicated offline transaction validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "transaction_id",
+    "experiment_id",
+    "run_id",
+    "transition_label",
+    "repository_head",
+    "protocol_identity",
+    "transaction_state",
+    "previous_transaction_state",
+    "transition_decision_utc_ns",
+    "failure_class",
+    "failure_reason",
+    "platform_qualification_identity",
+    "runtime_incarnation_identity",
+    "initial_prb_required",
+    "initial_prb_observed",
+    "receiver_workload_identity",
+    "actuator_identity",
+    "precontrol_admission_result",
+    "trigger_write_attempt_count",
+    "trigger_write_success_count",
+    "scientific_trigger_consumed",
+    "replay_decision",
+    "applied_readback_identity",
+    "poststep_completion_result",
+    "scientific_adjudication_result",
+    "closeout_checksum_identity",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "transaction_id": {
+      "type": "string",
+      "pattern": "^TXN-[0-9]{8}T[0-9]{6}Z-[0-9]{3}$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9]{8}-[A-Z0-9]+-[A-Z0-9-]+-R[0-9]{2}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[0-9]{8}T[0-9]{6}Z-[0-9]{3}$"
+    },
+    "transition_label": {
+      "enum": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6"
+      ]
+    },
+    "repository_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "protocol_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "transaction_state": {
+      "$ref": "#/$defs/transaction_state"
+    },
+    "previous_transaction_state": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/transaction_state"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transition_decision_utc_ns": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "failure_class": {
+      "enum": [
+        "NONE",
+        "PLATFORM_FAILURE",
+        "TOOLING_FAILURE"
+      ]
+    },
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "platform_qualification_identity": {
+      "$ref": "#/$defs/nullable_nonempty_string"
+    },
+    "runtime_incarnation_identity": {
+      "$ref": "#/$defs/nullable_nonempty_string"
+    },
+    "initial_prb_required": {
+      "enum": [
+        13,
+        26,
+        39,
+        52
+      ]
+    },
+    "initial_prb_observed": {
+      "oneOf": [
+        {
+          "enum": [
+            13,
+            26,
+            39,
+            52
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "receiver_workload_identity": {
+      "$ref": "#/$defs/nullable_nonempty_string"
+    },
+    "actuator_identity": {
+      "$ref": "#/$defs/nullable_nonempty_string"
+    },
+    "precontrol_admission_result": {
+      "enum": [
+        "NOT_EVALUATED",
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "trigger_write_attempt_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "trigger_write_success_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "scientific_trigger_consumed": {
+      "type": "boolean"
+    },
+    "replay_decision": {
+      "enum": [
+        "NOT_APPLICABLE",
+        "NEVER_REPEAT",
+        "NEVER_AUTOMATICALLY_REPLAY"
+      ]
+    },
+    "applied_readback_identity": {
+      "$ref": "#/$defs/nullable_nonempty_string"
+    },
+    "poststep_completion_result": {
+      "enum": [
+        "NOT_EVALUATED",
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "scientific_adjudication_result": {
+      "enum": [
+        "NOT_EVALUATED",
+        "VALID",
+        "INVALID"
+      ]
+    },
+    "closeout_checksum_identity": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence_item"
+      }
+    }
+  },
+  "$defs": {
+    "transaction_state": {
+      "enum": [
+        "NEW",
+        "DEPLOYED",
+        "PLATFORM_QUALIFIED",
+        "INITIAL_STATE_VERIFIED",
+        "ACTUATOR_ARMED",
+        "WORKLOAD_READY",
+        "PRESTEP_ADMITTED",
+        "TRIGGERED_EXACTLY_ONCE",
+        "APPLIED_VERIFIED",
+        "POSTSTEP_COMPLETE",
+        "SCIENTIFICALLY_ADJUDICATED",
+        "CLOSED",
+        "DESTROYED",
+        "ABORTED_PRETRIGGER",
+        "INVALID_POSTTRIGGER"
+      ]
+    },
+    "nullable_nonempty_string": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "const": "NEW"
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "previous_transaction_state": {
+            "type": "null"
+          },
+          "scientific_trigger_consumed": {
+            "const": false
+          },
+          "trigger_write_attempt_count": {
+            "const": 0
+          },
+          "trigger_write_success_count": {
+            "const": 0
+          },
+          "replay_decision": {
+            "const": "NOT_APPLICABLE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "enum": [
+              "NEW",
+              "DEPLOYED",
+              "PLATFORM_QUALIFIED",
+              "INITIAL_STATE_VERIFIED",
+              "ACTUATOR_ARMED",
+              "WORKLOAD_READY",
+              "PRESTEP_ADMITTED",
+              "ABORTED_PRETRIGGER"
+            ]
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "scientific_trigger_consumed": {
+            "const": false
+          },
+          "trigger_write_success_count": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "enum": [
+              "TRIGGERED_EXACTLY_ONCE",
+              "APPLIED_VERIFIED",
+              "POSTSTEP_COMPLETE"
+            ]
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "scientific_trigger_consumed": {
+            "const": true
+          },
+          "trigger_write_attempt_count": {
+            "const": 1
+          },
+          "trigger_write_success_count": {
+            "const": 1
+          },
+          "replay_decision": {
+            "const": "NEVER_REPEAT"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "const": "INVALID_POSTTRIGGER"
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "scientific_trigger_consumed": {
+            "const": true
+          },
+          "replay_decision": {
+            "enum": [
+              "NEVER_REPEAT",
+              "NEVER_AUTOMATICALLY_REPLAY"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "failure_class": {
+            "const": "NONE"
+          }
+        },
+        "required": [
+          "failure_class"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reason": {
+            "const": "NONE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "failure_class": {
+            "enum": [
+              "PLATFORM_FAILURE",
+              "TOOLING_FAILURE"
+            ]
+          }
+        },
+        "required": [
+          "failure_class"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reason": {
+            "not": {
+              "const": "NONE"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "const": "ABORTED_PRETRIGGER"
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_class": {
+            "enum": [
+              "PLATFORM_FAILURE",
+              "TOOLING_FAILURE"
+            ]
+          },
+          "scientific_trigger_consumed": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "const": "INITIAL_STATE_VERIFIED"
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "required": [
+          "initial_prb_observed"
+        ],
+        "properties": {
+          "initial_prb_observed": {
+            "enum": [
+              13,
+              26,
+              39,
+              52
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transaction_state": {
+            "enum": [
+              "APPLIED_VERIFIED",
+              "POSTSTEP_COMPLETE"
+            ]
+          }
+        },
+        "required": [
+          "transaction_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "applied_readback_identity": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}
