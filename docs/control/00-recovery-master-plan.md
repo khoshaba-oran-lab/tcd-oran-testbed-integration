@@ -1,75 +1,90 @@
-# Sci_O-RAN recovery and T2-T6 resumption plan
+# Sci-O-RAN recovery and experiment resumption plan
 
-Status: ACTIVE
+## Canonical sources
 
-## Authority
+- Master plan: `docs/control/00-recovery-master-plan.md`
+- Current state: `docs/control/01-current-state.md`
+- Next action: `docs/control/02-next-action.md`
+- Scientific design: `docs/12-siso-system-identification-design.md`
+- T2 protocol: `docs/12-t2-26to39-scientific-protocol.md`
 
-This file defines the recovery order. `01-current-state.md` records the
-accepted current state, and `02-next-action.md` limits execution to one action.
-The existing Prompt 12 design, protocols, evidence and handoff records remain
-the scientific sources. If these sources disagree, execution stops as BLOCKED.
+## Canonical scientific state
 
-## Objective
+- T1 is closed and validated; its accepted evidence is the golden dataset.
+- T2 is scientifically incomplete with one valid repetition, R03.
+- The R03 scientific trigger is consumed and must never be replayed.
+- R01V5 is an aborted pretrigger attempt and consumed no scientific trigger.
+- No new T2 trigger and no T3-T6 transition is currently authorised.
 
-Resume T2-T6 without losing the accepted T1 result, without replaying consumed
-triggers, and with Dell/VM lifecycle management incorporated reproducibly.
+## Stage R0 - Freeze and establish truth
 
-## Recovery order
+Status: COMPLETE.
 
-1. R0 - freeze experiments and establish the repository/runtime baseline.
-2. R1 - register T1/T2 lessons and mandatory safeguards.
-3. R2 - reconcile the two lifecycle-management namespaces.
-4. R3 - qualify deploy, teardown, status and doctor without scientific control.
-5. R4 - replay the accepted T1 dataset offline.
-6. R5 - qualify a T2 dry-run with no PRB trigger.
-7. R6 - diagnose and restore user-plane readiness if required.
-8. R7 - prepare one fresh T2 transaction.
-9. R8 - execute a new T2 control only after all gates and explicit authority.
-10. R9 - validate and close T2.
-11. R10-R13 - execute and validate T3, T4, T5 and T6 sequentially.
+Experiments and runtime mutations are paused. Repository, branch, runtime,
+T1 and T2 evidence boundaries have been established and published.
 
-## Permanent controls
+## Stage R1 - Repository and lifecycle consolidation
 
-- The repository, not chat history, is the execution source of truth.
-- Exactly one bounded action is executed per cycle.
-- Every action ends as PASS, FAIL or BLOCKED with evidence.
-- A consumed or ambiguous trigger is never replayed.
-- No scientific PRB control is implicit in this plan.
-- Failed diagnostics do not automatically invoke repair.
-- T3 is forbidden until T2 is closed and validated.
+Status: COMPLETE after `RECOVERY.R1.CLOSE` passes.
 
-## R0 progress
+The lifecycle source is integrated under `sci-oran/ansible`. Controller
+paths are portable, the real inventory remains untracked, and execution
+remains prohibited until controller qualification.
 
-- R0.1 repository baseline: PASS.
-- R0.2 branch boundary: PASS.
-- R0.3 runtime snapshot: PASS after R0.3R repair.
-- R0.4 durable T1/T2 source collection: PASS.
-- R0.5 historical T2 attempt adjudication: PASS.
-- R0.6 integration direction decision: PASS.
-- R0.7 create recovery control records: CURRENT.
-- R0.8 validate and checkpoint recovery control records: PENDING.
+## Stage R2 - External controller qualification
 
-## Recovery R0 closure
+Status: NOT STARTED.
 
-- Checkpoint action: RECOVERY.R0.8R
-- Checkpoint UTC: 2026-09-13T14:46:16Z
-- R0.1 through R0.6: PASS
-- R0.7: FAIL before mutation
-- R0.7R: PASS
-- R0.8R: PASS after all checkpoint gates
-- Recovery R0 status: COMPLETE LOCALLY
-- Remote publication status: PUBLISHED BY RECOVERY.R0.9
-- Runtime and scientific control: NOT CHANGED
+Confirm the controller host, repository, Ansible installation, local
+inventory, SSH target and native syntax checks. This stage is read-only.
 
-## Recovery R1 lifecycle source integration
+## Stage R3 - Tb3 lifecycle acceptance
 
-- Integration action: RECOVERY.R1.2
-- Integration UTC: 2026-09-13T15:11:13Z
-- Integrated origin/main: 5f689aa221678b34ef59c12bd7db00ffc9fe84d0
-- Lifecycle paths added: 14
-- Duplicate lifecycle basenames: 10
-- Identical duplicate playbooks: 8
-- Divergent duplicate playbooks: 2
-- YAML fallback validation: PASS, 13 of 13
-- Lifecycle runtime execution: NOT AUTHORISED
-- Next requirement: portability and controller contract repair
+Status: NOT STARTED.
+
+Perform one controlled preflight, start, status, doctor and stop cycle.
+Do not automatically recover or repeat an unknown failure.
+
+## Stage R4 - Offline experiment qualification
+
+Status: NOT STARTED.
+
+Reuse the accepted T1 evidence, existing transaction validator and runner.
+Require golden replay, T2 dry-run and fail-closed tests without a trigger.
+
+## Stage R5 - Restore T2 readiness
+
+Status: NOT STARTED.
+
+Require platform health, user-plane smoke, telemetry, actuator path,
+prospective 26-PRB readback and pre-step stationarity. No T2 trigger.
+
+## Stage R6 - Complete T2
+
+Status: NOT AUTHORISED.
+
+Use a fresh transaction and run ID. Never replay R03. Permit one new
+26-to-39 trigger only after every R5 gate passes.
+
+## Stage R7 - Execute T3 through T6
+
+Status: NOT AUTHORISED.
+
+Use one parameterised pipeline and accept each transition separately.
+
+## Stage R8 - Final modelling and shadow predictor
+
+Status: NOT STARTED.
+
+Compare models, saturation and hysteresis before qualifying ARX as a
+shadow predictor. Closed-loop control requires a later decision.
+
+## Anti-loop execution policy
+
+- Read-only checks may be grouped into one bounded action.
+- Repository changes use one checkpoint per logical result.
+- Runtime and scientific actuation remain strictly one-action.
+- A stage normally permits two actions and at most one repair.
+- Confirmed evidence is not re-audited unless its provenance changes.
+- Full logs go to evidence; chat output remains bounded.
+- Only the three control documents above govern execution state.

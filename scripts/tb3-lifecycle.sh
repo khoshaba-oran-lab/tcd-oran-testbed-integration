@@ -53,7 +53,9 @@ if [ "$CONFIRM" != "--confirm" ]; then
     fail "state-changing lifecycle operations require --confirm"
 fi
 
-ANSIBLE_ROOT="${SCI_ORAN_ANSIBLE_ROOT:-$HOME/sci-oran/ansible}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ANSIBLE_ROOT="${SCI_ORAN_ANSIBLE_ROOT:-$REPO_ROOT/sci-oran/ansible}"
 INVENTORY="${SCI_ORAN_INVENTORY:-$ANSIBLE_ROOT/inventory.ini}"
 PLAYBOOK_DIR="${SCI_ORAN_PLAYBOOK_DIR:-$ANSIBLE_ROOT/lifecycle/playbooks}"
 

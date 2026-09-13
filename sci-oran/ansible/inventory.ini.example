@@ -1,0 +1,2 @@
+[sci_oran_vms]
+tb3-dell ansible_host=CHANGE_ME ansible_user=CHANGE_ME ansible_python_interpreter=/usr/bin/python3

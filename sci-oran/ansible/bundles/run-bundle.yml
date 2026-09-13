@@ -6,6 +6,7 @@
   vars:
     bundle_name: ""
     action_id: ""
+    controller_staging_dir: "{{ lookup('ansible.builtin.env', 'SCI_ORAN_STAGING_DIR') | default(lookup('ansible.builtin.env', 'HOME') ~ '/sci-oran/staging', true) }}"
 
   tasks:
     - name: Validate action parameters
@@ -130,10 +131,19 @@
           - "{{ action_id }}"
       changed_when: true
 
+    - name: Create controller staging directory
+      ansible.builtin.file:
+        path: "{{ controller_staging_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
     - name: Fetch result archive to gateway
       ansible.builtin.fetch:
         src: "{{ result_archive }}"
-        dest: "/home/khoshaba/sci-oran/staging/{{ action_id }}-results.tar.gz"
+        dest: "{{ controller_staging_dir }}/{{ action_id }}-results.tar.gz"
         flat: true
 
     - name: Report execution
@@ -141,7 +151,7 @@
         msg:
           - "ACTION_ID={{ action_id }}"
           - "ACTION_RC={{ action_run.rc }}"
-          - "RESULT_ARCHIVE=/home/khoshaba/sci-oran/staging/{{ action_id }}-results.tar.gz"
+          - "RESULT_ARCHIVE={{ controller_staging_dir }}/{{ action_id }}-results.tar.gz"
 
     - name: Require successful bundle execution
       ansible.builtin.assert:
