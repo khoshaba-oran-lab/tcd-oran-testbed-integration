@@ -67,7 +67,7 @@ Do not automatically recover or repeat an unknown failure.
 
 ## Stage R4 - Offline experiment qualification
 
-Status: COMPLETE.
+Status: INCOMPLETE - DURATION LIMIT FAILED.
 
 Reuse the accepted T1 evidence, existing transaction validator and runner.
 When accepted evidence and relevant sources have not drifted, qualification is
@@ -77,6 +77,13 @@ Safe regression tests may be rerun only when they cannot contact live runtime.
 R4 acceptance requires T1 golden provenance, transaction-validator provenance,
 five accepted T2 no-control trials, fail-closed regression and a bounded
 execution-duration contract. No scientific trigger is permitted.
+
+Duration-limit adjudication supersedes the premature R4 completion
+decision. Receiver-readiness timeout and precontrol sample-age bounds do not
+constitute a global experiment-duration limit. The protocol defines minimum
+pre/post observations and five-second extensions, but no maximum total
+duration or maximum extension count. The first four R4 criteria remain
+accepted; R5 is prohibited until this R4 blocker is resolved.
 
 ## Stage R5 - Restore T2 readiness
 
