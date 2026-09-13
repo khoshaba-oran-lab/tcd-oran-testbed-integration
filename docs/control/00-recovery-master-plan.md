@@ -33,7 +33,14 @@ remains prohibited until controller qualification.
 
 ## Stage R2 - External controller qualification
 
-Status: NOT STARTED.
+Status: COMPLETE.
+
+
+Qualification was closed by `RECOVERY.R2.CLOSE`. The active controller is
+`coll.vntu.org`; it uses the canonical Git working copy and a controller-local,
+Git-ignored inventory. SSH target identity and all 13 playbook syntax checks
+passed. No lifecycle playbook was executed during qualification.
+
 
 Confirm the controller host, repository, Ansible installation, local
 inventory, SSH target and native syntax checks. This stage is read-only.
