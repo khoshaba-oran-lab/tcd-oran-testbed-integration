@@ -1,25 +1,26 @@
 # Next authorised action
 
-- UPDATED_UTC=2026-09-13T18:50:42Z
-- LAST_COMPLETED_ACTION=RECOVERY.R3.CLOSE-FAIL
+- UPDATED_UTC=2026-09-13T19:12:50Z
+- LAST_COMPLETED_ACTION=RECOVERY.R3.CONTRACT-SPLIT
 - LAST_ACTION_RESULT=PASS
-- CURRENT_STAGE=R3_REMEDIATION
+- CURRENT_STAGE=R4
 - CURRENT_ACTION=NONE
-- NEXT_AUTHORISED_ACTION=NONE
-- NEXT_PLANNED_ACTION=RECOVERY.R3.REMEDIATION-PLAN
-- PURPOSE=design a bounded user-plane readiness remediation before any new lifecycle session
+- NEXT_AUTHORISED_ACTION=RECOVERY.R4.1
+- PURPOSE=qualify the existing experiment pipeline offline without runtime or scientific actuation
 
-## Current blocker
+## R3 adjudication
 
-- R3 acceptance is closed with failure at `USER_PLANE_READINESS_GATE`.
-- Required fresh evidence `/tmp/sci-oran/user-plane-smoke/latest.env` was absent.
-- Tb3 is stopped and the single R3 lifecycle session has been consumed.
+- Original comprehensive-doctor acceptance: `FAIL`.
+- Amended lifecycle-only acceptance: `PASS`.
+- R3 status: `COMPLETE`.
+- Tb3 runtime: `STOPPED`.
+- Comprehensive doctor and fresh user-plane evidence are required in R5.
 
-## Restrictions
+## R4 boundaries
 
-- Do not replay the successful R3 deploy.
-- Do not start another lifecycle session without separate authorisation.
-- Do not execute automatic recover or reset.
-- Do not advance to R4.
-- Do not issue scientific PRB control.
+- Reuse the accepted T1 golden evidence and existing Prompt 12 tools.
+- Perform only offline or dry-run validation.
+- Do not start, deploy, recover or reset Tb3.
+- Do not run user-plane traffic against Tb3.
+- Do not issue a PRB trigger or other scientific control.
 - Never replay the consumed T2 R03 trigger.

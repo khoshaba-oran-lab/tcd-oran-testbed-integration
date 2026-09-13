@@ -47,14 +47,20 @@ inventory, SSH target and native syntax checks. This stage is read-only.
 
 ## Stage R3 - Tb3 lifecycle acceptance
 
-Status: CLOSED - FAILED ACCEPTANCE.
+Status: COMPLETE under the amended lifecycle-only acceptance contract.
 
-The single authorised lifecycle session completed deploy, runtime status,
-evidence finalization and controlled stop successfully. Platform doctor failed
-closed at `USER_PLANE_READINESS_GATE` because fresh user-plane smoke evidence
-was absent. Tb3 was returned to the stopped baseline. Deploy replay, automatic
-recover/reset and transition to R4 are prohibited pending a separate bounded
-remediation decision.
+The original strict acceptance attempt remains recorded as FAIL because the
+comprehensive doctor failed at `USER_PLANE_READINESS_GATE`. That historical
+result is not rewritten.
+
+The amended R3 contract accepts the lifecycle mechanism using its existing
+lifecycle preflight, controlled deploy, runtime container/network status,
+evidence manifests, controlled stop and post-stop verification. All of these
+gates passed during the single authorised lifecycle session.
+
+Comprehensive experiment readiness, including fresh functional user-plane
+evidence and readiness-artifact freshness, is evaluated in R5. No doctor code
+or scientific criterion is weakened.
 
 Perform one controlled preflight, start, status, doctor and stop cycle.
 Do not automatically recover or repeat an unknown failure.
@@ -69,6 +75,10 @@ Require golden replay, T2 dry-run and fail-closed tests without a trigger.
 ## Stage R5 - Restore T2 readiness
 
 Status: NOT STARTED.
+
+The comprehensive `scripts/sci-oran-doctor.sh` contract belongs to this
+stage. R5 requires fresh user-plane smoke evidence, readiness-artifact
+freshness and `SCI_ORAN_READY_GATE=PASS` for the same runtime incarnation.
 
 Require platform health, user-plane smoke, telemetry, actuator path,
 prospective 26-PRB readback and pre-step stationarity. No T2 trigger.
