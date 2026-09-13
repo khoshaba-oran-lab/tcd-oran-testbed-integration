@@ -1,0 +1,36 @@
+---
+- name: Deploy Sci-O-RAN experiment bundle
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    bundle_src: ""
+    bundle_name: ""
+
+  tasks:
+    - name: Validate bundle parameters
+      ansible.builtin.assert:
+        that:
+          - bundle_src | length > 0
+          - bundle_name | length > 0
+        fail_msg: "bundle_src and bundle_name are required"
+
+    - name: Copy bundle to VM incoming directory
+      ansible.builtin.copy:
+        src: "{{ bundle_src }}"
+        dest: "{{ ansible_env.HOME }}/sci-oran/incoming/{{ bundle_name }}"
+        mode: "0644"
+      register: bundle_copy
+
+    - name: Calculate VM SHA256
+      ansible.builtin.command:
+        cmd: "sha256sum {{ ansible_env.HOME }}/sci-oran/incoming/{{ bundle_name }}"
+      register: vm_sha
+      changed_when: false
+
+    - name: Report deployment
+      ansible.builtin.debug:
+        msg:
+          - "BUNDLE_NAME={{ bundle_name }}"
+          - "COPY_CHANGED={{ bundle_copy.changed }}"
+          - "VM_SHA256={{ vm_sha.stdout.split()[0] }}"

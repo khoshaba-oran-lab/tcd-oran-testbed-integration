@@ -1,0 +1,264 @@
+---
+- name: Sci-O-RAN Tb3 controlled recovery admission
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_recovery_teardown_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-teardown-'
+          )
+      }}
+
+    sci_oran_recovery_deploy_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-deploy-'
+          )
+      }}
+
+  tasks:
+    - name: Require explicit recovery confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_recover | default(false) | bool
+        fail_msg: >-
+          Controlled recovery requires explicit -e confirm_recover=true.
+
+    - name: Require recovery operation identity
+      ansible.builtin.assert:
+        that:
+          - recovery_operation_id is defined
+          - recovery_operation_id is string
+          - >-
+            recovery_operation_id is match(
+              '^lifecycle-recover-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          A valid lifecycle-recover operation identity is required.
+
+    - name: Verify derived child operation identities
+      ansible.builtin.assert:
+        that:
+          - >-
+            sci_oran_recovery_teardown_id is match(
+              '^lifecycle-teardown-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+          - >-
+            sci_oran_recovery_deploy_id is match(
+              '^lifecycle-deploy-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          Recovery child operation identity derivation failed.
+
+    - name: Inspect child lifecycle evidence directories
+      ansible.builtin.stat:
+        path: >-
+          {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ item }}
+      loop:
+        - "{{ sci_oran_recovery_teardown_id }}"
+        - "{{ sci_oran_recovery_deploy_id }}"
+      register: sci_oran_recovery_child_dirs
+
+    - name: Refuse recovery child evidence overwrite
+      ansible.builtin.assert:
+        that:
+          - not item.stat.exists
+        fail_msg: >-
+          Recovery child evidence directory already exists:
+          {{ item.item }}.
+      loop: "{{ sci_oran_recovery_child_dirs.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Report controlled recovery correlation
+      ansible.builtin.debug:
+        msg:
+          - "RECOVERY_OPERATION_ID={{ recovery_operation_id }}"
+          - "RECOVERY_TEARDOWN_OPERATION_ID={{ sci_oran_recovery_teardown_id }}"
+          - "RECOVERY_DEPLOY_OPERATION_ID={{ sci_oran_recovery_deploy_id }}"
+          - "RECOVERY_ADMISSION_GATE=PASS"
+
+- import_playbook: tb3-teardown.yml
+  vars:
+    operation_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-teardown-'
+          )
+      }}
+    confirm_teardown: true
+
+- import_playbook: tb3-deploy.yml
+  vars:
+    operation_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-deploy-'
+          )
+      }}
+    confirm_deploy: true
+
+- name: Sci-O-RAN Tb3 controlled recovery final gate
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_recovery_teardown_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-teardown-'
+          )
+      }}
+
+    sci_oran_recovery_deploy_id: >-
+      {{
+        recovery_operation_id
+        | regex_replace(
+            '^lifecycle-recover-',
+            'lifecycle-deploy-'
+          )
+      }}
+
+    sci_oran_recovery_expected_containers:
+      - name: base05_open5gs_5gc
+        image_id: >-
+          sha256:e584550ebb654abcce8801c479d977f97b0397319e5dd92c1e06b7091d92160d
+
+      - name: action11_202_flexric_ric_safe
+        image_id: >-
+          sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb
+
+      - name: base05_srsran_gnb
+        image_id: >-
+          sha256:4af028e1849c2c23848e342681d04ec1a1d2732ee25f7d41290018c93da05eb1
+
+      - name: base05_srsran_srsue
+        image_id: >-
+          sha256:ea98a2ab87f98037bc172f8422dc1f5fc65ebad21f847bc10b5765b9ecf02410
+
+  tasks:
+    - name: Inspect recovery child manifests
+      ansible.builtin.command:
+        argv:
+          - cat
+          - >-
+            {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ item }}/manifest.json
+      loop:
+        - "{{ sci_oran_recovery_teardown_id }}"
+        - "{{ sci_oran_recovery_deploy_id }}"
+      register: sci_oran_recovery_manifests
+      changed_when: false
+
+    - name: Require successful recovery child manifests
+      ansible.builtin.assert:
+        that:
+          - >-
+            (sci_oran_recovery_manifests.results[0].stdout | from_json)
+            ['operation_type'] == 'teardown'
+          - >-
+            (sci_oran_recovery_manifests.results[0].stdout | from_json)
+            ['operation_result'] == 'PASS'
+          - >-
+            (sci_oran_recovery_manifests.results[1].stdout | from_json)
+            ['operation_type'] == 'deploy'
+          - >-
+            (sci_oran_recovery_manifests.results[1].stdout | from_json)
+            ['operation_result'] == 'PASS'
+        fail_msg: >-
+          Recovery child lifecycle evidence does not prove successful
+          teardown and deploy.
+
+    - name: Inspect recovered lifecycle containers
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - "{{ item.name }}"
+      loop: "{{ sci_oran_recovery_expected_containers }}"
+      register: sci_oran_recovered_containers
+      changed_when: false
+
+    - name: Require exact recovered runtime identity
+      ansible.builtin.assert:
+        that:
+          - (item.stdout | from_json)[0]['State']['Running']
+          - >-
+            (item.stdout | from_json)[0]['Image']
+            == item.item.image_id
+          - >-
+            (item.stdout | from_json)[0]['RestartCount'] == 0
+        fail_msg: >-
+          Recovered runtime identity mismatch for {{ item.item.name }}.
+      loop: "{{ sci_oran_recovered_containers.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    - name: Require recovered 5GC healthy state
+      ansible.builtin.assert:
+        that:
+          - >-
+            (sci_oran_recovered_containers.results[0].stdout | from_json)
+            [0]['State']['Health']['Status'] == 'healthy'
+        fail_msg: "Recovered 5GC is not healthy."
+
+    - name: Inspect recovered lifecycle network
+      ansible.builtin.command:
+        argv:
+          - docker
+          - network
+          - inspect
+          - tcd-base05-zmq_ran
+      register: sci_oran_recovered_network
+      changed_when: false
+
+    - name: Require exact recovered network contract
+      ansible.builtin.assert:
+        that:
+          - >-
+            'base05_open5gs_5gc'
+            in sci_oran_recovered_network.stdout
+          - >-
+            'base05_srsran_gnb'
+            in sci_oran_recovered_network.stdout
+          - >-
+            'base05_srsran_srsue'
+            in sci_oran_recovered_network.stdout
+          - >-
+            'action11_202_flexric_ric_safe'
+            in sci_oran_recovered_network.stdout
+          - "'10.53.1.2' in sci_oran_recovered_network.stdout"
+          - "'10.53.1.3' in sci_oran_recovered_network.stdout"
+          - "'10.53.1.4' in sci_oran_recovered_network.stdout"
+          - "'10.53.1.10' in sci_oran_recovered_network.stdout"
+        fail_msg: >-
+          Recovered lifecycle network membership/IP contract mismatch.
+
+    - name: Report controlled recovery result
+      ansible.builtin.debug:
+        msg:
+          - "RECOVERY_OPERATION_ID={{ recovery_operation_id }}"
+          - "RECOVERY_TEARDOWN_OPERATION_ID={{ sci_oran_recovery_teardown_id }}"
+          - "RECOVERY_DEPLOY_OPERATION_ID={{ sci_oran_recovery_deploy_id }}"
+          - "RECOVERY_CHILD_EVIDENCE_GATE=PASS"
+          - "RECOVERY_RUNTIME_CONTAINER_GATE=PASS"
+          - "RECOVERY_RUNTIME_IMAGE_IDENTITY_GATE=PASS"
+          - "RECOVERY_RUNTIME_NETWORK_GATE=PASS"
+          - "CONTROLLED_RECOVERY_GATE=PASS"

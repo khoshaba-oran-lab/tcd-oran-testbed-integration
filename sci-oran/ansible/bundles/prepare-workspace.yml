@@ -1,0 +1,31 @@
+---
+- name: Prepare Sci-O-RAN experiment workspace
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  tasks:
+    - name: Create Sci-O-RAN workspace directories
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/sci-oran/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - incoming
+        - actions
+        - results
+        - archive
+
+    - name: Inspect workspace
+      ansible.builtin.command:
+        cmd: ls -ld
+          {{ ansible_env.HOME }}/sci-oran
+          {{ ansible_env.HOME }}/sci-oran/incoming
+          {{ ansible_env.HOME }}/sci-oran/actions
+          {{ ansible_env.HOME }}/sci-oran/results
+          {{ ansible_env.HOME }}/sci-oran/archive
+      register: workspace_state
+      changed_when: false
+
+    - name: Show workspace
+      ansible.builtin.debug:
+        var: workspace_state.stdout_lines
