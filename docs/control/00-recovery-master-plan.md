@@ -47,7 +47,14 @@ inventory, SSH target and native syntax checks. This stage is read-only.
 
 ## Stage R3 - Tb3 lifecycle acceptance
 
-Status: NOT STARTED.
+Status: CLOSED - FAILED ACCEPTANCE.
+
+The single authorised lifecycle session completed deploy, runtime status,
+evidence finalization and controlled stop successfully. Platform doctor failed
+closed at `USER_PLANE_READINESS_GATE` because fresh user-plane smoke evidence
+was absent. Tb3 was returned to the stopped baseline. Deploy replay, automatic
+recover/reset and transition to R4 are prohibited pending a separate bounded
+remediation decision.
 
 Perform one controlled preflight, start, status, doctor and stop cycle.
 Do not automatically recover or repeat an unknown failure.
