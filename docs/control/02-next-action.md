@@ -1,11 +1,11 @@
 # Next authorised action
 
 - UPDATED_UTC=2026-09-13T14:46:16Z
-- LAST_COMPLETED_ACTION=RECOVERY.R0.8R
+- LAST_COMPLETED_ACTION=RECOVERY.R0.9
 - LAST_ACTION_RESULT=PASS
 - CURRENT_ACTION=NONE
-- NEXT_AUTHORISED_ACTION=RECOVERY.R0.9
-- PURPOSE=publish the local recovery freeze checkpoint to the existing Prompt 12 remote branch
+- NEXT_AUTHORISED_ACTION=RECOVERY.R1.1
+- PURPOSE=read-only semantic review of origin/main lifecycle management before integration
 
 ## Restrictions
 

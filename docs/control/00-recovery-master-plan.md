@@ -58,5 +58,5 @@ triggers, and with Dell/VM lifecycle management incorporated reproducibly.
 - R0.7R: PASS
 - R0.8R: PASS after all checkpoint gates
 - Recovery R0 status: COMPLETE LOCALLY
-- Remote publication status: NOT PERFORMED
+- Remote publication status: PUBLISHED BY RECOVERY.R0.9
 - Runtime and scientific control: NOT CHANGED
