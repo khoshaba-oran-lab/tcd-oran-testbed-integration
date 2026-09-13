@@ -1,0 +1,150 @@
+---
+- name: Execute Sci-O-RAN experiment bundle
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    bundle_name: ""
+    action_id: ""
+
+  tasks:
+    - name: Validate action parameters
+      ansible.builtin.assert:
+        that:
+          - bundle_name | length > 0
+          - action_id | length > 0
+          - bundle_name is match('^[A-Za-z0-9._-]+$')
+          - action_id is match('^[A-Za-z0-9._-]+$')
+        fail_msg: "bundle_name/action_id contain unsupported characters or are empty"
+
+    - name: Define action paths
+      ansible.builtin.set_fact:
+        incoming_bundle: "{{ ansible_env.HOME }}/sci-oran/incoming/{{ bundle_name }}"
+        action_dir: "{{ ansible_env.HOME }}/sci-oran/actions/{{ action_id }}"
+        result_dir: "{{ ansible_env.HOME }}/sci-oran/results/{{ action_id }}"
+        result_archive: "{{ ansible_env.HOME }}/sci-oran/archive/{{ action_id }}-results.tar.gz"
+
+    - name: Check incoming bundle
+      ansible.builtin.stat:
+        path: "{{ incoming_bundle }}"
+      register: incoming_state
+
+    - name: Require incoming bundle
+      ansible.builtin.assert:
+        that:
+          - incoming_state.stat.exists
+          - incoming_state.stat.isreg
+        fail_msg: "incoming bundle is missing"
+
+    - name: Check action directory
+      ansible.builtin.stat:
+        path: "{{ action_dir }}"
+      register: action_state
+
+    - name: Check result directory
+      ansible.builtin.stat:
+        path: "{{ result_dir }}"
+      register: result_state
+
+    - name: Refuse to overwrite previous action evidence
+      ansible.builtin.assert:
+        that:
+          - not action_state.stat.exists
+          - not result_state.stat.exists
+        fail_msg: "action_id already exists; use a new action_id"
+
+    - name: Create action directory
+      ansible.builtin.file:
+        path: "{{ action_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create result directory
+      ansible.builtin.file:
+        path: "{{ result_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Extract bundle
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -m
+          - zipfile
+          - -e
+          - "{{ incoming_bundle }}"
+          - "{{ action_dir }}"
+      register: extract_result
+      changed_when: true
+
+    - name: Check run.sh
+      ansible.builtin.stat:
+        path: "{{ action_dir }}/run.sh"
+      register: runner_state
+
+    - name: Require run.sh
+      ansible.builtin.assert:
+        that:
+          - runner_state.stat.exists
+          - runner_state.stat.isreg
+        fail_msg: "bundle does not contain run.sh at archive root"
+
+    - name: Execute bundle runner and capture terminal output
+      ansible.builtin.shell: |
+        set -o pipefail
+        bash ./run.sh 2>&1 | tee "{{ result_dir }}/terminal.log"
+        rc=${PIPESTATUS[0]}
+        printf '%s\n' "$rc" > "{{ result_dir }}/exit_code.txt"
+        exit "$rc"
+      args:
+        chdir: "{{ action_dir }}"
+        executable: /bin/bash
+      environment:
+        SCI_ORAN_ACTION_ID: "{{ action_id }}"
+        SCI_ORAN_ACTION_DIR: "{{ action_dir }}"
+        SCI_ORAN_RESULTS_DIR: "{{ result_dir }}"
+      register: action_run
+      changed_when: true
+      failed_when: false
+
+    - name: Write execution summary
+      ansible.builtin.copy:
+        dest: "{{ result_dir }}/runner-summary.txt"
+        mode: "0644"
+        content: |
+          ACTION_ID={{ action_id }}
+          BUNDLE_NAME={{ bundle_name }}
+          ACTION_RC={{ action_run.rc }}
+          EXECUTION_UTC={{ ansible_date_time.iso8601 }}
+          ACTION_DIR={{ action_dir }}
+          RESULT_DIR={{ result_dir }}
+
+    - name: Create result archive
+      ansible.builtin.command:
+        argv:
+          - tar
+          - -C
+          - "{{ ansible_env.HOME }}/sci-oran/results"
+          - -czf
+          - "{{ result_archive }}"
+          - "{{ action_id }}"
+      changed_when: true
+
+    - name: Fetch result archive to gateway
+      ansible.builtin.fetch:
+        src: "{{ result_archive }}"
+        dest: "/home/khoshaba/sci-oran/staging/{{ action_id }}-results.tar.gz"
+        flat: true
+
+    - name: Report execution
+      ansible.builtin.debug:
+        msg:
+          - "ACTION_ID={{ action_id }}"
+          - "ACTION_RC={{ action_run.rc }}"
+          - "RESULT_ARCHIVE=/home/khoshaba/sci-oran/staging/{{ action_id }}-results.tar.gz"
+
+    - name: Require successful bundle execution
+      ansible.builtin.assert:
+        that:
+          - action_run.rc == 0
+        fail_msg: "bundle run.sh returned non-zero; result archive was still preserved and fetched"

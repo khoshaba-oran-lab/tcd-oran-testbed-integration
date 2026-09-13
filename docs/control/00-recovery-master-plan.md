@@ -60,3 +60,16 @@ triggers, and with Dell/VM lifecycle management incorporated reproducibly.
 - Recovery R0 status: COMPLETE LOCALLY
 - Remote publication status: PUBLISHED BY RECOVERY.R0.9
 - Runtime and scientific control: NOT CHANGED
+
+## Recovery R1 lifecycle source integration
+
+- Integration action: RECOVERY.R1.2
+- Integration UTC: 2026-09-13T15:11:13Z
+- Integrated origin/main: 5f689aa221678b34ef59c12bd7db00ffc9fe84d0
+- Lifecycle paths added: 14
+- Duplicate lifecycle basenames: 10
+- Identical duplicate playbooks: 8
+- Divergent duplicate playbooks: 2
+- YAML fallback validation: PASS, 13 of 13
+- Lifecycle runtime execution: NOT AUTHORISED
+- Next requirement: portability and controller contract repair
