@@ -1,0 +1,140 @@
+---
+- name: Sci-O-RAN Tb3 day-start admission
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_day_start_recovery_id: >-
+      {{
+        day_start_operation_id
+        | regex_replace(
+            '^lifecycle-day-start-',
+            'lifecycle-recover-'
+          )
+      }}
+
+    sci_oran_day_start_teardown_id: >-
+      {{
+        day_start_operation_id
+        | regex_replace(
+            '^lifecycle-day-start-',
+            'lifecycle-teardown-'
+          )
+      }}
+
+    sci_oran_day_start_deploy_id: >-
+      {{
+        day_start_operation_id
+        | regex_replace(
+            '^lifecycle-day-start-',
+            'lifecycle-deploy-'
+          )
+      }}
+
+  tasks:
+    - name: Require explicit day-start confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_day_start | default(false) | bool
+        fail_msg: >-
+          Day-start requires explicit -e confirm_day_start=true.
+
+    - name: Require day-start operation identity
+      ansible.builtin.assert:
+        that:
+          - day_start_operation_id is defined
+          - day_start_operation_id is string
+          - >-
+            day_start_operation_id is match(
+              '^lifecycle-day-start-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          A valid lifecycle-day-start operation identity is required.
+
+    - name: Verify derived day-start child identities
+      ansible.builtin.assert:
+        that:
+          - >-
+            sci_oran_day_start_recovery_id is match(
+              '^lifecycle-recover-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+          - >-
+            sci_oran_day_start_teardown_id is match(
+              '^lifecycle-teardown-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+          - >-
+            sci_oran_day_start_deploy_id is match(
+              '^lifecycle-deploy-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          Day-start child operation identity derivation failed.
+
+    - name: Report day-start correlation
+      ansible.builtin.debug:
+        msg:
+          - "DAY_START_OPERATION_ID={{ day_start_operation_id }}"
+          - "DAY_START_RECOVERY_OPERATION_ID={{ sci_oran_day_start_recovery_id }}"
+          - "DAY_START_TEARDOWN_OPERATION_ID={{ sci_oran_day_start_teardown_id }}"
+          - "DAY_START_DEPLOY_OPERATION_ID={{ sci_oran_day_start_deploy_id }}"
+          - "DAY_START_ADMISSION_GATE=PASS"
+
+- import_playbook: tb3-recover.yml
+  vars:
+    recovery_operation_id: >-
+      {{
+        day_start_operation_id
+        | regex_replace(
+            '^lifecycle-day-start-',
+            'lifecycle-recover-'
+          )
+      }}
+    confirm_recover: true
+
+- name: Sci-O-RAN Tb3 day-start final handoff
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_day_start_deploy_id: >-
+      {{
+        day_start_operation_id
+        | regex_replace(
+            '^lifecycle-day-start-',
+            'lifecycle-deploy-'
+          )
+      }}
+
+  tasks:
+    - name: Read day-start deployment manifest
+      ansible.builtin.command:
+        argv:
+          - cat
+          - >-
+            {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ sci_oran_day_start_deploy_id }}/manifest.json
+      register: sci_oran_day_start_deploy_manifest
+      changed_when: false
+
+    - name: Require successful day-start deployment evidence
+      ansible.builtin.assert:
+        that:
+          - >-
+            (sci_oran_day_start_deploy_manifest.stdout | from_json)
+            ['operation_type'] == 'deploy'
+          - >-
+            (sci_oran_day_start_deploy_manifest.stdout | from_json)
+            ['operation_result'] == 'PASS'
+        fail_msg: >-
+          Day-start does not have successful deploy evidence.
+
+    - name: Report day-start handoff
+      ansible.builtin.debug:
+        msg:
+          - "DAY_START_OPERATION_ID={{ day_start_operation_id }}"
+          - "DAY_START_RUNTIME_NORMALIZATION_GATE=PASS"
+          - "DAY_START_DEPLOY_EVIDENCE_GATE=PASS"
+          - "DAY_START_GATE=PASS"
+          - "SCI_ORAN_READY_GATE=DEFERRED_TO_PROMPT_11B"
+          - "PROMPT_11B_HANDOFF=REQUIRED"

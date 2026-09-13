@@ -1,0 +1,153 @@
+---
+- name: Sci-O-RAN Tb3 lifecycle runtime state inventory
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+    sci_oran_base05_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-1-baseline/base-05-zmq
+
+    sci_oran_runtime_compose: >-
+      {{ sci_oran_base05_dir }}/compose.runtime.yml
+
+    sci_oran_sandybridge_compose: >-
+      {{ sci_oran_base05_dir }}/compose.sandybridge.yml
+
+    sci_oran_base05_network: "tcd-base05-zmq_ran"
+
+    sci_oran_container_name_regex: >-
+      ^(base05_|action11_|p2a_)|(^|[-_])(flexric|ric|xapp)([-_]|$)
+
+  tasks:
+    - name: Capture snapshot timestamp
+      ansible.builtin.set_fact:
+        sci_oran_snapshot_utc: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Capture canonical BASE-05 Compose state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - "{{ sci_oran_runtime_compose }}"
+          - -f
+          - "{{ sci_oran_sandybridge_compose }}"
+          - ps
+          - -a
+      register: sci_oran_base05_compose_state
+      changed_when: false
+
+    - name: Discover Sci-O-RAN relevant container names
+      ansible.builtin.shell: |
+        set -o pipefail
+
+        docker ps -a \
+          --format '{% raw %}{{.Names}}{% endraw %}' |
+        grep -E '{{ sci_oran_container_name_regex }}' |
+        sort || true
+      args:
+        executable: /bin/bash
+      register: sci_oran_relevant_container_discovery
+      changed_when: false
+
+    - name: Define relevant container set
+      ansible.builtin.set_fact:
+        sci_oran_relevant_containers: >-
+          {{ sci_oran_relevant_container_discovery.stdout_lines }}
+
+    - name: Classify BASE-05 containers
+      ansible.builtin.set_fact:
+        sci_oran_base05_containers: >-
+          {{
+            sci_oran_relevant_containers
+            | select('match', '^base05_')
+            | list
+          }}
+
+    - name: Classify Action11 helper containers
+      ansible.builtin.set_fact:
+        sci_oran_action11_containers: >-
+          {{
+            sci_oran_relevant_containers
+            | select('match', '^action11_')
+            | list
+          }}
+
+    - name: Capture detailed relevant container state
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - --format
+          - >-
+            {% raw %}NAME={{.Name}}
+            STATUS={{.State.Status}}
+            RUNNING={{.State.Running}}
+            PID={{.State.Pid}}
+            RESTART_COUNT={{.RestartCount}}
+            IMAGE_REF={{.Config.Image}}
+            IMAGE_ID={{.Image}}
+            RESTART_POLICY={{.HostConfig.RestartPolicy.Name}}
+            AUTO_REMOVE={{.HostConfig.AutoRemove}}
+            COMPOSE_PROJECT={{with .Config.Labels}}{{index . "com.docker.compose.project"}}{{end}}
+            COMPOSE_SERVICE={{with .Config.Labels}}{{index . "com.docker.compose.service"}}{{end}}
+            NETWORK_MODE={{.HostConfig.NetworkMode}}{% endraw %}
+          - "{{ item }}"
+      loop: "{{ sci_oran_relevant_containers }}"
+      loop_control:
+        label: "{{ item }}"
+      register: sci_oran_container_inspect
+      changed_when: false
+      when: sci_oran_relevant_containers | length > 0
+
+    - name: Inspect BASE-05 network
+      ansible.builtin.command:
+        argv:
+          - docker
+          - network
+          - inspect
+          - --format
+          - >-
+            {% raw %}NETWORK={{.Name}}
+            DRIVER={{.Driver}}
+            SCOPE={{.Scope}}
+            {{range $id,$c := .Containers}}
+            MEMBER={{$c.Name}} IP={{$c.IPv4Address}}
+            {{end}}{% endraw %}
+          - "{{ sci_oran_base05_network }}"
+      register: sci_oran_network_state
+      changed_when: false
+      failed_when: false
+
+    - name: Capture relevant local image identities
+      ansible.builtin.command:
+        argv:
+          - docker
+          - image
+          - ls
+          - --digests
+          - --no-trunc
+      register: sci_oran_image_state
+      changed_when: false
+
+    - name: Report lifecycle runtime snapshot
+      ansible.builtin.debug:
+        msg:
+          - "SNAPSHOT_UTC={{ sci_oran_snapshot_utc }}"
+          - "BASE05_COMPOSE_STATE={{ sci_oran_base05_compose_state.stdout_lines }}"
+          - "RELEVANT_CONTAINERS={{ sci_oran_relevant_containers }}"
+          - "BASE05_CONTAINERS={{ sci_oran_base05_containers }}"
+          - "ACTION11_CONTAINERS={{ sci_oran_action11_containers }}"
+          - >-
+            CONTAINER_STATE={{
+              sci_oran_container_inspect.results
+              | default([])
+              | map(attribute='stdout')
+              | list
+            }}
+          - "BASE05_NETWORK_RC={{ sci_oran_network_state.rc }}"
+          - "BASE05_NETWORK_STATE={{ sci_oran_network_state.stdout_lines }}"
+          - "LOCAL_IMAGE_INVENTORY_CAPTURED=yes"
+          - "LIFECYCLE_RUNTIME_STATE_GATE=PASS"

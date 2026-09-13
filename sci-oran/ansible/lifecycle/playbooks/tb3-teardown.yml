@@ -1,0 +1,543 @@
+---
+- import_playbook: tb3-preflight.yml
+
+- import_playbook: tb3-capture-state.yml
+  vars:
+    snapshot_role: before
+
+- name: Sci-O-RAN Tb3 controlled teardown
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+    sci_oran_base05_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-1-baseline/base-05-zmq
+
+    sci_oran_runtime_compose: >-
+      {{ sci_oran_base05_dir }}/compose.runtime.yml
+
+    sci_oran_sandybridge_compose: >-
+      {{ sci_oran_base05_dir }}/compose.sandybridge.yml
+
+    sci_oran_ric_lock: >-
+      {{ sci_oran_repo_root }}/deploy/phase-2-flexric/tb3-runtime/locks/tb3-ric-runtime.lock
+
+    sci_oran_network: "tcd-base05-zmq_ran"
+
+    # Fail-closed lifecycle auxiliary-container ownership namespace.
+    # Keep this anchored and explicit. Unknown network members are not removed.
+    sci_oran_auxiliary_ownership_regex: >-
+      ^(action11_|action11r|prompt12[-_])[A-Za-z0-9][A-Za-z0-9_.-]*$
+
+    sci_oran_ue_container: "base05_srsran_srsue"
+    sci_oran_gnb_container: "base05_srsran_gnb"
+    sci_oran_5gc_container: "base05_open5gs_5gc"
+
+  tasks:
+    - name: Require explicit destructive-operation confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_teardown | default(false) | bool
+        fail_msg: >-
+          Controlled teardown requires explicit
+          -e confirm_teardown=true.
+
+    - name: Require teardown operation identity
+      ansible.builtin.assert:
+        that:
+          - operation_id is defined
+          - operation_id is string
+          - >-
+            operation_id is match(
+              '^lifecycle-teardown-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: >-
+          Teardown requires a lifecycle-teardown operation_id.
+
+    - name: Initialize teardown execution status
+      ansible.builtin.set_fact:
+        sci_oran_teardown_result: "FAIL"
+        sci_oran_teardown_failure_task: "NOT_STARTED"
+        sci_oran_teardown_failure_message: ""
+
+    - name: Execute controlled teardown mutation block
+      block:
+        - name: Read captured RIC container identity
+          ansible.builtin.command:
+            argv:
+              - awk
+              - -F=
+              - "/^CONTAINER_NAME=/{print $2}"
+              - "{{ sci_oran_ric_lock }}"
+          register: sci_oran_ric_container_result
+          changed_when: false
+
+        - name: Define RIC container identity
+          ansible.builtin.set_fact:
+            sci_oran_ric_container: >-
+              {{ sci_oran_ric_container_result.stdout | trim }}
+
+        - name: Require valid RIC container identity
+          ansible.builtin.assert:
+            that:
+              - sci_oran_ric_container | length > 0
+            fail_msg: >-
+              RIC container identity could not be resolved from the runtime lock.
+
+        - name: Discover lifecycle-owned auxiliary containers
+          ansible.builtin.shell: |
+            docker ps -a \
+              --format '{% raw %}{{.Names}}{% endraw %}' |
+            grep -E '{{ sci_oran_auxiliary_ownership_regex }}' |
+            LC_ALL=C sort || true
+          args:
+            executable: /bin/bash
+          register: sci_oran_auxiliary_discovery
+          changed_when: false
+
+        - name: Define lifecycle-owned auxiliary helpers excluding active RIC contract
+          ansible.builtin.set_fact:
+            sci_oran_auxiliary_helpers: >-
+              {{
+                sci_oran_auxiliary_discovery.stdout_lines
+                | reject('equalto', sci_oran_ric_container)
+                | list
+              }}
+
+        - name: Discover BASE-05 network member names
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            NETWORK="{{ sci_oran_network }}"
+
+            if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
+              exit 0
+            fi
+
+            docker network inspect \
+              --format \
+              '{% raw %}{{range .Containers}}{{println .Name}}{{end}}{% endraw %}' \
+              "$NETWORK" |
+            sed '/^[[:space:]]*$/d' |
+            LC_ALL=C sort -u
+          args:
+            executable: /bin/bash
+          register: sci_oran_network_member_discovery
+          changed_when: false
+
+        - name: Define BASE-05 network ownership classification
+          ansible.builtin.set_fact:
+            sci_oran_network_members: >-
+              {{
+                sci_oran_network_member_discovery.stdout_lines
+                | reject('equalto', '')
+                | list
+              }}
+            sci_oran_unknown_network_members: >-
+              {{
+                sci_oran_network_member_discovery.stdout_lines
+                | reject('equalto', '')
+                | reject('equalto', sci_oran_ue_container)
+                | reject('equalto', sci_oran_gnb_container)
+                | reject('equalto', sci_oran_5gc_container)
+                | reject('equalto', sci_oran_ric_container)
+                | reject('match', sci_oran_auxiliary_ownership_regex)
+                | list
+              }}
+
+        - name: Persist auxiliary ownership classification evidence
+          ansible.builtin.copy:
+            dest: >-
+              {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/auxiliary-ownership.txt
+            mode: "0644"
+            content: |
+              SCI_ORAN_AUXILIARY_OWNERSHIP_V1
+
+              OPERATION_ID={{ operation_id }}
+              NETWORK={{ sci_oran_network }}
+              ACTIVE_RIC={{ sci_oran_ric_container }}
+              AUXILIARY_OWNERSHIP_REGEX={{ sci_oran_auxiliary_ownership_regex }}
+              AUXILIARY_DISCOVERED={{ sci_oran_auxiliary_discovery.stdout_lines | to_json }}
+              AUXILIARY_REMOVAL_LIST={{ sci_oran_auxiliary_helpers | to_json }}
+              NETWORK_MEMBERS={{ sci_oran_network_members | to_json }}
+              UNKNOWN_NETWORK_MEMBERS={{ sci_oran_unknown_network_members | to_json }}
+              UNKNOWN_NETWORK_MEMBER_COUNT={{ sci_oran_unknown_network_members | length }}
+              ACTIVE_RIC_EXCLUDED_FROM_AUXILIARY_REMOVAL={{ sci_oran_ric_container not in sci_oran_auxiliary_helpers }}
+              ACTIVE_RIC_EXCLUSION_GATE={{ 'PASS' if (sci_oran_ric_container not in sci_oran_auxiliary_helpers) else 'FAIL' }}
+              UNKNOWN_NETWORK_CONTAINER_GATE={{ 'PASS' if ((sci_oran_unknown_network_members | length) == 0) else 'FAIL' }}
+              AUXILIARY_OWNERSHIP_ADMISSION_GATE={{ 'PASS' if ((sci_oran_ric_container not in sci_oran_auxiliary_helpers) and ((sci_oran_unknown_network_members | length) == 0)) else 'FAIL' }}
+
+        - name: Require fail-closed auxiliary ownership admission
+          ansible.builtin.assert:
+            that:
+              - sci_oran_ric_container not in sci_oran_auxiliary_helpers
+              - (sci_oran_unknown_network_members | length) == 0
+            fail_msg: >-
+              Refusing destructive teardown because auxiliary ownership
+              classification failed. Active RIC={{ sci_oran_ric_container }};
+              unknown BASE-05 network members={{
+                sci_oran_unknown_network_members | join(',')
+              }}.
+            success_msg: "AUXILIARY_OWNERSHIP_ADMISSION_GATE=PASS"
+
+        - name: Capture bounded pre-teardown logs
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            OP_DIR="{{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}"
+
+            for C in \
+              {{ sci_oran_auxiliary_helpers | join(' ') }} \
+              {{ sci_oran_ric_container }} \
+              {{ sci_oran_ue_container }} \
+              {{ sci_oran_gnb_container }} \
+              {{ sci_oran_5gc_container }}
+            do
+              if docker inspect "$C" >/dev/null 2>&1; then
+                docker logs \
+                  --timestamps \
+                  --tail 500 \
+                  "$C" \
+                  > "$OP_DIR/log-${C}.txt" 2>&1 || true
+              fi
+            done
+          args:
+            executable: /bin/bash
+          changed_when: true
+
+        - name: Persist lifecycle-owned auxiliary helper inspect provenance
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            C="{{ item }}"
+            OP_DIR="{{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}"
+
+            docker inspect "$C" > "$OP_DIR/inspect-${C}.json"
+          args:
+            executable: /bin/bash
+          loop: "{{ sci_oran_auxiliary_helpers }}"
+          loop_control:
+            label: "{{ item }}"
+          changed_when: true
+          when: sci_oran_auxiliary_helpers | length > 0
+
+        - name: Remove lifecycle-owned auxiliary helper containers
+          ansible.builtin.command:
+            argv:
+              - docker
+              - rm
+              - -f
+              - "{{ item }}"
+          loop: "{{ sci_oran_auxiliary_helpers }}"
+          loop_control:
+            label: "{{ item }}"
+          register: sci_oran_auxiliary_remove
+          changed_when: true
+          when: sci_oran_auxiliary_helpers | length > 0
+
+        - name: Inspect UE container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - inspect
+              - "{{ sci_oran_ue_container }}"
+          register: sci_oran_ue_inspect
+          changed_when: false
+          failed_when: false
+
+        - name: Stop UE
+          ansible.builtin.command:
+            argv:
+              - docker
+              - stop
+              - -t
+              - "10"
+              - "{{ sci_oran_ue_container }}"
+          when:
+            - sci_oran_ue_inspect.rc == 0
+            - (sci_oran_ue_inspect.stdout | from_json)[0]['State']['Running']
+          changed_when: true
+
+        - name: Remove UE container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - rm
+              - "{{ sci_oran_ue_container }}"
+          when: sci_oran_ue_inspect.rc == 0
+          changed_when: true
+
+        - name: Inspect gNB container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - inspect
+              - "{{ sci_oran_gnb_container }}"
+          register: sci_oran_gnb_inspect
+          changed_when: false
+          failed_when: false
+
+        - name: Stop gNB
+          ansible.builtin.command:
+            argv:
+              - docker
+              - stop
+              - -t
+              - "10"
+              - "{{ sci_oran_gnb_container }}"
+          when:
+            - sci_oran_gnb_inspect.rc == 0
+            - (sci_oran_gnb_inspect.stdout | from_json)[0]['State']['Running']
+          changed_when: true
+
+        - name: Remove gNB container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - rm
+              - "{{ sci_oran_gnb_container }}"
+          when: sci_oran_gnb_inspect.rc == 0
+          changed_when: true
+
+        - name: Inspect external RIC container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - inspect
+              - "{{ sci_oran_ric_container }}"
+          register: sci_oran_ric_inspect
+          changed_when: false
+          failed_when: false
+
+        - name: Stop external RIC
+          ansible.builtin.command:
+            argv:
+              - docker
+              - stop
+              - -t
+              - "10"
+              - "{{ sci_oran_ric_container }}"
+          when:
+            - sci_oran_ric_inspect.rc == 0
+            - (sci_oran_ric_inspect.stdout | from_json)[0]['State']['Running']
+          changed_when: true
+
+        - name: Remove external RIC container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - rm
+              - "{{ sci_oran_ric_container }}"
+          when: sci_oran_ric_inspect.rc == 0
+          changed_when: true
+
+        - name: Inspect 5GC container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - inspect
+              - "{{ sci_oran_5gc_container }}"
+          register: sci_oran_5gc_inspect
+          changed_when: false
+          failed_when: false
+
+        - name: Stop 5GC
+          ansible.builtin.command:
+            argv:
+              - docker
+              - stop
+              - -t
+              - "10"
+              - "{{ sci_oran_5gc_container }}"
+          when:
+            - sci_oran_5gc_inspect.rc == 0
+            - (sci_oran_5gc_inspect.stdout | from_json)[0]['State']['Running']
+          changed_when: true
+
+        - name: Remove 5GC container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - rm
+              - "{{ sci_oran_5gc_container }}"
+          when: sci_oran_5gc_inspect.rc == 0
+          changed_when: true
+
+        - name: Run BASE-05 Compose cleanup
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - -f
+              - "{{ sci_oran_runtime_compose }}"
+              - -f
+              - "{{ sci_oran_sandybridge_compose }}"
+              - down
+              - --remove-orphans
+          register: sci_oran_compose_down
+          changed_when: >-
+            'Removed' in sci_oran_compose_down.stderr or
+            'Removed' in sci_oran_compose_down.stdout
+
+        - name: Verify owned lifecycle containers are absent
+          ansible.builtin.shell: |
+            set -euo pipefail
+
+            FAIL=0
+
+            for C in \
+              "{{ sci_oran_ue_container }}" \
+              "{{ sci_oran_gnb_container }}" \
+              "{{ sci_oran_ric_container }}" \
+              "{{ sci_oran_5gc_container }}"
+            do
+              if docker inspect "$C" >/dev/null 2>&1; then
+                echo "UNEXPECTED_CONTAINER=$C"
+                FAIL=1
+              fi
+            done
+
+            if docker ps -a \
+              --format '{% raw %}{{.Names}}{% endraw %}' |
+              grep -Eq '{{ sci_oran_auxiliary_ownership_regex }}'
+            then
+              echo "UNEXPECTED_AUXILIARY_CONTAINER=yes"
+              FAIL=1
+            fi
+
+            exit "$FAIL"
+          args:
+            executable: /bin/bash
+          changed_when: false
+
+        - name: Inspect BASE-05 network after cleanup
+          ansible.builtin.command:
+            argv:
+              - docker
+              - network
+              - inspect
+              - "{{ sci_oran_network }}"
+          register: sci_oran_network_after
+          changed_when: false
+          failed_when: false
+
+        - name: Require BASE-05 network removal
+          ansible.builtin.assert:
+            that:
+              - sci_oran_network_after.rc != 0
+            fail_msg: >-
+              BASE-05 network still exists after controlled teardown.
+
+        - name: Mark controlled teardown execution successful
+          ansible.builtin.set_fact:
+            sci_oran_teardown_result: "PASS"
+            sci_oran_teardown_failure_task: "NONE"
+            sci_oran_teardown_failure_message: ""
+
+      rescue:
+        - name: Record controlled teardown failure
+          ansible.builtin.set_fact:
+            sci_oran_teardown_result: "FAIL"
+            sci_oran_teardown_failure_task: >-
+              {{ ansible_failed_task.name | default('UNKNOWN_TASK') }}
+            sci_oran_teardown_failure_message: >-
+              {{
+                ansible_failed_result.msg
+                | default(
+                    ansible_failed_result.stderr
+                    | default('UNKNOWN_FAILURE')
+                  )
+              }}
+
+        - name: Persist controlled teardown failure evidence
+          ansible.builtin.copy:
+            dest: >-
+              {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/teardown-failure.txt
+            mode: "0644"
+            content: |
+              SCI_ORAN_TEARDOWN_FAILURE_V1
+
+              OPERATION_ID={{ operation_id }}
+              RESULT={{ sci_oran_teardown_result }}
+              FAILED_TASK={{ sci_oran_teardown_failure_task }}
+              FAILURE_MESSAGE={{ sci_oran_teardown_failure_message }}
+
+        - name: Report rescued controlled teardown failure
+          ansible.builtin.debug:
+            msg:
+              - "CONTROLLED_TEARDOWN_EXECUTION=FAIL"
+              - "FAILED_TASK={{ sci_oran_teardown_failure_task }}"
+              - "AFTER_STATE_AND_FINALIZATION_REQUIRED=yes"
+
+
+- import_playbook: tb3-capture-state.yml
+  vars:
+    snapshot_role: after
+
+- import_playbook: tb3-finalize-operation.yml
+  vars:
+    operation_type: teardown
+    operation_result: "{{ sci_oran_teardown_result | default('FAIL') }}"
+    changed_components: >-
+      {{
+        [
+          'auxiliary-helper-containers',
+          'srsue',
+          'gnb',
+          'near-rt-ric',
+          '5gc',
+          'base05-network'
+        ]
+        if (sci_oran_teardown_result | default('FAIL')) == 'PASS'
+        else ['partial-teardown-see-after-state']
+      }}
+    lifecycle_gates:
+      - LIFECYCLE_PREFLIGHT_GATE=PASS
+      - LIFECYCLE_STATE_CAPTURE_BEFORE=PASS
+      - "CONTROLLED_TEARDOWN_EXECUTION={{ sci_oran_teardown_result | default('FAIL') }}"
+      - "TEARDOWN_FAILURE_TASK={{ sci_oran_teardown_failure_task | default('NONE') }}"
+      - LIFECYCLE_STATE_CAPTURE_AFTER=PASS
+
+- name: Sci-O-RAN Tb3 teardown final gate
+  hosts: sci_oran_vms
+  gather_facts: false
+
+  vars:
+    sci_oran_repo_root: "{{ ansible_env.HOME }}/project/tcd-oran-testbed-integration"
+
+  tasks:
+    - name: Verify before and after evidence exists
+      ansible.builtin.stat:
+        path: >-
+          {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/{{ item }}-state.txt
+      loop:
+        - before
+        - after
+      register: sci_oran_teardown_evidence
+
+    - name: Require complete teardown state evidence
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+        fail_msg: >-
+          Required teardown evidence is missing.
+      loop: "{{ sci_oran_teardown_evidence.results }}"
+
+    - name: Require successful teardown after evidence finalization
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_teardown_result | default('FAIL')) == 'PASS'
+        fail_msg: >-
+          Controlled teardown failed, but after-state and finalization evidence
+          were retained. Failed task={{
+            sci_oran_teardown_failure_task | default('UNKNOWN_TASK')
+          }}.
+
+    - name: Report controlled teardown result
+      ansible.builtin.debug:
+        msg:
+          - "OPERATION_ID={{ operation_id }}"
+          - "LIFECYCLE_TEARDOWN_GATE=PASS"

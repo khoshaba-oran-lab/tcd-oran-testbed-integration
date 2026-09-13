@@ -1,0 +1,499 @@
+---
+- import_playbook: tb3-preflight.yml
+
+- import_playbook: tb3-capture-state.yml
+  vars:
+    snapshot_role: before
+
+- name: Sci-O-RAN Tb3 controlled deploy
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+    sci_oran_base05_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-1-baseline/base-05-zmq
+
+    sci_oran_p2_dir: >-
+      {{ sci_oran_repo_root }}/deploy/phase-2-flexric/tb3-runtime
+
+    sci_oran_compose_runtime: >-
+      {{ sci_oran_base05_dir }}/compose.runtime.yml
+
+    sci_oran_compose_sandybridge: >-
+      {{ sci_oran_base05_dir }}/compose.sandybridge.yml
+
+    sci_oran_gnb_overlay: >-
+      {{ sci_oran_p2_dir }}/compose.lifecycle-gnb.yml
+
+    sci_oran_gnb_config: >-
+      {{ sci_oran_p2_dir }}/configs/gnb-e2sm-rc.yaml
+
+    sci_oran_ric_config: >-
+      {{ sci_oran_p2_dir }}/configs/ric.conf
+
+    sci_oran_ric_lock: >-
+      {{ sci_oran_p2_dir }}/locks/tb3-ric-runtime.lock
+
+    sci_oran_network: tcd-base05-zmq_ran
+
+    sci_oran_5gc_container: base05_open5gs_5gc
+    sci_oran_gnb_container: base05_srsran_gnb
+    sci_oran_ue_container: base05_srsran_srsue
+    sci_oran_ric_container: action11_202_flexric_ric_safe
+
+    sci_oran_ric_image: tcd-oran/flexric-action11:e2ap-v3-live-probe
+
+    sci_oran_ric_image_id: >-
+      sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb
+
+    sci_oran_ric_ip: 10.53.1.10
+
+    sci_oran_gnb_config_sha: >-
+      a609ce90006e7fdded896cff31fe83679c8bb97741d6a002c10a2b30fac5542e
+
+    sci_oran_gnb_overlay_sha: >-
+      2aac7b7639ae8b63cc198e6cbf986d51e8107f02659f1dce5840bc478d0f3fd3
+
+    sci_oran_ric_config_sha: >-
+      940d8e1a87b8e937fea3678ca9fc47dd765f3bdf9f68f731cf6d2d47dda8be68
+
+    sci_oran_ric_lock_sha: >-
+      edb1f3649a0a506a95084cc2526b8049710d537f24a200a4af4488dffef35893
+
+    sci_oran_known_owned_containers:
+      - base05_open5gs_5gc
+      - base05_srsran_gnb
+      - base05_srsran_srsue
+      - action11_202_flexric_ric_safe
+      - action11_119_rc_probe
+      - action11_191_rc_prb25_probe
+      - action11_48_flexric_ric
+      - action11_59_rc_probe
+      - action11_60_rc_probe
+
+  tasks:
+    - name: Require explicit deploy confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_deploy | default(false) | bool
+        fail_msg: >-
+          Controlled deploy requires explicit -e confirm_deploy=true.
+
+    - name: Require deploy operation identity
+      ansible.builtin.assert:
+        that:
+          - operation_id is defined
+          - operation_id is string
+          - >-
+            operation_id is match(
+              '^lifecycle-deploy-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$'
+            )
+        fail_msg: "A lifecycle-deploy operation_id is required."
+
+    - name: Verify deploy artifact identities
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - "{{ item.path }}"
+      loop:
+        - path: "{{ sci_oran_gnb_config }}"
+          sha: "{{ sci_oran_gnb_config_sha }}"
+        - path: "{{ sci_oran_gnb_overlay }}"
+          sha: "{{ sci_oran_gnb_overlay_sha }}"
+        - path: "{{ sci_oran_ric_config }}"
+          sha: "{{ sci_oran_ric_config_sha }}"
+        - path: "{{ sci_oran_ric_lock }}"
+          sha: "{{ sci_oran_ric_lock_sha }}"
+      register: sci_oran_deploy_artifact_hashes
+      changed_when: false
+
+    - name: Require exact deploy artifact identities
+      ansible.builtin.assert:
+        that:
+          - item.stdout.split()[0] == item.item.sha
+        fail_msg: >-
+          Deploy artifact identity mismatch: {{ item.item.path }}.
+      loop: "{{ sci_oran_deploy_artifact_hashes.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Verify known owned containers are absent before deploy
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - "{{ item }}"
+      loop: "{{ sci_oran_known_owned_containers }}"
+      register: sci_oran_predeploy_container_inspect
+      changed_when: false
+      failed_when: false
+
+    - name: Require clean owned-container state before deploy
+      ansible.builtin.assert:
+        that:
+          - item.rc != 0
+        fail_msg: >-
+          Controlled deploy requires clean state, but container exists:
+          {{ item.item }}.
+      loop: "{{ sci_oran_predeploy_container_inspect.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Inspect BASE-05 network before deploy
+      ansible.builtin.command:
+        argv:
+          - docker
+          - network
+          - inspect
+          - "{{ sci_oran_network }}"
+      register: sci_oran_predeploy_network
+      changed_when: false
+      failed_when: false
+
+    - name: Require BASE-05 network absence before deploy
+      ansible.builtin.assert:
+        that:
+          - sci_oran_predeploy_network.rc != 0
+        fail_msg: >-
+          Controlled deploy requires the BASE-05 network to be absent.
+
+    - name: Resolve effective deploy image references
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - "{{ sci_oran_compose_runtime }}"
+          - -f
+          - "{{ sci_oran_compose_sandybridge }}"
+          - -f
+          - "{{ sci_oran_gnb_overlay }}"
+          - config
+          - --images
+      register: sci_oran_deploy_images
+      changed_when: false
+
+    - name: Require exact deploy service image count
+      ansible.builtin.assert:
+        that:
+          - sci_oran_deploy_images.stdout_lines | length == 3
+        fail_msg: >-
+          Effective lifecycle Compose contract must resolve exactly three images.
+
+    - name: Verify effective Compose images are locally resolvable
+      ansible.builtin.command:
+        argv:
+          - docker
+          - image
+          - inspect
+          - "{{ item }}"
+      loop: "{{ sci_oran_deploy_images.stdout_lines }}"
+      register: sci_oran_compose_image_inspect
+      changed_when: false
+
+    - name: Verify RIC image identity
+      ansible.builtin.command:
+        argv:
+          - docker
+          - image
+          - inspect
+          - "{{ sci_oran_ric_image }}"
+          - --format
+          - "{% raw %}{{.Id}}{% endraw %}"
+      register: sci_oran_ric_image_identity
+      changed_when: false
+
+    - name: Require exact RIC image identity
+      ansible.builtin.assert:
+        that:
+          - sci_oran_ric_image_identity.stdout == sci_oran_ric_image_id
+        fail_msg: "Standalone RIC image identity mismatch."
+
+    - name: Initialize deploy execution status
+      ansible.builtin.set_fact:
+        sci_oran_deploy_result: "FAIL"
+        sci_oran_deploy_failure_task: "NOT_STARTED"
+        sci_oran_deploy_failure_message: ""
+
+    - name: Execute controlled deploy mutation block
+      block:
+        - name: Start 5GC
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - -f
+              - "{{ sci_oran_compose_runtime }}"
+              - -f
+              - "{{ sci_oran_compose_sandybridge }}"
+              - -f
+              - "{{ sci_oran_gnb_overlay }}"
+              - up
+              - -d
+              - "5gc"
+          changed_when: true
+
+        - name: Wait for 5GC healthy state
+          ansible.builtin.command:
+            argv:
+              - docker
+              - inspect
+              - "{{ sci_oran_5gc_container }}"
+          register: sci_oran_5gc_health
+          changed_when: false
+          retries: 30
+          delay: 2
+          until:
+            - sci_oran_5gc_health.rc == 0
+            - >-
+              (sci_oran_5gc_health.stdout | from_json)[0]
+              ['State']['Running']
+            - >-
+              (sci_oran_5gc_health.stdout | from_json)[0]
+              ['State']['Health']['Status'] == 'healthy'
+
+        - name: Start standalone RIC
+          ansible.builtin.command:
+            argv:
+              - docker
+              - run
+              - -d
+              - --name
+              - "{{ sci_oran_ric_container }}"
+              - --network
+              - "{{ sci_oran_network }}"
+              - --ip
+              - "{{ sci_oran_ric_ip }}"
+              - --restart=no
+              - -v
+              - "{{ sci_oran_ric_config }}:/ric-action11.conf:ro"
+              - -w
+              - /opt/flexric
+              - "{{ sci_oran_ric_image }}"
+              - stdbuf
+              - -oL
+              - -eL
+              - /usr/local/bin/flexric/ric/nearRT-RIC
+              - -c
+              - /ric-action11.conf
+          changed_when: true
+
+        - name: Wait for standalone RIC running state
+          ansible.builtin.command:
+            argv:
+              - docker
+              - top
+              - "{{ sci_oran_ric_container }}"
+          register: sci_oran_ric_running
+          changed_when: false
+          retries: 15
+          delay: 2
+          until: sci_oran_ric_running.rc == 0
+
+        - name: Start E2-enabled gNB
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - -f
+              - "{{ sci_oran_compose_runtime }}"
+              - -f
+              - "{{ sci_oran_compose_sandybridge }}"
+              - -f
+              - "{{ sci_oran_gnb_overlay }}"
+              - up
+              - -d
+              - --no-deps
+              - gnb
+          changed_when: true
+
+        - name: Wait for gNB running state
+          ansible.builtin.command:
+            argv:
+              - docker
+              - top
+              - "{{ sci_oran_gnb_container }}"
+          register: sci_oran_gnb_running
+          changed_when: false
+          retries: 20
+          delay: 2
+          until: sci_oran_gnb_running.rc == 0
+
+        - name: Start UE
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - -f
+              - "{{ sci_oran_compose_runtime }}"
+              - -f
+              - "{{ sci_oran_compose_sandybridge }}"
+              - -f
+              - "{{ sci_oran_gnb_overlay }}"
+              - up
+              - -d
+              - --no-deps
+              - srsue
+          changed_when: true
+
+        - name: Wait for UE running state
+          ansible.builtin.command:
+            argv:
+              - docker
+              - top
+              - "{{ sci_oran_ue_container }}"
+          register: sci_oran_ue_running
+          changed_when: false
+          retries: 20
+          delay: 2
+          until: sci_oran_ue_running.rc == 0
+
+        - name: Verify four lifecycle runtime containers
+          ansible.builtin.command:
+            argv:
+              - docker
+              - top
+              - "{{ item }}"
+          loop:
+            - "{{ sci_oran_5gc_container }}"
+            - "{{ sci_oran_ric_container }}"
+            - "{{ sci_oran_gnb_container }}"
+            - "{{ sci_oran_ue_container }}"
+          changed_when: false
+
+        - name: Capture deployed network state
+          ansible.builtin.command:
+            argv:
+              - docker
+              - network
+              - inspect
+              - "{{ sci_oran_network }}"
+          register: sci_oran_deployed_network
+          changed_when: false
+
+        - name: Require expected deployed network membership
+          ansible.builtin.assert:
+            that:
+              - sci_oran_5gc_container in sci_oran_deployed_network.stdout
+              - sci_oran_gnb_container in sci_oran_deployed_network.stdout
+              - sci_oran_ue_container in sci_oran_deployed_network.stdout
+              - sci_oran_ric_container in sci_oran_deployed_network.stdout
+              - "'10.53.1.2' in sci_oran_deployed_network.stdout"
+              - "'10.53.1.3' in sci_oran_deployed_network.stdout"
+              - "'10.53.1.4' in sci_oran_deployed_network.stdout"
+              - "'10.53.1.10' in sci_oran_deployed_network.stdout"
+            fail_msg: >-
+              Deployed BASE-05/RIC network membership is incomplete.
+
+        - name: Mark controlled deploy execution successful
+          ansible.builtin.set_fact:
+            sci_oran_deploy_result: "PASS"
+            sci_oran_deploy_failure_task: "NONE"
+            sci_oran_deploy_failure_message: ""
+
+      rescue:
+        - name: Record controlled deploy failure
+          ansible.builtin.set_fact:
+            sci_oran_deploy_result: "FAIL"
+            sci_oran_deploy_failure_task: >-
+              {{ ansible_failed_task.name | default('UNKNOWN_TASK') }}
+            sci_oran_deploy_failure_message: >-
+              {{
+                ansible_failed_result.msg
+                | default(
+                    ansible_failed_result.stderr
+                    | default('UNKNOWN_FAILURE')
+                  )
+              }}
+
+        - name: Persist controlled deploy failure evidence
+          ansible.builtin.copy:
+            dest: >-
+              {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/deploy-failure.txt
+            mode: "0644"
+            content: |
+              SCI_ORAN_DEPLOY_FAILURE_V1
+
+              OPERATION_ID={{ operation_id }}
+              RESULT={{ sci_oran_deploy_result }}
+              FAILED_TASK={{ sci_oran_deploy_failure_task }}
+              FAILURE_MESSAGE={{ sci_oran_deploy_failure_message }}
+
+        - name: Report rescued controlled deploy failure
+          ansible.builtin.debug:
+            msg:
+              - "CONTROLLED_DEPLOY_EXECUTION=FAIL"
+              - "FAILED_TASK={{ sci_oran_deploy_failure_task }}"
+              - "AFTER_STATE_AND_FINALIZATION_REQUIRED=yes"
+
+- import_playbook: tb3-capture-state.yml
+  vars:
+    snapshot_role: after
+
+- import_playbook: tb3-finalize-operation.yml
+  vars:
+    operation_type: deploy
+    operation_result: "{{ sci_oran_deploy_result | default('FAIL') }}"
+    changed_components: >-
+      {{
+        [
+          'base05-network',
+          '5gc',
+          'near-rt-ric',
+          'gnb',
+          'srsue'
+        ]
+        if (sci_oran_deploy_result | default('FAIL')) == 'PASS'
+        else ['partial-deploy-see-after-state']
+      }}
+    lifecycle_gates:
+      - LIFECYCLE_PREFLIGHT_GATE=PASS
+      - LIFECYCLE_STATE_CAPTURE_BEFORE=PASS
+      - "CONTROLLED_DEPLOY_EXECUTION={{ sci_oran_deploy_result | default('FAIL') }}"
+      - "DEPLOY_FAILURE_TASK={{ sci_oran_deploy_failure_task | default('NONE') }}"
+      - LIFECYCLE_STATE_CAPTURE_AFTER=PASS
+
+- name: Sci-O-RAN Tb3 deploy final gate
+  hosts: sci_oran_vms
+  gather_facts: true
+
+  vars:
+    sci_oran_repo_root: >-
+      {{ ansible_env.HOME }}/project/tcd-oran-testbed-integration
+
+  tasks:
+    - name: Verify deploy before and after evidence exists
+      ansible.builtin.stat:
+        path: >-
+          {{ sci_oran_repo_root }}/artifacts/lifecycle/{{ operation_id }}/{{ item }}-state.txt
+      loop:
+        - before
+        - after
+      register: sci_oran_deploy_state_evidence
+
+    - name: Require complete deploy state evidence
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+        fail_msg: "Lifecycle deploy state evidence is incomplete."
+      loop: "{{ sci_oran_deploy_state_evidence.results }}"
+
+    - name: Require successful deploy after evidence finalization
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_deploy_result | default('FAIL')) == 'PASS'
+        fail_msg: >-
+          Controlled deploy failed, but after-state and finalization evidence
+          were retained. Failed task={{
+            sci_oran_deploy_failure_task | default('UNKNOWN_TASK')
+          }}.
+
+    - name: Report controlled deploy result
+      ansible.builtin.debug:
+        msg:
+          - "OPERATION_ID={{ operation_id }}"
+          - "LIFECYCLE_DEPLOY_GATE=PASS"
