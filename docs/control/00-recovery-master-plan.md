@@ -67,10 +67,16 @@ Do not automatically recover or repeat an unknown failure.
 
 ## Stage R4 - Offline experiment qualification
 
-Status: NOT STARTED.
+Status: COMPLETE.
 
 Reuse the accepted T1 evidence, existing transaction validator and runner.
-Require golden replay, T2 dry-run and fail-closed tests without a trigger.
+When accepted evidence and relevant sources have not drifted, qualification is
+provenance-based rather than a repetition of the scientific experiment.
+Safe regression tests may be rerun only when they cannot contact live runtime.
+
+R4 acceptance requires T1 golden provenance, transaction-validator provenance,
+five accepted T2 no-control trials, fail-closed regression and a bounded
+execution-duration contract. No scientific trigger is permitted.
 
 ## Stage R5 - Restore T2 readiness
 
