@@ -301,5 +301,23 @@
     "pi_pid_authorized": false,
     "t2_execution_authorized": false,
     "authorization_condition": "A separate Git checkpoint and authoritative remote-sync verification of this frozen protocol are required before runtime admission."
+  },
+  "bounded_duration_contract": {
+    "schema": "sci_oran_prompt12_bounded_sequence_v1",
+    "startup_guard_minimum_s": 1,
+    "pre_step_minimum_duration_s": 11,
+    "post_step_minimum_duration_s": 10,
+    "post_step_extension_s": 5,
+    "max_stationarity_extensions": 2,
+    "pre_step_maximum_duration_s": 21,
+    "post_step_maximum_duration_s": 20,
+    "observation_budget_maximum_s": 141,
+    "experiment_maximum_duration_s": 180,
+    "timeout_scope": "TRAFFIC_START_THROUGH_POST_T6_FINALIZATION",
+    "stationarity_timeout_result": "FAIL_CLOSED",
+    "next_trigger_after_timeout": "PROHIBITED",
+    "automatic_trigger_replay": "PROHIBITED",
+    "live_enable_environment": "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE=YES",
+    "live_authorization_token": "AUTHORISE_PROMPT12_BOUNDED_SEQUENCE_LIVE"
   }
 }

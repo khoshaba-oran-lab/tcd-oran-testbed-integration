@@ -162,3 +162,35 @@ NEXT_TRIGGER_AFTER_TIMEOUT=PROHIBITED
 AUTOMATIC_TRIGGER_REPLAY=PROHIBITED
 EXISTING_TRIGGER_STATE_MUST_BE_REPORTED=YES
 R4_DURATION_CONTRACT_DESIGN_V1_END
+
+## R4 bounded-duration supervisor implementation
+
+The frozen duration contract now has a dedicated executable supervisor.
+It owns the initial and six post-transition observation deadlines, the
+extension count, the global wall-clock deadline and exactly-once trigger
+ordering. Live mode requires both an enable environment value and an explicit
+authorization token.
+
+Nine offline tests verify arithmetic, no-control behaviour, dual live
+authorization, phase/global fail-closed limits, six exactly-once trigger
+attempts and prohibition of later triggers after an ambiguous or failed
+trigger.
+
+The supervisor is not yet bound to a concrete live T2 command plan. Therefore
+R4 remains incomplete and R5 remains unauthorized.
+
+R4_DURATION_SUPERVISOR_IMPLEMENTATION_V1_BEGIN
+R4_DURATION_SUPERVISOR_IMPLEMENTATION=PASS
+SUPERVISOR_SHA256=dc12b93b24f67dfe2d2163d1c6c545269f5efcc63d688f70ef56c1b15f6d5633
+SUPERVISOR_TEST_SHA256=f21c3584c733d3a12948808a55ea8b11d7debedd25a9ea2eca777a25cde67514
+OFFLINE_TESTS=9_OF_9_PASS
+PRE_STEP_MAXIMUM_DURATION_S=21
+POST_STEP_MAXIMUM_DURATION_S=20
+MAX_STATIONARITY_EXTENSIONS=2
+OBSERVATION_BUDGET_MAXIMUM_S=141
+EXPERIMENT_MAXIMUM_DURATION_S=180
+LIVE_DEFAULT_GATE=FAIL_CLOSED
+AUTOMATIC_TRIGGER_REPLAY=PROHIBITED
+LIVE_MODE_EXECUTED=NO
+EVIDENCE_DIR=/home/khoshaba/sci-oran/staging/r4-duration-supervisor/r4-supervisor-20260914T063504Z-b34210ca
+R4_DURATION_SUPERVISOR_IMPLEMENTATION_V1_END
