@@ -194,3 +194,44 @@ AUTOMATIC_TRIGGER_REPLAY=PROHIBITED
 LIVE_MODE_EXECUTED=NO
 EVIDENCE_DIR=/home/khoshaba/sci-oran/staging/r4-duration-supervisor/r4-supervisor-20260914T063504Z-b34210ca
 R4_DURATION_SUPERVISOR_IMPLEMENTATION_V1_END
+
+## R4 scope adjudication
+
+R4 is conclusively scoped as offline experiment-tool qualification. Its
+accepted evidence consists of checksum-valid T1 provenance, transaction
+validator provenance, five no-control T2 trials, fail-closed regression and
+the offline-tested bounded-duration supervisor.
+
+Binding that supervisor to a concrete live T1--T6 sequence is not evidence
+required to close offline R4. It is deferred to scientific-run preparation.
+
+This deferral does not authorise an unbounded experiment. Before any future
+scientific trigger, a concrete duration-supervisor binding must independently
+pass. Missing or failed binding prohibits traffic/control admission.
+
+R5 remains the comprehensive platform and user-plane readiness stage.
+
+R4_SCOPE_ADJUDICATION_V1_BEGIN
+R4_SCOPE_ADJUDICATION=PASS
+R4_SCOPE=OFFLINE_EXPERIMENT_TOOL_QUALIFICATION
+R4_STATUS=COMPLETE_OFFLINE
+R4_OFFLINE_ACCEPTANCE=PASS
+T1_GOLDEN_PROVENANCE=PASS
+TRANSACTION_VALIDATOR_PROVENANCE=PASS
+T2_DRY_RUN_NO_TRIGGER=PASS
+FAIL_CLOSED_CONTRACT=PASS
+ER_LIMIT_OFFLINE_CONTRACT=PASS
+OFFLINE_SUPERVISOR_TESTS=9_OF_9_PASS
+SUPERVISOR_SHA256=dc12b93b24f67dfe2d2163d1c6c545269f5efcc63d688f70ef56c1b15f6d5633
+SUPERVISOR_TEST_SHA256=f21c3584c733d3a12948808a55ea8b11d7debedd25a9ea2eca777a25cde67514
+R4_EVIDENCE_MANIFEST=/home/khoshaba/sci-oran/staging/r4-duration-supervisor/r4-supervisor-20260914T063504Z-b34210ca/SHA256SUMS
+LIVE_DURATION_SEQUENCE_BINDING=DEFERRED_REQUIRED
+LIVE_DURATION_SEQUENCE_BINDING_GATE=NOT_EXECUTED
+LIVE_BINDING_IS_NOT_R4_PASS_EVIDENCE=YES
+LIVE_BINDING_REQUIRED_BEFORE_ANY_SCIENTIFIC_TRIGGER=YES
+SCIENTIFIC_TRIGGER_ADMISSION=BLOCKED
+AUTOMATIC_TRIGGER_REPLAY=PROHIBITED
+R5_STATUS=NOT_STARTED
+R5_AUTHORISED=NO
+TB3_RUNTIME=STOPPED
+R4_SCOPE_ADJUDICATION_V1_END
