@@ -125,3 +125,40 @@ shadow predictor. Closed-loop control requires a later decision.
 - Confirmed evidence is not re-audited unless its provenance changes.
 - Full logs go to evidence; chat output remains bounded.
 - Only the three control documents above govern execution state.
+
+## R4 bounded-duration design adjudication
+
+The missing experiment-duration contract is now designed but not yet
+implemented. The frozen policy permits at most two 5-second stationarity
+extensions. This bounds initial pre-step observation at 21 seconds and every
+post-step observation at 20 seconds.
+
+For six transitions, the maximum observation budget is:
+
+`21 + 6 * 20 = 141 seconds`.
+
+The end-to-end wall-clock ceiling is 180 seconds. The remaining 39 seconds are
+a bounded operational allowance for traffic startup, six exactly-once
+actuation/readback transactions and final evidence completion.
+
+A phase or global timeout is fail-closed. It must prohibit the next trigger and
+must never cause automatic replay of a trigger already attempted.
+
+
+R4_DURATION_CONTRACT_DESIGN_V1_BEGIN
+R4_DURATION_CONTRACT_DESIGN=PASS
+STARTUP_GUARD_MINIMUM_S=1
+PRE_STEP_MINIMUM_DURATION_S=11
+POST_STEP_MINIMUM_DURATION_S=10
+POST_STEP_EXTENSION_S=5
+MAX_STATIONARITY_EXTENSIONS=2
+PRE_STEP_MAXIMUM_DURATION_S=21
+POST_STEP_MAXIMUM_DURATION_S=20
+OBSERVATION_BUDGET_MAXIMUM_S=141
+EXPERIMENT_MAXIMUM_DURATION_S=180
+EXPERIMENT_TIMEOUT_SCOPE=TRAFFIC_START_THROUGH_POST_T6_FINALIZATION
+STATIONARITY_TIMEOUT_RESULT=FAIL_CLOSED
+NEXT_TRIGGER_AFTER_TIMEOUT=PROHIBITED
+AUTOMATIC_TRIGGER_REPLAY=PROHIBITED
+EXISTING_TRIGGER_STATE_MUST_BE_REPORTED=YES
+R4_DURATION_CONTRACT_DESIGN_V1_END
