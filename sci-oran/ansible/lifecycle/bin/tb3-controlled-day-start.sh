@@ -99,7 +99,8 @@ execute_once() {
         return 2
     }
 
-    ansible-playbook -i "$INVENTORY" "$PLAYBOOK" >"$log" 2>&1
+    ansible-playbook -i "$INVENTORY" "$PLAYBOOK" \
+        -e confirm_day_start=true >"$log" 2>&1
     playbook_rc=$?
 
     log_sha="$(sha256sum "$log" | awk '{print $1}')"

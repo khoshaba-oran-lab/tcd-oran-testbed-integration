@@ -2013,3 +2013,16 @@ NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
   `inventory.ini`, exactly one ansible-playbook invocation and no retry.
 - Optional operation-ID extraction is non-fatal.
 - Ad-hoc day-start wrappers are prohibited.
+
+<!-- RECOVERY.R5.PATCH-DAY-START-CONFIRMATION-CONTRACT -->
+## Canonical day-start confirmation-contract correction
+
+- Recorded: `2026-09-18T06:31:06Z`
+- The first canonical-launcher invocation reached only the playbook's
+  explicit confirmation assertion.
+- `PLAYBOOK_RC=2`, `changed=0`, and no operation ID was created.
+- Root cause: the launcher omitted `-e confirm_day_start=true`.
+- The canonical launcher now supplies this argument explicitly.
+- An isolated mock captured and verified the complete argv without
+  executing the real playbook.
+- Automatic retry remains prohibited.

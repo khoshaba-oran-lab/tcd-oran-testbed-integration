@@ -1906,3 +1906,23 @@ with `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
 
 This checkpoint does not authorise `--execute`, day-start, smoke,
 Doctor, traffic, PRB control, reset or T2.
+
+<!-- RECOVERY.R5.PATCH-DAY-START-CONFIRMATION-CONTRACT -->
+## Current authoritative directive after confirmation correction
+
+Recorded: `2026-09-18T06:31:06Z`
+
+This section supersedes all earlier current-action declarations.
+Earlier declarations are historical only.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START-CORRECTED-V2`
+
+The only permitted lifecycle entrypoint remains:
+
+`sci-oran/ansible/lifecycle/bin/tb3-controlled-day-start.sh`
+
+The launcher must pass `-e confirm_day_start=true`. A future execution
+still requires separate authorisation, `--execute`, and
+`SCI_ORAN_DAY_START_AUTHORISATION=YES`.
+
+This patch does not authorise or execute day-start.
