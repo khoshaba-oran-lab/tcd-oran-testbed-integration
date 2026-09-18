@@ -1872,3 +1872,17 @@ RESET_REEXECUTION_AUTHORISED=NO
 NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 
 <!-- R5_LEVEL_A_RESET_TO_26_EXECUTION_CHECKPOINT_V1_END -->
+
+<!-- RECOVERY.R5.LEVEL-A-END-OF-DAY-HANDOFF-CHECKPOINT -->
+## Current authoritative directive
+
+Recorded: `2026-09-18T04:08:11Z`
+
+This section supersedes all earlier current-action declarations in this
+document. Earlier declarations are historical only.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START`
+
+No other action is authorised. In particular, this checkpoint does not
+authorise runtime diagnostics, smoke, Doctor, traffic, PRB control,
+reset replay, or the T2 trigger.

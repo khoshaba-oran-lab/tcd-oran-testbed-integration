@@ -1977,3 +1977,24 @@ RESET_REEXECUTION_AUTHORISED=NO
 NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 
 <!-- R5_LEVEL_A_RESET_TO_26_EXECUTION_CHECKPOINT_V1_END -->
+
+<!-- RECOVERY.R5.LEVEL-A-END-OF-DAY-HANDOFF-CHECKPOINT -->
+## Recovery R5 Level-A end-of-day handoff checkpoint
+
+- Checkpoint time: `2026-09-18T04:08:11Z`
+- Result: `PASS`
+- Failed 75-second UDP operation
+  `prompt12-r5-udp26-baseline-20260917T172515Z-6fa3d6f4`
+  is consumed and must not be retried.
+- The failed run produced no UDP payload and is not a scientific dataset.
+- Static user-plane path verification passed, but TCP control-path
+  liveness and a valid sustained 26-PRB baseline remain unproven.
+- The post-failure smoke/Doctor transaction did not execute because its
+  controller used an obsolete policy SHA.
+- Clean day-stop completed successfully; Tb3 containers and lifecycle
+  network are absent.
+- Previous reset-to-26 evidence is historical and its operation ID must
+  never be replayed.
+- T1 remains closed and validated; T2 remains untriggered.
+- Next authorised action:
+  `RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START`.

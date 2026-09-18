@@ -2094,3 +2094,51 @@ RESET_REEXECUTION_AUTHORISED=NO
 NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 
 <!-- R5_LEVEL_A_RESET_TO_26_EXECUTION_CHECKPOINT_V1_END -->
+
+<!-- RECOVERY.R5.LEVEL-A-END-OF-DAY-HANDOFF-CHECKPOINT -->
+## Authoritative Recovery R5 state after 2026-09-17 day-stop
+
+Checkpoint recorded: `2026-09-18T04:08:11Z`
+
+- `TB3_RUNTIME=STOPPED`
+- `TB3_CONTAINERS=ABSENT`
+- `TB3_NETWORK=ABSENT`
+- `T1=CLOSED_AND_VALIDATED`
+- `VALID_26_PRB_SUSTAINED_UDP_BASELINE=NOT_OBTAINED`
+- `T2_TRIGGER_EXECUTED=NO`
+- `SCIENTIFIC_CONTROL_EXECUTED=NO`
+- `FRESH_READINESS_FOR_STOPPED_RUNTIME=EXPIRED`
+- `RESET_TO_26_FOR_PREVIOUS_RUNTIME=PASS_HISTORICAL`
+- `RESET_OPERATION_REPLAY=PROHIBITED`
+
+Failed UDP attempt:
+
+- `OPERATION_ID=prompt12-r5-udp26-baseline-20260917T172515Z-6fa3d6f4`
+- `CLIENT_RC=1`
+- `RAW_INTERVAL_COUNT=0`
+- `UDP_PAYLOAD_EXECUTED=NO`
+- Classification: consumed diagnostic failure, not a scientific dataset.
+- `STATIC_USER_PLANE_PATH=PASS`
+- `TCP_CONTROL_PATH_LIVENESS=NOT_PROVEN`
+
+Post-UDP smoke controller:
+
+- `SMOKE_EXECUTED=NO`
+- `DOCTOR_EXECUTED=NO`
+- `RUNTIME_MUTATION_EXECUTED=NO`
+- Cause: obsolete hard-coded policy SHA.
+
+Known controller errors and mandatory prevention:
+
+1. Do not reuse a stale policy SHA; resolve it from the clean target
+   checkout and stop if the policy differs from target HEAD.
+2. Always pass `-i sci-oran/ansible/inventory.ini`.
+3. Never use `sci-oran/ansible/inventory.ini.example`.
+
+Clean shutdown:
+
+- `DAY_STOP_OPERATION_ID=lifecycle-day-stop-20260917T180737Z-c01692b8`
+- `DAY_STOP_TEARDOWN_OPERATION_ID=lifecycle-teardown-20260917T180737Z-c01692b8`
+- `DAY_STOP_GATE=PASS`
+- `DAY_STOP_RC=0`
+- Day-stop replay is prohibited.
