@@ -1961,3 +1961,15 @@ consumed and must not be replayed.
 The next action must bind source identities to the actual clean target
 checkout. It must not use the obsolete policy SHA. It does not authorise
 UDP 18M traffic, PRB control, reset or T2.
+
+<!-- RECOVERY.R5.FRESH-SMOKE-DOCTOR-PASS-ADJUDICATION-CHECKPOINT -->
+## Current authoritative directive
+
+Recorded: `2026-09-18T07:57:37Z`
+
+This section supersedes earlier current-action declarations.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.FRESH-RUNTIME-PRB-READBACK`
+
+The next action is read-only. It does not authorise PRB control, reset,
+traffic, smoke/Doctor replay, or T2.

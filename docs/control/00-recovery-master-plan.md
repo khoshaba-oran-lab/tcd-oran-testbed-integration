@@ -2055,3 +2055,17 @@ NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 - Scientific readiness remains deferred to the Prompt 11B handoff.
 - The former launcher `RESULT=FAIL` was a controller false negative
   caused by expecting a non-canonical target-post marker.
+
+<!-- RECOVERY.R5.FRESH-SMOKE-DOCTOR-PASS-ADJUDICATION-CHECKPOINT -->
+## Fresh smoke and Doctor PASS checkpoint
+
+- Recorded: `2026-09-18T07:57:37Z`
+- Transaction: `r5-fresh-smoke-doctor-20260918T073933Z-513efb86`; smoke: `UPSMK-20260918T073933Z-149722`.
+- Smoke RC 0 and immediate Doctor RC 0.
+- Functional smoke, process continuity, freshness, artifact finalisation,
+  and final `SCI_ORAN_READY_GATE=PASS`.
+- The earlier controller FAIL was a false negative caused by checking
+  freshness in the wrong artifact.
+- Smoke and Doctor are consumed and non-replayable.
+- Evidence: `/home/khoshaba/sci-oran/staging/r5-readiness/target-evidence/r5-fresh-smoke-doctor-20260918T073933Z-513efb86`.
+- Manifest SHA256: `bce32a791f777d3845283b55215b013eceec02aaa2e0f6ee8ba6bfd18f00c98b`.
