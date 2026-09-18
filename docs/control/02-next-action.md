@@ -1886,3 +1886,23 @@ document. Earlier declarations are historical only.
 No other action is authorised. In particular, this checkpoint does not
 authorise runtime diagnostics, smoke, Doctor, traffic, PRB control,
 reset replay, or the T2 trigger.
+
+<!-- RECOVERY.R5.CREATE-CANONICAL-DAY-START-LAUNCHER -->
+## Current authoritative directive after launcher creation
+
+Recorded: `2026-09-18T06:22:35Z`
+
+This section supersedes all earlier current-action declarations.
+Earlier declarations are historical only.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START-CORRECTED`
+
+The only permitted lifecycle entrypoint is:
+
+`sci-oran/ansible/lifecycle/bin/tb3-controlled-day-start.sh`
+
+A later explicitly authorised execution must use `--execute` together
+with `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
+
+This checkpoint does not authorise `--execute`, day-start, smoke,
+Doctor, traffic, PRB control, reset or T2.

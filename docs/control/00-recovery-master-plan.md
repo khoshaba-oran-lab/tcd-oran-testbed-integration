@@ -1998,3 +1998,18 @@ NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 - T1 remains closed and validated; T2 remains untriggered.
 - Next authorised action:
   `RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START`.
+
+<!-- RECOVERY.R5.CREATE-CANONICAL-DAY-START-LAUNCHER -->
+## Canonical controlled day-start launcher
+
+- Recorded: `2026-09-18T06:22:35Z`
+- Canonical launcher:
+  `sci-oran/ansible/lifecycle/bin/tb3-controlled-day-start.sh`
+- Read-only validation:
+  `tb3-controlled-day-start.sh --preflight`
+- Runtime execution requires both `--execute` and
+  `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
+- The launcher enforces `LANG=C.UTF-8`, `LC_ALL=C.UTF-8`, the real
+  `inventory.ini`, exactly one ansible-playbook invocation and no retry.
+- Optional operation-ID extraction is non-fatal.
+- Ad-hoc day-start wrappers are prohibited.
