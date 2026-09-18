@@ -1944,3 +1944,20 @@ A future real execution still requires separate authorisation,
 `--execute`, and `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
 
 This patch does not authorise or execute day-start.
+
+<!-- RECOVERY.R5.DAY-START-V3-PASS-ADJUDICATION -->
+## Current authoritative directive after successful day-start
+
+Recorded: `2026-09-18T07:19:46Z`
+
+This section supersedes all earlier current-action declarations.
+Earlier declarations are historical only.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.FRESH-SMOKE-DOCTOR-READINESS`
+
+The active runtime was created by `lifecycle-day-start-20260918T064359Z-b3123314`. That operation is
+consumed and must not be replayed.
+
+The next action must bind source identities to the actual clean target
+checkout. It must not use the obsolete policy SHA. It does not authorise
+UDP 18M traffic, PRB control, reset or T2.

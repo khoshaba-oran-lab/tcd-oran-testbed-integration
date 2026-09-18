@@ -77,7 +77,7 @@ preflight() {
 execute_once() {
     local timestamp suffix log playbook_rc log_sha
     local requested_operation_id observed_operation_id
-    local day_gate target_gate
+    local day_gate deploy_gate handoff_gate
 
     test "${SCI_ORAN_DAY_START_AUTHORISATION:-NO}" = "YES" || {
         echo "RESULT=BLOCKED"
@@ -124,19 +124,23 @@ execute_once() {
     )"
 
     day_gate="FAIL"
-    target_gate="FAIL"
+    deploy_gate="FAIL"
+    handoff_gate="FAIL"
 
     grep -Fq "DAY_START_GATE=PASS" "$log" &&
         day_gate="PASS"
-    grep -Fq "TARGET_POST_DAY_START_GATE=PASS" "$log" &&
-        target_gate="PASS"
+    grep -Fq "DAY_START_DEPLOY_EVIDENCE_GATE=PASS" "$log" &&
+        deploy_gate="PASS"
+    grep -Fq "PROMPT_11B_HANDOFF=REQUIRED" "$log" &&
+        handoff_gate="PASS"
 
     echo "ANSIBLE_PLAYBOOK_INVOCATION_COUNT=1"
     echo "PLAYBOOK_RC=$playbook_rc"
     echo "REQUESTED_DAY_START_OPERATION_ID=$requested_operation_id"
     echo "DAY_START_OPERATION_ID=${observed_operation_id:-NOT_AVAILABLE}"
     echo "DAY_START_GATE=$day_gate"
-    echo "TARGET_POST_DAY_START_GATE=$target_gate"
+    echo "DAY_START_DEPLOY_EVIDENCE_GATE=$deploy_gate"
+    echo "PROMPT_11B_HANDOFF_GATE=$handoff_gate"
     echo "CONTROLLER_LOG=$log"
     echo "CONTROLLER_LOG_SHA256=$log_sha"
     echo "AUTOMATIC_RETRY=NO"
@@ -145,7 +149,8 @@ execute_once() {
        test -n "$observed_operation_id" &&
        test "$observed_operation_id" = "$requested_operation_id" &&
        test "$day_gate" = "PASS" &&
-       test "$target_gate" = "PASS"; then
+       test "$deploy_gate" = "PASS" &&
+       test "$handoff_gate" = "PASS"; then
         echo "RESULT=PASS"
         return 0
     fi

@@ -2040,3 +2040,18 @@ NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
   inputs and requires requested/readback identity equality.
 - The complete argv and identity readback were verified through an
   isolated mock; the real playbook was not executed.
+
+<!-- RECOVERY.R5.DAY-START-V3-PASS-ADJUDICATION -->
+## Corrected adjudication of the 2026-09-18 day-start
+
+- Recorded: `2026-09-18T07:19:46Z`
+- Lifecycle result: `PASS`.
+- Operation ID: `lifecycle-day-start-20260918T064359Z-b3123314`.
+- The operation ID is consumed and must never be replayed.
+- Evidence log SHA256: `0fa1a8adccd8ea1a6d8f4ddfc29a8010dca5a3ef63576d76dbb24d2f4a170fd6`.
+- Playbook result: RC 0, changed 18, failed 0.
+- `DAY_START_DEPLOY_EVIDENCE_GATE=PASS`.
+- `DAY_START_GATE=PASS`.
+- Scientific readiness remains deferred to the Prompt 11B handoff.
+- The former launcher `RESULT=FAIL` was a controller false negative
+  caused by expecting a non-canonical target-post marker.
