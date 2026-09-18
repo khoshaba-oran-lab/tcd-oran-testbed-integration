@@ -2026,3 +2026,17 @@ NEXT_AUTHORISED_ACTION=RECOVERY.R5.LEVEL-A-SUSTAINED-UDP-DL-WITH-TELEMETRY
 - An isolated mock captured and verified the complete argv without
   executing the real playbook.
 - Automatic retry remains prohibited.
+
+<!-- RECOVERY.R5.PATCH-COMPLETE-DAY-START-IDENTITY-CONTRACT -->
+## Complete canonical day-start admission contract
+
+- Recorded: `2026-09-18T06:40:25Z`
+- Full playbook audit identified exactly two external admission inputs:
+  `confirm_day_start=true` and a unique `day_start_operation_id`.
+- The required ID format is
+  `lifecycle-day-start-YYYYMMDDTHHMMSSZ-xxxxxxxx`.
+- Recovery, teardown and deploy child identities are derived internally.
+- The launcher now generates the parent identity, passes both external
+  inputs and requires requested/readback identity equality.
+- The complete argv and identity readback were verified through an
+  isolated mock; the real playbook was not executed.

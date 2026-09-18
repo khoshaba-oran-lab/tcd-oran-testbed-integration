@@ -75,7 +75,8 @@ preflight() {
 }
 
 execute_once() {
-    local timestamp log playbook_rc log_sha operation_id
+    local timestamp suffix log playbook_rc log_sha
+    local requested_operation_id observed_operation_id
     local day_gate target_gate
 
     test "${SCI_ORAN_DAY_START_AUTHORISATION:-NO}" = "YES" || {
@@ -91,6 +92,15 @@ execute_once() {
     }
 
     timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    suffix="$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
+    requested_operation_id="lifecycle-day-start-${timestamp}-${suffix}"
+
+    if ! [[ "$requested_operation_id" =~ ^lifecycle-day-start-[0-9]{8}T[0-9]{6}Z-[a-z0-9]{8}$ ]]; then
+        echo "RESULT=BLOCKED"
+        echo "BLOCKER=INVALID_GENERATED_DAY_START_OPERATION_ID"
+        return 2
+    fi
+
     log="$LOG_ROOT/r5-controlled-day-start-$timestamp.log"
 
     test ! -e "$log" || {
@@ -100,12 +110,14 @@ execute_once() {
     }
 
     ansible-playbook -i "$INVENTORY" "$PLAYBOOK" \
-        -e confirm_day_start=true >"$log" 2>&1
+        -e confirm_day_start=true \
+        -e "day_start_operation_id=$requested_operation_id" \
+        >"$log" 2>&1
     playbook_rc=$?
 
     log_sha="$(sha256sum "$log" | awk '{print $1}')"
 
-    operation_id="$(
+    observed_operation_id="$(
         grep -Eo \
         'DAY_START_OPERATION_ID=lifecycle-day-start-[A-Za-z0-9._-]+' \
         "$log" | tail -n 1 | cut -d= -f2 || true
@@ -121,7 +133,8 @@ execute_once() {
 
     echo "ANSIBLE_PLAYBOOK_INVOCATION_COUNT=1"
     echo "PLAYBOOK_RC=$playbook_rc"
-    echo "DAY_START_OPERATION_ID=${operation_id:-NOT_AVAILABLE}"
+    echo "REQUESTED_DAY_START_OPERATION_ID=$requested_operation_id"
+    echo "DAY_START_OPERATION_ID=${observed_operation_id:-NOT_AVAILABLE}"
     echo "DAY_START_GATE=$day_gate"
     echo "TARGET_POST_DAY_START_GATE=$target_gate"
     echo "CONTROLLER_LOG=$log"
@@ -129,7 +142,8 @@ execute_once() {
     echo "AUTOMATIC_RETRY=NO"
 
     if test "$playbook_rc" -eq 0 &&
-       test -n "$operation_id" &&
+       test -n "$observed_operation_id" &&
+       test "$observed_operation_id" = "$requested_operation_id" &&
        test "$day_gate" = "PASS" &&
        test "$target_gate" = "PASS"; then
         echo "RESULT=PASS"

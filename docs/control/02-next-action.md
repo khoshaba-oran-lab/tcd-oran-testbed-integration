@@ -1926,3 +1926,21 @@ still requires separate authorisation, `--execute`, and
 `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
 
 This patch does not authorise or execute day-start.
+
+<!-- RECOVERY.R5.PATCH-COMPLETE-DAY-START-IDENTITY-CONTRACT -->
+## Current authoritative directive after full contract correction
+
+Recorded: `2026-09-18T06:40:25Z`
+
+This section supersedes all earlier current-action declarations.
+Earlier declarations are historical only.
+
+`NEXT_AUTHORISED_ACTION=RECOVERY.R5.NEXT-DAY-CONTROLLED-DAY-START-CORRECTED-V3`
+
+The canonical launcher now implements every external admission input
+declared by `tb3-day-start.yml` and verifies operation-ID readback.
+
+A future real execution still requires separate authorisation,
+`--execute`, and `SCI_ORAN_DAY_START_AUTHORISATION=YES`.
+
+This patch does not authorise or execute day-start.
