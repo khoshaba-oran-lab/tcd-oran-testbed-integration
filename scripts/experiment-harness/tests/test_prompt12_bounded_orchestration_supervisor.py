@@ -172,10 +172,13 @@ class SupervisorTests(unittest.TestCase):
             def poll():
                 return None
 
+        traffic = Traffic()
         trigger_number = 0
+        reasons = []
 
         def fake_run(argv, budget, reason, **kwargs):
             nonlocal trigger_number
+            reasons.append(reason)
             if "_TRIGGER_FAILED" in reason:
                 trigger_number += 1
                 if trigger_number == 3:
@@ -187,13 +190,15 @@ class SupervisorTests(unittest.TestCase):
         }
 
         with mock.patch.dict(os.environ, environment, clear=True), \
-             mock.patch.object(module.subprocess, "Popen", return_value=Traffic()), \
+             mock.patch.object(module.subprocess, "Popen", return_value=traffic), \
              mock.patch.object(module, "stationarity_gate", return_value=0), \
              mock.patch.object(module, "run_command", side_effect=fake_run), \
-             mock.patch.object(module, "terminate_process"):
+             mock.patch.object(module, "terminate_process") as terminate:
             with self.assertRaises(module.SupervisorError):
                 module.run_live(plan, report, module.LIVE_TOKEN)
 
+        terminate.assert_called_once_with(traffic)
+        self.assertNotIn("FINALIZATION_FAILED", reasons)
         self.assertEqual(trigger_number, 3)
         self.assertEqual(report["TRIGGER_WRITE_ATTEMPT_COUNT"], 3)
         self.assertEqual(report["TRIGGER_WRITE_SUCCESS_COUNT"], 2)
