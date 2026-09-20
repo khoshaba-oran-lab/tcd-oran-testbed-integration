@@ -161,6 +161,69 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual(len(trigger_calls), 6)
         self.assertEqual(calls[-1][1], "FINALIZATION_FAILED")
 
+    def test_success_stops_traffic_before_finalization(self):
+        plan = valid_plan(Path("unused"))
+        report = module.base_report("live")
+        events = []
+
+        class Traffic:
+            pid = 123
+
+            @staticmethod
+            def poll():
+                return None
+
+        traffic = Traffic()
+
+        def fake_run(argv, budget, reason, **kwargs):
+            if reason == "FINALIZATION_FAILED":
+                events.append("finalization")
+            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+        def fake_terminate(process):
+            events.append(("terminate", process))
+
+        environment = {
+            "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
+        }
+
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with mock.patch.object(
+                module.subprocess,
+                "Popen",
+                return_value=traffic,
+            ):
+                with mock.patch.object(
+                    module,
+                    "stationarity_gate",
+                    return_value=0,
+                ):
+                    with mock.patch.object(
+                        module,
+                        "run_command",
+                        side_effect=fake_run,
+                    ):
+                        with mock.patch.object(
+                            module,
+                            "terminate_process",
+                            side_effect=fake_terminate,
+                        ):
+                            rc = module.run_live(
+                                plan,
+                                report,
+                                module.LIVE_TOKEN,
+                            )
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(
+            events,
+            [
+                ("terminate", traffic),
+                "finalization",
+                ("terminate", None),
+            ],
+        )
+
     def test_trigger_failure_prohibits_later_trigger(self):
         plan = valid_plan(Path("unused"))
         report = module.base_report("live")

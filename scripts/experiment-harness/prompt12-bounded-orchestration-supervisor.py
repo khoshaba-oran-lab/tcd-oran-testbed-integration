@@ -256,6 +256,8 @@ def run_live(plan, report, authorization_token):
         report["POST_STEP_EXTENSION_COUNTS"] = post_counts
         if traffic.poll() is not None:
             raise SupervisorError("TRAFFIC_TERMINATED_BEFORE_FINALIZATION", 76)
+        terminate_process(traffic)
+        traffic = None
         run_command(
             plan["finalization_command"],
             budget,
