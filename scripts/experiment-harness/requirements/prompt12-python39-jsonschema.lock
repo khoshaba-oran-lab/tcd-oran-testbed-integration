@@ -1,0 +1,21 @@
+# Prompt-12 Python 3.9 jsonschema toolchain lock.
+#
+# Frozen platform:
+#   CPython 3.9.25
+#   Linux x86_64
+#   jsonschema Draft 2020-12 support
+#
+# Bootstrap provenance:
+#   pip 21.3.1
+#   setuptools 53.0.0
+#
+# Install only from a verified local wheelhouse:
+#   python -m pip install --no-index --find-links <wheelhouse> \
+#       --require-hashes -r prompt12-python39-jsonschema.lock
+
+attrs==26.1.0 --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309
+jsonschema==4.25.1 --hash=sha256:3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63
+jsonschema-specifications==2025.9.1 --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe
+referencing==0.36.2 --hash=sha256:e8699adbbf8b5c7de96d8ffa0eb5c158b3beafce084968e2ea8bb08c6794dcd0
+rpds-py==0.27.1 --hash=sha256:2fd50659a069c15eef8aa3d64bbef0d69fd27bb4a50c9ab4f17f83a16cbf8905
+typing-extensions==4.16.0 --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
