@@ -16,6 +16,7 @@ FRESHNESS_MARKER = "--freshness-command"
 STATIONARITY_JSON_TOKEN = "@PROMPT12_STATIONARITY_JSON@"
 PRECONTROL_JSON_TOKEN = "@PROMPT12_PRECONTROL_JSON@"
 DECISION_UTC_NS_TOKEN = "@PROMPT12_DECISION_UTC_NS@"
+CANONICAL_INTERVALS_TOKEN = "@PROMPT12_CANONICAL_INTERVALS@"
 
 SHELL_NAMES = {
     "bash",
@@ -41,15 +42,18 @@ class HandoffParser(argparse.ArgumentParser):
         )
 
 
+
 def show_contract():
     print("PROMPT12_BOUNDED_PRECONTROL_HANDOFF_CONTRACT=1")
     print("COMMAND_FORM=ARGV_ONLY")
     print("STATIONARITY_STDOUT_FORM=EXACTLY_ONE_JSON_OBJECT")
+    print("CANONICAL_INTERVALS_TOKEN=@PROMPT12_CANONICAL_INTERVALS@")
     print("PRECONTROL_CREATED_ONLY_AFTER_STATIONARITY_PASS=YES")
     print("PRECONTROL_OUTPUT_OVERWRITE_ALLOWED=NO")
     print("SHELL_STRING_EXECUTION_ALLOWED=NO")
     print("TRIGGER_WRITE_CAPABILITY=ABSENT")
     print("CONTROL_EXECUTED=NO")
+
 
 
 def parse_invocation(argv):
@@ -129,6 +133,7 @@ def validate_command(command, label):
         )
 
 
+
 def validate_freshness_template(command):
     if command.count(STATIONARITY_JSON_TOKEN) != 1:
         raise HandoffError(
@@ -142,11 +147,18 @@ def validate_freshness_template(command):
             64,
         )
 
+    if command.count(CANONICAL_INTERVALS_TOKEN) != 1:
+        raise HandoffError(
+            "FRESHNESS_CANONICAL_INTERVALS_TOKEN_COUNT_INVALID",
+            64,
+        )
+
     if command.count(DECISION_UTC_NS_TOKEN) > 1:
         raise HandoffError(
             "FRESHNESS_DECISION_TIME_TOKEN_COUNT_INVALID",
             64,
         )
+
 
 
 def create_attempt(root):
@@ -325,9 +337,92 @@ def publish_exclusive(candidate, destination):
         ) from exc
 
 
-def execute(args, stationarity_command, freshness_template):
+
+def validate_canonical_snapshot(stationarity_record):
+    value = stationarity_record.get(
+        "canonical_interval_snapshot_path"
+    )
+
+    if not isinstance(value, str) or not value:
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_PATH_MISSING",
+            65,
+        )
+
+    path = pathlib.Path(value)
+
+    if not path.is_absolute():
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_PATH_NOT_ABSOLUTE",
+            65,
+        )
+
+    try:
+        resolved = path.resolve(strict=True)
+        data = resolved.read_bytes()
+    except OSError as exc:
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_UNAVAILABLE",
+            65,
+        ) from exc
+
+    if str(resolved) != value:
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_PATH_NOT_CANONICAL",
+            65,
+        )
+
+    if (
+        resolved.name != "intervals.canonical.jsonl"
+        or resolved.parent.name != "processed"
+        or not resolved.parent.parent.name.startswith(
+            "attempt-"
+        )
+    ):
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_LAYOUT_INVALID",
+            65,
+        )
+
+    if not data or not data.endswith(b"\n"):
+        raise HandoffError(
+            "CANONICAL_INTERVAL_SNAPSHOT_CONTENT_INVALID",
+            65,
+        )
+
+    return value
+
+
+def bind_canonical_snapshot(
+    freshness_template,
+    canonical_snapshot,
+):
+    resolved = [
+        canonical_snapshot
+        if value == CANONICAL_INTERVALS_TOKEN
+        else value
+        for value in freshness_template
+    ]
+
+    if CANONICAL_INTERVALS_TOKEN in resolved:
+        raise HandoffError(
+            "CANONICAL_INTERVALS_TOKEN_UNRESOLVED",
+            64,
+        )
+
+    return resolved
+
+
+
+def execute(
+    args,
+    stationarity_command,
+    freshness_template,
+):
     attempt_root = pathlib.Path(args.attempt_root)
-    precontrol_output = pathlib.Path(args.precontrol_output)
+    precontrol_output = pathlib.Path(
+        args.precontrol_output
+    )
 
     if os.path.lexists(str(precontrol_output)):
         raise HandoffError(
@@ -349,9 +444,12 @@ def execute(args, stationarity_command, freshness_template):
     write_json_exclusive(
         attempt / "commands.json",
         {
-            "stationarity_command": stationarity_command,
-            "freshness_command_template": freshness_template,
-            "precontrol_output": str(precontrol_output),
+            "stationarity_command":
+                stationarity_command,
+            "freshness_command_template":
+                freshness_template,
+            "precontrol_output":
+                str(precontrol_output),
         },
     )
 
@@ -368,11 +466,13 @@ def execute(args, stationarity_command, freshness_template):
             stationarity_proc.returncode or 70,
         )
 
-    _, gate = parse_stationarity(
+    stationarity_record, gate = parse_stationarity(
         stationarity_proc.stdout
     )
 
-    stationarity_path = attempt / "stationarity.json"
+    stationarity_path = (
+        attempt / "stationarity.json"
+    )
     write_text_exclusive(
         stationarity_path,
         stationarity_proc.stdout,
@@ -381,18 +481,30 @@ def execute(args, stationarity_command, freshness_template):
     if gate == "FAIL":
         return stationarity_proc.stdout, attempt
 
-    candidate_path = attempt / "precontrol.candidate.json"
+    canonical_snapshot = validate_canonical_snapshot(
+        stationarity_record
+    )
+
+    candidate_path = (
+        attempt / "precontrol.candidate.json"
+    )
     decision_utc_ns = time.time_ns()
 
-    freshness_command = resolve_freshness_command(
+    bound_template = bind_canonical_snapshot(
         freshness_template,
+        canonical_snapshot,
+    )
+
+    freshness_command = resolve_freshness_command(
+        bound_template,
         stationarity_path,
         candidate_path,
         decision_utc_ns,
     )
 
     write_json_exclusive(
-        attempt / "freshness-command.resolved.json",
+        attempt
+        / "freshness-command.resolved.json",
         freshness_command,
     )
 
@@ -416,6 +528,7 @@ def execute(args, stationarity_command, freshness_template):
     )
 
     return stationarity_proc.stdout, attempt
+
 
 
 def emit_stationarity(stdout):

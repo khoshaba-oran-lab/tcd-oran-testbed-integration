@@ -44,7 +44,31 @@ def parse_args():
     parser.add_argument("--control-index", type=int)
     parser.add_argument("--stable-ms", type=int, default=40)
     parser.add_argument("--snapshot-timeout-ms", type=int, default=1000)
+
+    parser.add_argument(
+        "--timeline-command-json",
+        help=(
+            "Optional post-step argv JSON template containing exactly "
+            "one @PROMPT12_ACTUATOR_TIMELINE@ output token."
+        ),
+    )
+    parser.add_argument(
+        "--expected-timeline-event-count",
+        type=int,
+    )
+    parser.add_argument(
+        "--timeline-readiness-timeout-ms",
+        type=int,
+        default=5000,
+    )
+    parser.add_argument(
+        "--timeline-readiness-poll-ms",
+        type=int,
+        default=100,
+    )
+
     return parser.parse_args()
+
 
 
 def require_regular_file(value, label):
@@ -290,9 +314,295 @@ def build_commands(args, paths, attempt):
     }, report
 
 
+
+TIMELINE_OUTPUT_TOKEN = "@PROMPT12_ACTUATOR_TIMELINE@"
+
+PROHIBITED_TIMELINE_EXECUTABLES = {
+    "bash",
+    "dash",
+    "sh",
+    "zsh",
+    "ksh",
+}
+
+
+def parse_timeline_command_template(args):
+    encoded = args.timeline_command_json
+
+    if encoded is None:
+        if args.expected_timeline_event_count is not None:
+            raise AdapterError(
+                "TIMELINE_EVENT_COUNT_WITHOUT_COMMAND",
+                64,
+            )
+        return None
+
+    if args.mode != "post-step":
+        raise AdapterError(
+            "TIMELINE_COMMAND_FORBIDDEN_OUTSIDE_POST_STEP",
+            64,
+        )
+
+    if args.actuator_timeline is not None:
+        raise AdapterError(
+            "TIMELINE_COMMAND_AND_INPUT_MUTUALLY_EXCLUSIVE",
+            64,
+        )
+
+    try:
+        command = json.loads(encoded)
+    except json.JSONDecodeError as exc:
+        raise AdapterError(
+            "TIMELINE_COMMAND_JSON_INVALID",
+            64,
+        ) from exc
+
+    if not isinstance(command, list) or not command:
+        raise AdapterError(
+            "TIMELINE_COMMAND_NOT_NONEMPTY_ARGV",
+            64,
+        )
+
+    for index, value in enumerate(command):
+        if (
+            not isinstance(value, str)
+            or not value
+            or "\0" in value
+        ):
+            raise AdapterError(
+                f"TIMELINE_COMMAND_ARG_{index}_INVALID",
+                64,
+            )
+
+    executable = pathlib.Path(command[0]).name
+
+    if executable in PROHIBITED_TIMELINE_EXECUTABLES:
+        raise AdapterError(
+            "TIMELINE_SHELL_EXECUTION_FORBIDDEN",
+            64,
+        )
+
+    if command.count(TIMELINE_OUTPUT_TOKEN) != 1:
+        raise AdapterError(
+            "TIMELINE_OUTPUT_TOKEN_COUNT_INVALID",
+            64,
+        )
+
+    expected = args.expected_timeline_event_count
+
+    if expected is None or expected <= 0:
+        raise AdapterError(
+            "EXPECTED_TIMELINE_EVENT_COUNT_INVALID",
+            64,
+        )
+
+    if args.control_index is None:
+        raise AdapterError(
+            "CONTROL_INDEX_REQUIRED_FOR_TIMELINE_COMMAND",
+            64,
+        )
+
+    if expected != args.control_index * 3:
+        raise AdapterError(
+            "TIMELINE_EVENT_COUNT_CONTROL_INDEX_MISMATCH",
+            64,
+        )
+
+    if args.timeline_readiness_timeout_ms <= 0:
+        raise AdapterError(
+            "TIMELINE_READINESS_TIMEOUT_INVALID",
+            64,
+        )
+
+    if (
+        args.timeline_readiness_poll_ms <= 0
+        or args.timeline_readiness_poll_ms
+        > args.timeline_readiness_timeout_ms
+    ):
+        raise AdapterError(
+            "TIMELINE_READINESS_POLL_INVALID",
+            64,
+        )
+
+    return command
+
+
+def timeline_record_count(path):
+    try:
+        with path.open(encoding="utf-8") as handle:
+            rows = [
+                json.loads(line)
+                for line in handle
+                if line.strip()
+            ]
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    if not rows or not all(
+        isinstance(row, dict)
+        for row in rows
+    ):
+        return None
+
+    return len(rows)
+
+
+def run_incremental_timeline(args, attempt):
+    template = parse_timeline_command_template(args)
+
+    if template is None:
+        return None
+
+    candidates = attempt / "timeline-candidates"
+    candidates.mkdir(mode=0o750)
+
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+
+    deadline = (
+        time.monotonic()
+        + args.timeline_readiness_timeout_ms / 1000
+    )
+    expected = args.expected_timeline_event_count
+    attempt_index = 0
+    last_reason = "NOT_ATTEMPTED"
+
+    while True:
+        attempt_index += 1
+        candidate = (
+            candidates
+            / f"actuator-timeline-{attempt_index:04d}.jsonl"
+        )
+        command = [
+            str(candidate)
+            if value == TIMELINE_OUTPUT_TOKEN
+            else value
+            for value in template
+        ]
+
+        write_json_exclusive(
+            candidates
+            / f"command-{attempt_index:04d}.json",
+            command,
+        )
+
+        try:
+            proc = subprocess.run(
+                command,
+                text=True,
+                capture_output=True,
+                check=False,
+                env=environment,
+            )
+        except OSError as exc:
+            raise AdapterError(
+                "TIMELINE_COMMAND_EXECUTION_FAILED:"
+                + type(exc).__name__,
+                70,
+            ) from exc
+
+        (
+            attempt
+            / "logs"
+            / f"timeline-{attempt_index:04d}.stdout.log"
+        ).write_text(
+            proc.stdout,
+            encoding="utf-8",
+        )
+        (
+            attempt
+            / "logs"
+            / f"timeline-{attempt_index:04d}.stderr.log"
+        ).write_text(
+            proc.stderr,
+            encoding="utf-8",
+        )
+
+        if proc.returncode == 0:
+            count = timeline_record_count(candidate)
+
+            if count == expected:
+                args.actuator_timeline = str(candidate)
+                return candidate
+
+            if count is None:
+                last_reason = "OUTPUT_INVALID"
+            elif count > expected:
+                raise AdapterError(
+                    "TIMELINE_EVENT_COUNT_EXCEEDS_EXPECTED:"
+                    + str(count),
+                    65,
+                )
+            else:
+                last_reason = (
+                    "EVENT_COUNT_"
+                    + str(count)
+                    + "_EXPECTED_"
+                    + str(expected)
+                )
+        else:
+            last_reason = (
+                "COMMAND_RC_" + str(proc.returncode)
+            )
+
+        remaining = deadline - time.monotonic()
+
+        if remaining <= 0:
+            raise AdapterError(
+                "ACTUATOR_TIMELINE_READINESS_TIMEOUT:"
+                + last_reason,
+                75,
+            )
+
+        time.sleep(
+            min(
+                args.timeline_readiness_poll_ms / 1000,
+                remaining,
+            )
+        )
+
+
+def canonical_snapshot_path(attempt):
+    path = (
+        attempt
+        / "processed"
+        / "intervals.canonical.jsonl"
+    )
+
+    try:
+        resolved = path.resolve(strict=True)
+        data = resolved.read_bytes()
+    except OSError as exc:
+        raise AdapterError(
+            "CANONICAL_INTERVAL_SNAPSHOT_UNAVAILABLE",
+            65,
+        ) from exc
+
+    if not data or not data.endswith(b"\n"):
+        raise AdapterError(
+            "CANONICAL_INTERVAL_SNAPSHOT_INVALID",
+            65,
+        )
+
+    return str(resolved)
+
+
+
 def execute(args):
-    paths = validate_arguments(args)
-    attempt = create_attempt(args.evidence_root)
+    timeline_template = parse_timeline_command_template(
+        args
+    )
+
+    if timeline_template is None:
+        paths = validate_arguments(args)
+        attempt = create_attempt(args.evidence_root)
+    else:
+        attempt = create_attempt(args.evidence_root)
+        run_incremental_timeline(
+            args,
+            attempt,
+        )
+        paths = validate_arguments(args)
 
     stable_pair_snapshot(
         paths["raw"],
@@ -302,30 +612,69 @@ def execute(args):
         args.stable_ms,
         args.snapshot_timeout_ms,
     )
+
     if paths["actuator_timeline"] is not None:
         stable_single_snapshot(
             paths["actuator_timeline"],
             attempt / "raw" / "actuator-timeline.jsonl",
         )
 
-    commands, report_path = build_commands(args, paths, attempt)
-    write_json_exclusive(attempt / "commands.json", commands)
+    commands, report_path = build_commands(
+        args,
+        paths,
+        attempt,
+    )
+    write_json_exclusive(
+        attempt / "commands.json",
+        commands,
+    )
 
-    for label in ("parser", "canonicalizer", "evaluator"):
-        run_tool(label, commands[label], attempt / "logs")
+    for label in (
+        "parser",
+        "canonicalizer",
+        "evaluator",
+    ):
+        run_tool(
+            label,
+            commands[label],
+            attempt / "logs",
+        )
 
     try:
-        with report_path.open(encoding="utf-8") as handle:
+        with report_path.open(
+            encoding="utf-8",
+        ) as handle:
             report = json.load(handle)
-    except (OSError, json.JSONDecodeError) as exc:
-        raise AdapterError("EVALUATOR_REPORT_INVALID", 65) from exc
+    except (
+        OSError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise AdapterError(
+            "EVALUATOR_REPORT_INVALID",
+            65,
+        ) from exc
 
     if not isinstance(report, dict):
-        raise AdapterError("EVALUATOR_REPORT_NOT_OBJECT", 65)
-    if report.get("output_stationarity_gate") not in ("PASS", "FAIL"):
-        raise AdapterError("EVALUATOR_GATE_INVALID", 65)
+        raise AdapterError(
+            "EVALUATOR_REPORT_NOT_OBJECT",
+            65,
+        )
+
+    if report.get(
+        "output_stationarity_gate"
+    ) not in ("PASS", "FAIL"):
+        raise AdapterError(
+            "EVALUATOR_GATE_INVALID",
+            65,
+        )
+
+    report = dict(report)
+    report[
+        "canonical_interval_snapshot_path"
+    ] = canonical_snapshot_path(attempt)
 
     return report, attempt
+
 
 
 def main():

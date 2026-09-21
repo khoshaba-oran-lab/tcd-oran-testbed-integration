@@ -229,5 +229,138 @@ class BoundedStationarityCommandTests(unittest.TestCase):
         self.assertNotIn("bash -lc", source)
 
 
+
+class StationarityLiveSnapshotExtensionTests(
+    unittest.TestCase
+):
+    def test_exports_absolute_canonical_snapshot(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            layout = create_layout(root)
+
+            proc = subprocess.run(
+                command(layout),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(
+                proc.returncode,
+                0,
+                proc.stderr,
+            )
+
+            report = json.loads(proc.stdout)
+            canonical = Path(
+                report[
+                    "canonical_interval_snapshot_path"
+                ]
+            )
+
+            self.assertTrue(canonical.is_absolute())
+            self.assertTrue(canonical.is_file())
+            self.assertEqual(
+                canonical.name,
+                "intervals.canonical.jsonl",
+            )
+            self.assertEqual(
+                canonical.parent.name,
+                "processed",
+            )
+            self.assertTrue(
+                canonical.parent.parent.name.startswith(
+                    "attempt-"
+                )
+            )
+
+    def test_post_step_builds_bounded_incremental_timeline(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            layout = create_layout(root)
+            timeline_tool = root / "timeline-tool.py"
+
+            timeline_tool.write_text(
+                "\n".join([
+                    "import json",
+                    "import pathlib",
+                    "import sys",
+                    "output = pathlib.Path(sys.argv[sys.argv.index('--output') + 1])",
+                    "output.parent.mkdir(parents=True, exist_ok=True)",
+                    "output.write_text(",
+                    "    ''.join(json.dumps({'event_index': i}) + '\\n' for i in range(1, 4)),",
+                    "    encoding='utf-8',",
+                    ")",
+                ]) + "\n",
+                encoding="utf-8",
+            )
+
+            token = "@PROMPT12_ACTUATOR_TIMELINE@"
+            timeline_command = [
+                sys.executable,
+                str(timeline_tool),
+                "--output",
+                token,
+            ]
+
+            argv = command(
+                layout,
+                "post-step",
+            ) + [
+                "--control-index",
+                "1",
+                "--timeline-command-json",
+                json.dumps(timeline_command),
+                "--expected-timeline-event-count",
+                "3",
+                "--timeline-readiness-timeout-ms",
+                "500",
+                "--timeline-readiness-poll-ms",
+                "10",
+            ]
+
+            proc = subprocess.run(
+                argv,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(
+                proc.returncode,
+                0,
+                proc.stderr,
+            )
+
+            report = json.loads(proc.stdout)
+            canonical = Path(
+                report[
+                    "canonical_interval_snapshot_path"
+                ]
+            )
+            attempt = canonical.parent.parent
+            timeline_snapshot = (
+                attempt
+                / "raw"
+                / "actuator-timeline.jsonl"
+            )
+
+            self.assertTrue(
+                timeline_snapshot.is_file()
+            )
+            self.assertEqual(
+                len(
+                    [
+                        line
+                        for line in timeline_snapshot.read_text(
+                            encoding="utf-8"
+                        ).splitlines()
+                        if line
+                    ]
+                ),
+                3,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

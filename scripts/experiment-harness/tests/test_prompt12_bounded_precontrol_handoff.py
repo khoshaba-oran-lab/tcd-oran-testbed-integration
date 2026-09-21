@@ -16,14 +16,37 @@ SCRIPT = (
 STATIONARITY_TOKEN = "@PROMPT12_STATIONARITY_JSON@"
 PRECONTROL_TOKEN = "@PROMPT12_PRECONTROL_JSON@"
 DECISION_TOKEN = "@PROMPT12_DECISION_UTC_NS@"
+CANONICAL_TOKEN = "@PROMPT12_CANONICAL_INTERVALS@"
 
 
-def make_stationarity(root, gate, raw=None, marker=None):
+
+def make_stationarity(
+    root,
+    gate,
+    raw=None,
+    marker=None,
+):
     script = root / "stationarity.py"
+    canonical = (
+        root
+        / "attempt-stationarity-test"
+        / "processed"
+        / "intervals.canonical.jsonl"
+    )
+    canonical.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    canonical.write_text(
+        '{"record":"canonical"}\n',
+        encoding="utf-8",
+    )
 
     if raw is None:
         raw = json.dumps(
             {
+                "canonical_interval_snapshot_path":
+                    str(canonical.resolve()),
                 "output_stationarity_gate": gate,
                 "window_pair_index": [1, 2],
             },
@@ -52,6 +75,8 @@ def make_stationarity(root, gate, raw=None, marker=None):
     return [sys.executable, str(script)], raw
 
 
+
+
 def make_freshness(root, admission="PASS"):
     script = root / "freshness.py"
     marker = root / "freshness.executed"
@@ -65,6 +90,9 @@ def make_freshness(root, admission="PASS"):
             "marker.write_text('executed\\n', encoding='utf-8')",
             "input_path = pathlib.Path(sys.argv[sys.argv.index('--input') + 1])",
             "output_path = pathlib.Path(sys.argv[sys.argv.index('--output') + 1])",
+            "canonical_path = pathlib.Path(sys.argv[sys.argv.index('--canonical-input') + 1])",
+            "if not canonical_path.is_file():",
+            "    raise SystemExit(79)",
             "official = json.loads(input_path.read_text(encoding='utf-8'))",
             "admission = sys.argv[sys.argv.index('--admission') + 1]",
             "result = {",
@@ -88,6 +116,8 @@ def make_freshness(root, admission="PASS"):
         str(script),
         "--input",
         STATIONARITY_TOKEN,
+        "--canonical-input",
+        CANONICAL_TOKEN,
         "--output",
         PRECONTROL_TOKEN,
         "--decision-utc-ns",
@@ -97,6 +127,7 @@ def make_freshness(root, admission="PASS"):
     ]
 
     return command, marker
+
 
 
 def run_handoff(root, stationarity, freshness, output=None):
@@ -271,6 +302,7 @@ class BoundedPrecontrolHandoffTests(unittest.TestCase):
                 "-c",
                 "raise SystemExit(9)",
                 STATIONARITY_TOKEN,
+                CANONICAL_TOKEN,
                 PRECONTROL_TOKEN,
             ]
             output = root / "precontrol.json"
