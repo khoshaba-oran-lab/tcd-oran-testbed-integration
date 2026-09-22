@@ -1,0 +1,129 @@
+{
+  "class_counts": {
+    "AUTHORIZATION_BOUND": 2,
+    "FROZEN_STATIC": 9,
+    "LIVE_DISCOVERED": 1,
+    "RUN_ALLOCATED": 6
+  },
+  "concrete_profile": false,
+  "executable": false,
+  "guards": {
+    "builder_admission_allowed": false,
+    "concrete_r01_identity_present": false,
+    "control_authorization_present": false,
+    "control_executed": false,
+    "live_fifo_present": false,
+    "r01_authorised": false,
+    "scientific_trigger_authorised": false
+  },
+  "parameter_contract": {
+    "actuator_fifo_path": {
+      "class": "LIVE_DISCOVERED",
+      "materialization": "verify at live runtime admission",
+      "source": "persistent prearmed actuator runtime admission"
+    },
+    "control_authorization_token": {
+      "class": "AUTHORIZATION_BOUND",
+      "materialization": "supply only after separate live-control authorization",
+      "source": "explicit live-control authorization"
+    },
+    "data_paths": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "derive command, applied and acknowledgement paths from the allocated run directory",
+      "source": "per-run evidence layout"
+    },
+    "experiment_id": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "allocate a fresh acquisition identity",
+      "source": "complete-sequence reacquisition contract"
+    },
+    "incremental_timeline_command_json": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "create six distinct prefix timeline command artefacts",
+      "source": "incremental timeline contract"
+    },
+    "max_age_ms": {
+      "class": "AUTHORIZATION_BOUND",
+      "materialization": "freeze with the precontrol freshness authorization",
+      "source": "precontrol freshness safety threshold"
+    },
+    "python_executable": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the qualified isolated Python toolchain",
+      "source": "prompt12-python39-jsonschema.lock and environment provenance"
+    },
+    "receiver_container_name": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "derive a unique receiver name from the allocated run identity",
+      "source": "bounded traffic-session ownership contract"
+    },
+    "run_directory": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "derive from the fresh evidence-root identity",
+      "source": "per-run evidence layout"
+    },
+    "run_id": {
+      "class": "RUN_ALLOCATED",
+      "materialization": "allocate a fresh run identity",
+      "source": "complete-sequence reacquisition contract"
+    },
+    "schema": {
+      "class": "FROZEN_STATIC",
+      "materialization": "use the target runtime profile schema",
+      "source": "prompt12-bounded-production-binding-builder.py:PROFILE_SCHEMA"
+    },
+    "snapshot_timeout_ms": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the bounded stationarity snapshot contract",
+      "source": "prompt12-bounded-stationarity-command.py"
+    },
+    "stable_ms": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the bounded stationarity snapshot contract",
+      "source": "prompt12-bounded-stationarity-command.py"
+    },
+    "timeline_readiness_poll_ms": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the incremental timeline readiness contract",
+      "source": "prompt12-bounded-stationarity-command.py"
+    },
+    "timeline_readiness_timeout_ms": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the incremental timeline readiness contract",
+      "source": "prompt12-bounded-stationarity-command.py"
+    },
+    "tool_paths": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve all thirteen paths from committed repository artefacts",
+      "source": "production binding builder TOOL_KEYS and repository identities"
+    },
+    "traffic_duration_s": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the bounded supervisor experiment duration contract",
+      "source": "prompt12-bounded-orchestration-supervisor.py"
+    },
+    "trigger_token": {
+      "class": "FROZEN_STATIC",
+      "materialization": "resolve from the atomic precontrol trigger-executor contract",
+      "source": "prompt12-precontrol-trigger-executor.py"
+    }
+  },
+  "required_transition_order": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6"
+  ],
+  "requested_ratio_sequence": [
+    50,
+    75,
+    100,
+    75,
+    50,
+    25
+  ],
+  "schema": "sci_oran_prompt12_bounded_sequence_runtime_profile_template_contract_v1",
+  "target_profile_schema": "sci_oran_prompt12_bounded_sequence_runtime_profile_v1"
+}
