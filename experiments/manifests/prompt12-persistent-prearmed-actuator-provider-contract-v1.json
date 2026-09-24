@@ -1,0 +1,63 @@
+{
+  "admission_states": [
+    "ABSENT",
+    "FIFO_CREATED",
+    "PROVIDER_STARTED",
+    "READER_READY",
+    "ADMITTED",
+    "STOPPED"
+  ],
+  "architecture": "persistent_prearmed_fifo_v2",
+  "executable": false,
+  "existing_component_roles": {
+    "atomic_prestart": "excluded_legacy_path",
+    "binding_builder": "argv_only_fifo_binding",
+    "orchestration_supervisor": "local_argv_supervisor",
+    "runtime_profile_materializer": "explicit_path_validator_and_profile_binder",
+    "trigger_executor": "fifo_writer_and_type_validator"
+  },
+  "guards": {
+    "broad_filesystem_scan_allowed": false,
+    "implicit_fifo_path_allowed": false,
+    "legacy_atomic_prestart_allowed": false,
+    "prb_control_allowed_during_admission": false,
+    "r01_authorised": false,
+    "traffic_allowed_during_admission": false,
+    "trigger_allowed_during_admission": false
+  },
+  "host_semantics": "supervisor_local_filesystem",
+  "live_runtime_admitted": false,
+  "provider_implemented": false,
+  "required_admission_evidence": [
+    "execution_host",
+    "fifo_path",
+    "fifo_mode",
+    "fifo_uid",
+    "fifo_gid",
+    "provider_pid",
+    "provider_process_start_identity",
+    "provider_restart_count",
+    "reader_readiness_gate",
+    "admission_utc"
+  ],
+  "required_provider_responsibilities": [
+    "own_one_explicit_absolute_fifo_path",
+    "create_fifo_exclusively",
+    "fail_on_existing_path_or_identity_collision",
+    "prearm_one_persistent_actuator_reader",
+    "report_host_path_type_owner_and_process_identity",
+    "prove_reader_readiness_before_profile_materialization",
+    "execute_no_trigger_no_prb_control_and_no_traffic_during_admission",
+    "leave_cleanup_to_a_separate_lifecycle_action"
+  ],
+  "schema": "sci_oran_prompt12_persistent_prearmed_actuator_provider_contract_v1",
+  "unresolved_runtime_bindings": [
+    "runtime_root",
+    "fifo_path",
+    "provider_launch_argv",
+    "provider_identity",
+    "readiness_timeout_ms",
+    "readiness_poll_ms",
+    "cleanup_argv"
+  ]
+}
