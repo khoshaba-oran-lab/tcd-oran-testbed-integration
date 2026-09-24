@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "prompt12-bounded-sequence-production-v2-reader-contract-v1",
+  "status": "FROZEN_EVIDENCE_BACKED",
+  "purpose": "Define the production Prompt 12 persistent FIFO reader boundary without executing scientific control.",
+  "execution_boundary": {
+    "runtime_host": "tb3-dell",
+    "controller_host": "coll.vntu.org",
+    "reader_runs_on_runtime_host": true,
+    "cross_host_fifo_proxy_allowed": false,
+    "ssh_child_proxy_allowed": false,
+    "ansible_child_proxy_allowed": false
+  },
+  "actuator_evidence": {
+    "repository_source": "deploy/phase-2-flexric/tb3-runtime/actuator/src/xapp_oran_slice_ctrl.prompt12.c",
+    "repository_source_sha256": "8d0cb43dd6ad26eefded522e9ba792eb189f8d4bfe605609c41c7511e47426c5",
+    "historical_binary": "/home/khoshaba/sci-oran/build/prompt12-actuator-bfd1a35b/build/examples/xApp/c/control/xapp_oran_slice_ctrl",
+    "historical_binary_sha256": "de71dcc0298c50c433828ec80be60bd68447ad6ef2912b2dcf3da65e10d4700f",
+    "compatible_flexric_execution_image": "sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb",
+    "control_api": "control_sm_xapp_api",
+    "control_service_style": 2,
+    "control_action": "Slice-level PRB quota",
+    "direct_control_call_count_per_actuator_execution": 1
+  },
+  "ratio_binding": {
+    "mechanism": "ENVIRONMENT",
+    "environment_key": "SCI_ORAN_MAX_PRB_RATIO",
+    "allowed_values_pct": [
+      25,
+      50,
+      75,
+      100
+    ],
+    "default_value": null,
+    "missing_value_policy": "FAIL_CLOSED",
+    "empty_value_policy": "FAIL_CLOSED",
+    "invalid_value_policy": "FAIL_CLOSED",
+    "positional_prb_ratio_argument_required": false,
+    "actuator_specific_argv_required": false,
+    "generic_flexric_runtime_args": "EXTERNAL_RUNTIME_DEPENDENCY_NOT_PRB_CONTROL_INPUT"
+  },
+  "fifo_reader_contract": {
+    "mode": "PERSISTENT_PREARMED_FIFO_V2",
+    "fifo_path_source": "RUNTIME_PROFILE",
+    "accepted_trigger_token": "TRIGGER",
+    "trigger_token_carries_ratio": false,
+    "ratio_must_be_bound_before_trigger": true,
+    "accepted_trigger_to_actuator_execution_cardinality": "EXACTLY_ONE",
+    "actuator_execution_to_control_call_cardinality": "EXACTLY_ONE",
+    "automatic_trigger_replay": "PROHIBITED",
+    "automatic_actuator_restart": "PROHIBITED",
+    "control_before_trigger": "PROHIBITED",
+    "scientific_trigger_replay_after_uncertain_write": "PROHIBITED"
+  },
+  "evidence_semantics": {
+    "actuator_stdout_markers": [
+      "REQUESTED_MAX_PRB_RATIO_PCT",
+      "ACTUATOR_CONTRACT",
+      "CONTROL_REQUEST_COUNT"
+    ],
+    "u_cmd_directly_emitted_by_actuator_source": false,
+    "u_ack_directly_emitted_by_actuator_source": false,
+    "prb_actuator_applied_directly_emitted_by_actuator_source": false,
+    "applied_readback_parser": "scripts/experiment-harness/build-actuator-timeline.py",
+    "scientific_t0_source": "PRB_ACTUATOR_APPLIED",
+    "required_applied_fields": [
+      "applied_min_prbs",
+      "applied_max_prbs"
+    ],
+    "historical_u_cmd_status": "PASS",
+    "historical_u_ack_status": "PASS"
+  },
+  "safety_invariants": {
+    "reader_implementation_in_this_action": false,
+    "provider_admission_in_this_action": false,
+    "fifo_creation_in_this_action": false,
+    "process_start_in_this_action": false,
+    "docker_execution_in_this_action": false,
+    "traffic_execution_in_this_action": false,
+    "prb_control_execution_in_this_action": false,
+    "scientific_trigger_execution_in_this_action": false,
+    "r01_execution_in_this_action": false,
+    "model_fitting_in_this_action": false
+  },
+  "forensic_recovery": {
+    "status": "CLOSED",
+    "continuation_without_new_evidence": "PROHIBITED",
+    "next_phase": "IMPLEMENT_PRODUCTION_LOCAL_FIFO_READER_AGAINST_THIS_FROZEN_CONTRACT"
+  }
+}
