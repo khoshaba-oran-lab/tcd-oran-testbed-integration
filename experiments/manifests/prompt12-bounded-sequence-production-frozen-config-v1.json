@@ -1,0 +1,24 @@
+{
+  "python_executable": "/home/khoshaba/sci-oran/venvs/prompt12-py39-jsonschema-4.25.1/bin/python",
+  "snapshot_timeout_ms": 1000,
+  "stable_ms": 40,
+  "timeline_readiness_poll_ms": 100,
+  "timeline_readiness_timeout_ms": 5000,
+  "tool_paths": {
+    "canonicalizer": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/canonicalize-iperf-receiver-t2.py",
+    "finalization_adapter": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-bounded-finalization-command.py",
+    "freshness_evaluator": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-precontrol-freshness.py",
+    "freshness_policy": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/contracts/prompt12-precontrol-freshness-v1.env",
+    "parser": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/parse-iperf-receiver.py",
+    "precontrol_handoff": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-bounded-precontrol-handoff.py",
+    "receiver_pipeline": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-receiver-pipeline.sh",
+    "schema": "/home/khoshaba/project/tcd-oran-testbed-integration/datasets/schemas/sci-oran-prompt12-siso-v1.0.0.schema.json",
+    "stationarity_adapter": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-bounded-stationarity-command.py",
+    "stationarity_evaluator": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/evaluate-output-stationarity.py",
+    "timeline_builder": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/build-actuator-timeline.py",
+    "traffic_adapter": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/adapters/prompt12-bounded-traffic-session.sh",
+    "trigger_executor": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-precontrol-trigger-executor.py"
+  },
+  "traffic_duration_s": 180,
+  "trigger_token": "TRIGGER"
+}
