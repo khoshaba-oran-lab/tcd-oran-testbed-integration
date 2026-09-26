@@ -19,6 +19,12 @@ BUILDER = pathlib.Path(
         str(HARNESS / "prompt12-bounded-production-binding-builder.py"),
     )
 )
+MATERIALIZER = pathlib.Path(
+    os.environ.get(
+        "PROMPT12_TEST_RUNTIME_PROFILE_MATERIALIZER",
+        str(HARNESS / "prompt12-bounded-runtime-profile-materializer.py"),
+    )
+)
 CONTRACT = pathlib.Path(
     os.environ.get(
         "PROMPT12_TEST_PROFILE_TEMPLATE_CONTRACT",
@@ -32,9 +38,9 @@ CONTRACT = pathlib.Path(
 )
 
 
-def builder_profile_keys():
-    source = BUILDER.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(BUILDER))
+def profile_keys(path):
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
     values = []
     for node in tree.body:
         if not isinstance(node, ast.Assign):
@@ -67,13 +73,35 @@ class RuntimeProfileTemplateContractTests(unittest.TestCase):
         self.assertIs(value["concrete_profile"], False)
         self.assertTrue(all(flag is False for flag in value["guards"].values()))
 
-    def test_contract_covers_exact_builder_profile_keys(self):
+    def test_contract_covers_exact_materializer_and_builder_profile_keys(self):
         value = load_contract()
-        self.assertEqual(
-            set(value["parameter_contract"]),
-            builder_profile_keys(),
+
+        contract_keys = set(
+            value["parameter_contract"]
         )
-        self.assertEqual(len(value["parameter_contract"]), 18)
+        materializer_keys = profile_keys(
+            MATERIALIZER
+        )
+        builder_keys = profile_keys(
+            BUILDER
+        )
+
+        self.assertEqual(
+            contract_keys,
+            materializer_keys,
+        )
+        self.assertEqual(
+            contract_keys,
+            builder_keys,
+        )
+        self.assertEqual(
+            len(contract_keys),
+            19,
+        )
+        self.assertIn(
+            "ratio_binding_paths",
+            contract_keys,
+        )
 
     def test_parameter_class_distribution_is_frozen(self):
         value = load_contract()
@@ -83,7 +111,7 @@ class RuntimeProfileTemplateContractTests(unittest.TestCase):
         )
         expected = {
             "FROZEN_STATIC": 9,
-            "RUN_ALLOCATED": 6,
+            "RUN_ALLOCATED": 7,
             "LIVE_DISCOVERED": 1,
             "AUTHORIZATION_BOUND": 2,
         }

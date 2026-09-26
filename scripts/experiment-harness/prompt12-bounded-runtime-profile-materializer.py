@@ -66,6 +66,7 @@ PROFILE_KEYS = {
     "timeline_readiness_timeout_ms",
     "timeline_readiness_poll_ms",
     "incremental_timeline_command_json",
+    "ratio_binding_paths",
 }
 
 EXPERIMENT_RE = re.compile(
@@ -338,6 +339,22 @@ def execute(args):
     }
     require_exact_keys(data_paths, DATA_KEYS, "DATA_PATHS")
 
+    ratio_binding_directory = (
+        run_directory / "runtime" / "ratio-bindings"
+    )
+    ratio_binding_directory.mkdir(
+        mode=0o700,
+        exist_ok=False,
+    )
+
+    ratio_binding_paths = [
+        str(
+            ratio_binding_directory
+            / f"T{index}.binding.json"
+        )
+        for index in range(1, 7)
+    ]
+
     timeline_paths = []
     for index in range(1, 7):
         path = (
@@ -365,6 +382,7 @@ def execute(args):
         "run_directory": str(run_directory),
         "receiver_container_name": receiver_name(args.run_id),
         "actuator_fifo_path": str(fifo_path),
+        "ratio_binding_paths": ratio_binding_paths,
         "python_executable": frozen["python_executable"],
         "tool_paths": frozen["tool_paths"],
         "data_paths": data_paths,

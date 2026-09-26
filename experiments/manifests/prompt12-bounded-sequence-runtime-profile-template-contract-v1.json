@@ -1,9 +1,9 @@
 {
   "class_counts": {
-    "AUTHORIZATION_BOUND": 2,
-    "FROZEN_STATIC": 9,
     "LIVE_DISCOVERED": 1,
-    "RUN_ALLOCATED": 6
+    "AUTHORIZATION_BOUND": 2,
+    "RUN_ALLOCATED": 7,
+    "FROZEN_STATIC": 9
   },
   "concrete_profile": false,
   "executable": false,
@@ -106,6 +106,11 @@
       "class": "FROZEN_STATIC",
       "materialization": "resolve from the atomic precontrol trigger-executor contract",
       "source": "prompt12-precontrol-trigger-executor.py"
+    },
+    "ratio_binding_paths": {
+      "class": "RUN_ALLOCATED",
+      "source": "prompt12-bounded-runtime-profile-materializer.py",
+      "materialization": "derive exactly six absolute deterministic paths T1.binding.json through T6.binding.json under <run_directory>/runtime/ratio-bindings; create the ratio-bindings directory but do not create binding JSON files"
     }
   },
   "required_transition_order": [

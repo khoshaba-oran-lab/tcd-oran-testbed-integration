@@ -100,6 +100,7 @@ def build_plan(root):
             transition,
             (
                 "label",
+                "ratio_bind_command",
                 "trigger_command",
                 "post_stationarity_command",
             ),
@@ -114,6 +115,10 @@ def build_plan(root):
         built_transitions.append(
             {
                 "label": expected_label,
+                "ratio_bind_command": validate_command(
+                    transition["ratio_bind_command"],
+                    f"{role}.ratio_bind_command",
+                ),
                 "trigger_command": validate_command(
                     transition["trigger_command"],
                     f"{role}.trigger_command",

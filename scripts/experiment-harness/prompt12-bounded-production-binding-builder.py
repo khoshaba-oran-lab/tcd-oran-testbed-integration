@@ -58,6 +58,7 @@ PROFILE_KEYS = {
     "tool_paths",
     "data_paths",
     "incremental_timeline_command_json",
+    "ratio_binding_paths",
 }
 
 
@@ -426,6 +427,103 @@ def finalization_command(profile):
     ]
 
 
+def validate_ratio_binding_paths(value, run_directory):
+    if not isinstance(value, list) or len(value) != 6:
+        raise BuilderError(
+            "RATIO_BINDING_PATHS_COUNT_INVALID"
+        )
+
+    expected_parent = (
+        run_directory
+        / "runtime"
+        / "ratio-bindings"
+    )
+
+    paths = []
+
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, str) or not item:
+            raise BuilderError(
+                "RATIO_BINDING_PATH_INVALID"
+            )
+
+        path = pathlib.Path(item)
+
+        if not path.is_absolute():
+            raise BuilderError(
+                "RATIO_BINDING_PATH_NOT_ABSOLUTE"
+            )
+
+        expected_name = f"T{index}.binding.json"
+
+        if path.name != expected_name:
+            raise BuilderError(
+                "RATIO_BINDING_PATH_ORDER_INVALID:"
+                f"{path.name}:{expected_name}"
+            )
+
+        if path.parent != expected_parent:
+            raise BuilderError(
+                "RATIO_BINDING_PATH_PARENT_INVALID:"
+                f"{path}"
+            )
+
+        paths.append(path)
+
+    if len({str(path) for path in paths}) != 6:
+        raise BuilderError(
+            "RATIO_BINDING_PATH_DUPLICATE"
+        )
+
+    return paths
+
+
+def ratio_bind_command(profile, transition_index):
+    if not 1 <= transition_index <= 6:
+        raise BuilderError(
+            "RATIO_BIND_TRANSITION_INDEX_INVALID"
+        )
+
+    writer = (
+        pathlib.Path(__file__)
+        .resolve()
+        .with_name(
+            "prompt12-pretrigger-ratio-binding-writer.py"
+        )
+    )
+
+    if not writer.is_file():
+        raise BuilderError(
+            "RATIO_BINDING_WRITER_MISSING"
+        )
+
+    label = f"T{transition_index}"
+    ratio = REQUESTED_RATIOS[
+        transition_index - 1
+    ]
+
+    return [
+        str(profile["python"]),
+        str(writer),
+        "--experiment-id",
+        profile["experiment_id"],
+        "--run-id",
+        profile["run_id"],
+        "--transition-label",
+        label,
+        "--transition-index",
+        str(transition_index),
+        "--requested-ratio-pct",
+        str(ratio),
+        "--output",
+        str(
+            profile["ratio_binding_paths"][
+                transition_index - 1
+            ]
+        ),
+    ]
+
+
 def build_binding(profile):
     run = profile["run_directory"]
     traffic = [
@@ -449,6 +547,10 @@ def build_binding(profile):
             post = handoff_command(profile, index + 1, post)
         transitions.append({
             "label": label,
+            "ratio_bind_command": ratio_bind_command(
+                profile,
+                index,
+            ),
             "trigger_command": trigger_command(profile, index),
             "post_stationarity_command": post,
         })
@@ -483,6 +585,12 @@ def main():
         output_path = pathlib.Path(args.output)
         root = read_object(profile_path, "PROFILE")
         profile = validate_profile(root)
+        profile["ratio_binding_paths"] = (
+            validate_ratio_binding_paths(
+                root["ratio_binding_paths"],
+                profile["run_directory"],
+            )
+        )
         binding = build_binding(profile)
         write_exclusive(output_path, binding)
     except BuilderError as exc:

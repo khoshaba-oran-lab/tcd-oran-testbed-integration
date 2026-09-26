@@ -145,9 +145,11 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
         self.assertIn("DOCKER_EXECUTION_CAPABILITY=ABSENT", proc.stdout)
         self.assertIn("CONTROL_EXECUTED=NO", proc.stdout)
 
-    def test_materialized_profile_is_accepted_by_builder(self):
-        _, _, profile_path, _ = self.successful_materialization()
+    def test_materialized_profile_is_accepted_by_builder_after_point_4(self):
+        _, _, profile_path, profile = self.successful_materialization()
+
         binding = self.root / "binding.json"
+
         proc = subprocess.run(
             [
                 sys.executable,
@@ -157,16 +159,39 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
                 "--output",
                 str(binding),
             ],
-            text=True,
             capture_output=True,
+            text=True,
             check=False,
         )
+
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertTrue(binding.is_file())
 
+        value = json.loads(
+            binding.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(
+            len(value["transitions"]),
+            6,
+        )
+
+        self.assertEqual(
+            [
+                item["ratio_bind_command"][
+                    item["ratio_bind_command"].index(
+                        "--output"
+                    )
+                    + 1
+                ]
+                for item in value["transitions"]
+            ],
+            profile["ratio_binding_paths"],
+        )
+
     def test_profile_has_exact_fields_and_private_mode(self):
         _, report, profile_path, profile = self.successful_materialization()
-        self.assertEqual(len(profile), 18)
+        self.assertEqual(len(profile), 19)
         self.assertEqual(profile["schema"], "sci_oran_prompt12_bounded_sequence_runtime_profile_v1")
         self.assertEqual(profile_path.stat().st_mode & 0o777, 0o600)
         allocation = json.loads(
@@ -174,6 +199,45 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
         )
         self.assertFalse(allocation["authorization_value_recorded"])
         self.assertNotIn("control_authorization_token", allocation)
+
+    def test_six_ratio_binding_paths_are_deterministic_and_unmaterialized(self):
+        _, _, _, profile = self.successful_materialization()
+
+        paths = [
+            pathlib.Path(value)
+            for value in profile["ratio_binding_paths"]
+        ]
+
+        self.assertEqual(len(paths), 6)
+
+        expected_parent = (
+            pathlib.Path(profile["run_directory"])
+            / "runtime"
+            / "ratio-bindings"
+        )
+
+        self.assertTrue(expected_parent.is_dir())
+        self.assertEqual(
+            expected_parent.stat().st_mode & 0o777,
+            0o700,
+        )
+
+        self.assertEqual(
+            [path.name for path in paths],
+            [
+                "T1.binding.json",
+                "T2.binding.json",
+                "T3.binding.json",
+                "T4.binding.json",
+                "T5.binding.json",
+                "T6.binding.json",
+            ],
+        )
+
+        for path in paths:
+            self.assertTrue(path.is_absolute())
+            self.assertEqual(path.parent, expected_parent)
+            self.assertFalse(path.exists())
 
     def test_six_incremental_commands_have_frozen_prefixes(self):
         _, _, _, profile = self.successful_materialization()

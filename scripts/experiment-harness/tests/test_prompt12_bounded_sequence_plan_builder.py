@@ -34,6 +34,7 @@ def valid_bindings(marker=None):
         "transitions": [
             {
                 "label": f"T{index}",
+                "ratio_bind_command": command,
                 "trigger_command": command,
                 "post_stationarity_command": command,
             }
@@ -69,6 +70,27 @@ class PlanBuilderTests(unittest.TestCase):
             list(module.TRANSITION_LABELS),
         )
         self.assertEqual(len(plan["transitions"]), 6)
+        self.assertTrue(
+            all(
+                set(item) == {
+                    "label",
+                    "ratio_bind_command",
+                    "trigger_command",
+                    "post_stationarity_command",
+                }
+                for item in plan["transitions"]
+            )
+        )
+        self.assertEqual(
+            [
+                item["ratio_bind_command"]
+                for item in plan["transitions"]
+            ],
+            [
+                item["ratio_bind_command"]
+                for item in bindings["transitions"]
+            ],
+        )
         self.assertEqual(
             plan["traffic_command"],
             bindings["traffic_command"],
@@ -81,6 +103,36 @@ class PlanBuilderTests(unittest.TestCase):
         with self.assertRaisesRegex(
             module.PlanBuilderError,
             "traffic_command",
+        ):
+            module.build_plan(bindings)
+
+    def test_rejects_empty_ratio_bind_command(self):
+        bindings = valid_bindings()
+        bindings["transitions"][0]["ratio_bind_command"] = []
+
+        with self.assertRaisesRegex(
+            module.PlanBuilderError,
+            "ratio_bind_command",
+        ):
+            module.build_plan(bindings)
+
+    def test_rejects_missing_ratio_bind_command(self):
+        bindings = valid_bindings()
+        del bindings["transitions"][0]["ratio_bind_command"]
+
+        with self.assertRaisesRegex(
+            module.PlanBuilderError,
+            "missing keys",
+        ):
+            module.build_plan(bindings)
+
+    def test_rejects_unexpected_transition_key(self):
+        bindings = valid_bindings()
+        bindings["transitions"][0]["unexpected"] = True
+
+        with self.assertRaisesRegex(
+            module.PlanBuilderError,
+            "unexpected keys",
         ):
             module.build_plan(bindings)
 
@@ -99,6 +151,7 @@ class PlanBuilderTests(unittest.TestCase):
         bindings["transitions"].append(
             {
                 "label": "T7",
+                "ratio_bind_command": ["true"],
                 "trigger_command": ["true"],
                 "post_stationarity_command": ["true"],
             }

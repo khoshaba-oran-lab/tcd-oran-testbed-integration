@@ -235,6 +235,22 @@ def run_live(plan, report, authorization_token):
         for transition in plan["transitions"]:
             if traffic.poll() is not None:
                 raise SupervisorError("TRAFFIC_TERMINATED_BEFORE_TRIGGER", 76)
+
+            ratio_bind = run_command(
+                transition["ratio_bind_command"],
+                budget,
+                f"{transition['label']}_RATIO_BIND_FAILED",
+            )
+
+            ratio_bind_stdout = ratio_bind.stdout.strip()
+
+            if "RATIO_BOUND=PASS" not in ratio_bind_stdout.splitlines():
+                raise SupervisorError(
+                    f"{transition['label']}_RATIO_BIND_PASS_MARKER_MISSING",
+                    76,
+                )
+
+            report[f"{transition['label']}_RATIO_BIND_STDOUT"] = ratio_bind_stdout
             report["TRIGGER_WRITE_ATTEMPT_COUNT"] += 1
             report["SCIENTIFIC_TRIGGER_REPLAY_DECISION"] = "NEVER_AUTOMATICALLY_REPLAY"
             trigger = run_command(

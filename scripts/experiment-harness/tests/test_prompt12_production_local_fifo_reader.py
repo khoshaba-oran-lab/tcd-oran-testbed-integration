@@ -1,141 +1,163 @@
-"""Regression tests for the Prompt 12 production local FIFO reader.
+#!/usr/bin/env python3
 
-All execution tests use only temporary FIFOs and harmless Python stubs.
-No FlexRIC, Docker, traffic, PRB control, scientific trigger, or real
-actuator is used by this module.
-"""
-
-from __future__ import annotations
-
-import ast
+import datetime
 import importlib.util
 import json
 import os
-from pathlib import Path
+import pathlib
+import stat
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+import uuid
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-READER = (
-    REPO_ROOT
-    / "scripts"
-    / "experiment-harness"
-    / "prompt12-production-local-fifo-reader.py"
+HERE = pathlib.Path(__file__).resolve().parent
+HARNESS = HERE.parent
+READER = HARNESS / "prompt12-production-local-fifo-reader.py"
+
+spec = importlib.util.spec_from_file_location(
+    "prompt12_production_local_fifo_reader",
+    READER,
 )
-
-
-def load_reader_module():
-    spec = importlib.util.spec_from_file_location(
-        "prompt12_production_local_fifo_reader",
-        READER,
-    )
-
-    if spec is None or spec.loader is None:
-        raise RuntimeError("cannot load production reader module")
-
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-READER_MODULE = load_reader_module()
-
-
-def wait_until(predicate, timeout: float = 5.0) -> None:
-    deadline = time.monotonic() + timeout
-
-    while time.monotonic() < deadline:
-        if predicate():
-            return
-        time.sleep(0.05)
-
-    raise AssertionError("timed out waiting for expected reader state")
-
-
-def wait_for_text(path: Path, expected: str, timeout: float = 5.0) -> None:
-    def present() -> bool:
-        if not path.exists():
-            return False
-        return expected in path.read_text(encoding="utf-8")
-
-    wait_until(present, timeout=timeout)
-
-
-def read_jsonl(path: Path) -> list[dict]:
-    if not path.exists():
-        return []
-
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
 
 
 class ProductionLocalFifoReaderTests(unittest.TestCase):
-    def make_stub(self, tmp_path: Path) -> Path:
-        stub = tmp_path / "safe_stub.py"
+
+    def setUp(self):
+        self.experiment_id = "EXP-001"
+        self.run_id = "RUN-001"
+
+    def create_stub(self, root):
+        stub = root / "actuator-stub.py"
 
         stub.write_text(
-            """
+            """#!/usr/bin/env python3
 import json
 import os
+import pathlib
 import sys
+
+log = pathlib.Path(sys.argv[1])
+rc = int(sys.argv[2])
 
 record = {
     "ratio": os.environ.get("SCI_ORAN_MAX_PRB_RATIO"),
-    "argv": sys.argv[1:],
 }
 
-with open(
-    os.environ["PROMPT12_TEST_STUB_LOG"],
-    "a",
-    encoding="utf-8",
-) as f:
-    f.write(json.dumps(record, sort_keys=True) + "\\n")
-    f.flush()
-    os.fsync(f.fileno())
+with log.open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(record) + "\\n")
 
-raise SystemExit(
-    int(os.environ.get("PROMPT12_TEST_STUB_EXIT_CODE", "0"))
-)
-""".lstrip(),
+raise SystemExit(rc)
+""",
             encoding="utf-8",
         )
 
         return stub
 
+    def binding_paths(self, root):
+        directory = root / "ratio-bindings"
+        directory.mkdir(mode=0o700)
+
+        return [
+            directory / f"T{index}.binding.json"
+            for index in range(1, 7)
+        ]
+
+    def binding_value(
+        self,
+        *,
+        transition_index,
+        ratio,
+        experiment_id=None,
+        run_id=None,
+        schema=None,
+        created_utc=None,
+        binding_id=None,
+    ):
+        if created_utc is None:
+            created_utc = (
+                datetime.datetime.now(
+                    datetime.timezone.utc
+                )
+                .replace(microsecond=0)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+
+        return {
+            "schema": schema or module.BINDING_SCHEMA,
+            "binding_id": binding_id or uuid.uuid4().hex,
+            "experiment_id": (
+                experiment_id
+                if experiment_id is not None
+                else self.experiment_id
+            ),
+            "run_id": (
+                run_id
+                if run_id is not None
+                else self.run_id
+            ),
+            "transition_label": f"T{transition_index}",
+            "transition_index": transition_index,
+            "requested_ratio_pct": ratio,
+            "created_utc": created_utc,
+        }
+
+    def write_binding(
+        self,
+        path,
+        *,
+        transition_index,
+        ratio,
+        **overrides,
+    ):
+        value = self.binding_value(
+            transition_index=transition_index,
+            ratio=ratio,
+            **overrides,
+        )
+
+        path.write_text(
+            json.dumps(
+                value,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        path.chmod(0o600)
+
+        return value
+
     def start_reader(
         self,
-        tmp_path: Path,
+        root,
         *,
-        ratio: str,
-        stub_exit_code: int = 0,
-        stub_args: list[str] | None = None,
-    ) -> dict:
-        fifo = tmp_path / "actuator.fifo"
-        log = tmp_path / "stub.jsonl"
-        stdout_path = tmp_path / "reader.out"
-        stderr_path = tmp_path / "reader.err"
-        stub = self.make_stub(tmp_path)
+        stub_rc=0,
+    ):
+        fifo = root / "actuator.fifo"
+        os.mkfifo(fifo, 0o600)
 
-        os.mkfifo(fifo)
-        log.write_text("", encoding="utf-8")
+        paths = self.binding_paths(root)
 
-        actuator_argv = [sys.executable, str(stub)]
-        actuator_argv.extend(stub_args or [])
+        log = root / "actuator.jsonl"
+        stub = self.create_stub(root)
+
+        actuator_argv = [
+            sys.executable,
+            str(stub),
+            str(log),
+            str(stub_rc),
+        ]
 
         env = os.environ.copy()
-        env["SCI_ORAN_MAX_PRB_RATIO"] = ratio
-        env["PROMPT12_TEST_STUB_LOG"] = str(log)
-        env["PROMPT12_TEST_STUB_EXIT_CODE"] = str(stub_exit_code)
-
-        stdout_handle = stdout_path.open("w", encoding="utf-8")
-        stderr_handle = stderr_path.open("w", encoding="utf-8")
+        env.pop("SCI_ORAN_MAX_PRB_RATIO", None)
 
         process = subprocess.Popen(
             [
@@ -145,314 +167,511 @@ raise SystemExit(
                 str(fifo),
                 "--actuator-argv-json",
                 json.dumps(actuator_argv),
+                "--experiment-id",
+                self.experiment_id,
+                "--run-id",
+                self.run_id,
+                "--ratio-binding-paths-json",
+                json.dumps(
+                    [str(path) for path in paths]
+                ),
             ],
-            env=env,
-            stdout=stdout_handle,
-            stderr=stderr_handle,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            shell=False,
+            env=env,
         )
 
-        wait_for_text(
-            stdout_path,
-            f"PROMPT12_V2_READER_PREARMED=YES ratio_pct={ratio}",
+        prearmed = process.stdout.readline()
+
+        self.assertIn(
+            "PROMPT12_V2_READER_PREARMED=YES",
+            prearmed,
+        )
+        self.assertIn(
+            "ratio_binding_count=6",
+            prearmed,
+        )
+
+        writer_fd = os.open(
+            fifo,
+            os.O_WRONLY,
         )
 
         return {
-            "process": process,
             "fifo": fifo,
+            "paths": paths,
             "log": log,
-            "stdout": stdout_path,
-            "stderr": stderr_path,
-            "stdout_handle": stdout_handle,
-            "stderr_handle": stderr_handle,
+            "process": process,
+            "writer_fd": writer_fd,
         }
 
-    def close_reader_handles(self, state: dict) -> None:
-        state["stdout_handle"].close()
-        state["stderr_handle"].close()
+    def stop_reader(self, state):
+        try:
+            os.close(state["writer_fd"])
+        except OSError:
+            pass
 
-    def test_static_production_boundary(self) -> None:
-        source = READER.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=str(READER))
+        try:
+            return state["process"].communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            state["process"].terminate()
+            return state["process"].communicate(timeout=5)
 
-        subprocess_run_calls = [
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "subprocess"
-            and node.func.attr == "run"
+    def records(self, log):
+        if not log.exists():
+            return []
+
+        return [
+            json.loads(line)
+            for line in log.read_text(
+                encoding="utf-8"
+            ).splitlines()
+            if line.strip()
         ]
 
-        self.assertEqual(len(subprocess_run_calls), 1)
-        self.assertIn("shell=False", source)
-        self.assertNotIn("shell=True", source)
-        self.assertNotIn("os.mkfifo", source)
-
-        self.assertNotIn("U_CMD=", source)
-        self.assertNotIn("U_ACK=", source)
-        self.assertNotIn("PRB_ACTUATOR_APPLIED=", source)
-
-    def test_invalid_actuator_argv_fails_closed(self) -> None:
-        invalid_values = [
-            "",
-            "not-json",
-            "{}",
-            "[]",
-            '[""]',
-            '["ok", ""]',
-        ]
-
-        for raw in invalid_values:
-            with self.subTest(raw=raw):
-                with self.assertRaises(READER_MODULE.ReaderContractError):
-                    READER_MODULE.parse_actuator_argv(raw)
-
-    def test_missing_or_invalid_ratio_fails_closed(self) -> None:
-        invalid_envs = [
-            {},
-            {"SCI_ORAN_MAX_PRB_RATIO": ""},
-            {"SCI_ORAN_MAX_PRB_RATIO": "13"},
-            {"SCI_ORAN_MAX_PRB_RATIO": "26"},
-            {"SCI_ORAN_MAX_PRB_RATIO": "101"},
-        ]
-
-        for env in invalid_envs:
-            with self.subTest(env=env):
-                with self.assertRaises(READER_MODULE.ReaderContractError):
-                    READER_MODULE.validate_prebound_ratio(env)
-
-    def test_allowed_ratios_are_accepted(self) -> None:
-        for ratio in ["25", "50", "75", "100"]:
-            with self.subTest(ratio=ratio):
-                actual = READER_MODULE.validate_prebound_ratio(
-                    {"SCI_ORAN_MAX_PRB_RATIO": ratio}
-                )
-                self.assertEqual(actual, ratio)
-
-    def test_non_fifo_path_fails_closed(self) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
-            regular_file = tmp_path / "not-a-fifo"
-            regular_file.write_text("not a fifo", encoding="utf-8")
-
-            with self.assertRaises(READER_MODULE.ReaderContractError):
-                READER_MODULE.validate_existing_fifo(str(regular_file))
-
-    def test_missing_ratio_cli_fails_before_fifo_open(self) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
-
-            env = os.environ.copy()
-            env.pop("SCI_ORAN_MAX_PRB_RATIO", None)
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    str(READER),
-                    "--fifo-path",
-                    str(tmp_path / "does-not-exist.fifo"),
-                    "--actuator-argv-json",
-                    json.dumps(
-                        [
-                            sys.executable,
-                            "-c",
-                            "raise SystemExit(0)",
-                        ]
-                    ),
-                ],
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                shell=False,
-                check=False,
-                timeout=5,
-            )
-
-            self.assertEqual(completed.returncode, 2)
-            self.assertIn(
-                "SCI_ORAN_MAX_PRB_RATIO must be pre-bound before reader start",
-                completed.stderr,
-            )
-
-    def test_invalid_ratio_cli_fails_before_fifo_open(self) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
-
-            env = os.environ.copy()
-            env["SCI_ORAN_MAX_PRB_RATIO"] = "13"
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    str(READER),
-                    "--fifo-path",
-                    str(tmp_path / "does-not-exist.fifo"),
-                    "--actuator-argv-json",
-                    json.dumps(
-                        [
-                            sys.executable,
-                            "-c",
-                            "raise SystemExit(0)",
-                        ]
-                    ),
-                ],
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                shell=False,
-                check=False,
-                timeout=5,
-            )
-
-            self.assertEqual(completed.returncode, 2)
-            self.assertIn(
-                "invalid SCI_ORAN_MAX_PRB_RATIO='13'",
-                completed.stderr,
-            )
-
-    def test_invalid_token_then_trigger_executes_stub_exactly_once(
+    def wait_for_record_count(
         self,
-    ) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
+        log,
+        expected,
+        timeout=5,
+    ):
+        deadline = time.monotonic() + timeout
 
-            state = self.start_reader(
-                tmp_path,
-                ratio="50",
-                stub_exit_code=0,
-                stub_args=["--probe", "alpha beta"],
+        while time.monotonic() < deadline:
+            records = self.records(log)
+
+            if len(records) >= expected:
+                return records
+
+            time.sleep(0.02)
+
+        self.fail(
+            f"actuator record count did not reach {expected}; "
+            f"actual={len(self.records(log))}"
+        )
+
+    def trigger(self, state):
+        os.write(
+            state["writer_fd"],
+            b"TRIGGER\n",
+        )
+
+    def test_static_production_boundary(self):
+        source = READER.read_text(encoding="utf-8")
+
+        self.assertNotIn("os.mkfifo", source)
+        self.assertNotIn("docker", source.lower())
+        self.assertNotIn("flexric", source.lower())
+        self.assertEqual(
+            source.count("subprocess.run("),
+            1,
+        )
+        self.assertIn(
+            'TRIGGER_TOKEN = "TRIGGER\\n"',
+            source,
+        )
+        self.assertNotIn(
+            'TRIGGER_TOKEN = "TRIGGER:',
+            source,
+        )
+
+    def test_binding_path_contract_is_exact_six_absolute_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+
+            paths = [
+                str(
+                    root
+                    / f"T{index}.binding.json"
+                )
+                for index in range(1, 7)
+            ]
+
+            parsed = module.parse_ratio_binding_paths(
+                json.dumps(paths)
             )
 
-            process = state["process"]
-            writer_fd = os.open(state["fifo"], os.O_WRONLY)
+            self.assertEqual(
+                [path.name for path in parsed],
+                [
+                    "T1.binding.json",
+                    "T2.binding.json",
+                    "T3.binding.json",
+                    "T4.binding.json",
+                    "T5.binding.json",
+                    "T6.binding.json",
+                ],
+            )
+
+    def test_one_persistent_reader_executes_full_six_ratio_sequence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            expected_ratios = [
+                50,
+                75,
+                100,
+                75,
+                50,
+                25,
+            ]
 
             try:
-                os.write(writer_fd, b"INVALID\n")
+                pid = state["process"].pid
 
-                wait_for_text(
-                    state["stderr"],
-                    'PROMPT12_V2_READER_TOKEN_REJECTED="INVALID\\n"',
-                )
+                for index, ratio in enumerate(
+                    expected_ratios,
+                    start=1,
+                ):
+                    self.write_binding(
+                        state["paths"][index - 1],
+                        transition_index=index,
+                        ratio=ratio,
+                    )
 
-                self.assertEqual(read_jsonl(state["log"]), [])
+                    self.trigger(state)
 
-                os.write(writer_fd, b"TRIGGER\n")
+                    records = self.wait_for_record_count(
+                        state["log"],
+                        index,
+                    )
 
-                wait_until(
-                    lambda: len(read_jsonl(state["log"])) == 1,
-                )
+                    self.assertEqual(
+                        records[-1]["ratio"],
+                        str(ratio),
+                    )
+                    self.assertEqual(
+                        state["process"].pid,
+                        pid,
+                    )
 
-                wait_for_text(
-                    state["stdout"],
-                    "PROMPT12_V2_READER_ACTUATOR_EXECUTION_COMPLETED=YES",
-                )
+                    original = state["paths"][index - 1]
+                    consumed = module.consumed_path_for(
+                        original
+                    )
 
-                records = read_jsonl(state["log"])
+                    self.assertFalse(original.exists())
+                    self.assertTrue(consumed.is_file())
 
-                self.assertEqual(len(records), 1)
-                self.assertEqual(records[0]["ratio"], "50")
                 self.assertEqual(
-                    records[0]["argv"],
-                    ["--probe", "alpha beta"],
+                    [row["ratio"] for row in self.records(state["log"])],
+                    ["50", "75", "100", "75", "50", "25"],
                 )
 
             finally:
-                os.close(writer_fd)
+                stdout, stderr = self.stop_reader(state)
 
-            self.assertEqual(process.wait(timeout=5), 2)
-            self.close_reader_handles(state)
-
-            self.assertEqual(len(read_jsonl(state["log"])), 1)
             self.assertIn(
                 "FIFO reached EOF; automatic reader restart prohibited",
-                state["stderr"].read_text(encoding="utf-8"),
+                stderr,
             )
 
-    def test_actuator_failure_has_no_retry_or_replay(self) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
+    def test_missing_binding_fails_closed_without_actuation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
 
-            state = self.start_reader(
-                tmp_path,
-                ratio="75",
-                stub_exit_code=17,
-                stub_args=["--probe", "failure"],
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertEqual(
+                state["process"].returncode,
+                2,
+            )
+            self.assertIn(
+                "BINDING_MISSING",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
             )
 
-            process = state["process"]
-            writer_fd = os.open(state["fifo"], os.O_WRONLY)
+    def test_malformed_binding_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
 
-            try:
-                os.write(writer_fd, b"TRIGGER\n")
-                self.assertEqual(process.wait(timeout=5), 2)
-            finally:
-                os.close(writer_fd)
+            state["paths"][0].write_text(
+                "{invalid",
+                encoding="utf-8",
+            )
 
-            self.close_reader_handles(state)
+            self.trigger(state)
 
-            records = read_jsonl(state["log"])
+            stdout, stderr = self.stop_reader(state)
 
-            self.assertEqual(len(records), 1)
-            self.assertEqual(records[0]["ratio"], "75")
-            self.assertEqual(records[0]["argv"], ["--probe", "failure"])
+            self.assertEqual(
+                state["process"].returncode,
+                2,
+            )
+            self.assertIn(
+                "BINDING_JSON_INVALID",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
 
-            stdout = state["stdout"].read_text(encoding="utf-8")
-            stderr = state["stderr"].read_text(encoding="utf-8")
+    def test_invalid_schema_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            self.write_binding(
+                state["paths"][0],
+                transition_index=1,
+                ratio=50,
+                schema="invalid-schema",
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
 
             self.assertIn(
-                "PROMPT12_V2_READER_TRIGGER_ACCEPTED=YES",
-                stdout,
+                "BINDING_SCHEMA_INVALID",
+                stderr,
             )
-            self.assertNotIn(
-                "PROMPT12_V2_READER_ACTUATOR_EXECUTION_COMPLETED=YES",
-                stdout,
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
             )
+
+    def test_invalid_ratio_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            self.write_binding(
+                state["paths"][0],
+                transition_index=1,
+                ratio=13,
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "BINDING_RATIO_INVALID",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
+
+    def test_experiment_identity_mismatch_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            self.write_binding(
+                state["paths"][0],
+                transition_index=1,
+                ratio=50,
+                experiment_id="EXP-OTHER",
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "BINDING_EXPERIMENT_ID_MISMATCH",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
+
+    def test_transition_identity_mismatch_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            value = self.binding_value(
+                transition_index=2,
+                ratio=50,
+            )
+
+            state["paths"][0].write_text(
+                json.dumps(value) + "\n",
+                encoding="utf-8",
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "BINDING_TRANSITION_LABEL_MISMATCH",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
+
+    def test_stale_binding_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            self.write_binding(
+                state["paths"][0],
+                transition_index=1,
+                ratio=50,
+                created_utc="2000-01-01T00:00:00Z",
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "BINDING_STALE",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
+
+    def test_preexisting_consumed_binding_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            path = state["paths"][0]
+            consumed = module.consumed_path_for(path)
+
+            consumed.write_text(
+                "{}\n",
+                encoding="utf-8",
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "BINDING_ALREADY_CONSUMED",
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
+
+    def test_binding_is_consumed_before_actuator_failure_and_not_replayed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(
+                root,
+                stub_rc=17,
+            )
+
+            path = state["paths"][0]
+
+            self.write_binding(
+                path,
+                transition_index=1,
+                ratio=75,
+            )
+
+            self.trigger(state)
+
+            stdout, stderr = self.stop_reader(state)
+
+            records = self.records(state["log"])
+
+            self.assertEqual(
+                len(records),
+                1,
+            )
+            self.assertEqual(
+                records[0]["ratio"],
+                "75",
+            )
+
+            self.assertFalse(path.exists())
+            self.assertTrue(
+                module.consumed_path_for(path).exists()
+            )
+
             self.assertIn(
                 "returncode=17; replay prohibited",
                 stderr,
             )
 
-    def test_fifo_eof_without_trigger_fails_closed_without_actuation(
-        self,
-    ) -> None:
-        with tempfile.TemporaryDirectory(
-            prefix="prompt12-reader-unittest-"
-        ) as tmp:
-            tmp_path = Path(tmp)
+    def test_invalid_token_never_consumes_binding_or_executes_actuator(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
 
-            state = self.start_reader(
-                tmp_path,
-                ratio="25",
-                stub_exit_code=0,
+            path = state["paths"][0]
+
+            self.write_binding(
+                path,
+                transition_index=1,
+                ratio=50,
             )
 
-            process = state["process"]
+            os.write(
+                state["writer_fd"],
+                b"INVALID\n",
+            )
 
-            writer_fd = os.open(state["fifo"], os.O_WRONLY)
-            os.close(writer_fd)
+            time.sleep(0.1)
 
-            self.assertEqual(process.wait(timeout=5), 2)
-            self.close_reader_handles(state)
+            self.assertTrue(path.exists())
+            self.assertFalse(
+                module.consumed_path_for(path).exists()
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
+            )
 
-            self.assertEqual(read_jsonl(state["log"]), [])
+            self.trigger(state)
+
+            self.wait_for_record_count(
+                state["log"],
+                1,
+            )
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertIn(
+                "PROMPT12_V2_READER_TOKEN_REJECTED",
+                stderr,
+            )
+
+    def test_fifo_eof_without_trigger_fails_closed_without_actuation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            state = self.start_reader(root)
+
+            stdout, stderr = self.stop_reader(state)
+
+            self.assertEqual(
+                state["process"].returncode,
+                2,
+            )
             self.assertIn(
                 "FIFO reached EOF; automatic reader restart prohibited",
-                state["stderr"].read_text(encoding="utf-8"),
+                stderr,
+            )
+            self.assertEqual(
+                self.records(state["log"]),
+                [],
             )
 
 

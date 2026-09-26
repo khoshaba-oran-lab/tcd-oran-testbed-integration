@@ -82,6 +82,16 @@ def create_profile(root):
         "receiver_container_name": "prompt12-r01-receiver",
         "traffic_duration_s": 180,
         "actuator_fifo_path": str(root / "runtime" / "actuator.fifo"),
+        "ratio_binding_paths": [
+            str(
+                root
+                / "run"
+                / "runtime"
+                / "ratio-bindings"
+                / f"T{index}.binding.json"
+            )
+            for index in range(1, 7)
+        ],
         "control_authorization_token": "AUTHORISE_PROMPT12_FIFO_CONTROL",
         "trigger_token": "TRIGGER",
         "max_age_ms": 500,
@@ -126,7 +136,7 @@ class ProductionBindingBuilderTests(unittest.TestCase):
     def test_builds_exact_six_transition_binding(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)
-            _, profile_path = create_profile(root)
+            profile, profile_path = create_profile(root)
             output = root / "binding.json"
 
             proc = run_builder(profile_path, output)
@@ -141,6 +151,74 @@ class ProductionBindingBuilderTests(unittest.TestCase):
                 [item["label"] for item in binding["transitions"]],
                 [f"T{index}" for index in range(1, 7)],
             )
+
+            expected_ratios = [
+                "50",
+                "75",
+                "100",
+                "75",
+                "50",
+                "25",
+            ]
+
+            writer = str(
+                HARNESS
+                / "prompt12-pretrigger-ratio-binding-writer.py"
+            )
+
+            for index, transition in enumerate(
+                binding["transitions"],
+                start=1,
+            ):
+                command = transition["ratio_bind_command"]
+
+                self.assertEqual(command[0], sys.executable)
+                self.assertEqual(command[1], writer)
+
+                self.assertEqual(
+                    command[
+                        command.index("--experiment-id") + 1
+                    ],
+                    profile["experiment_id"],
+                )
+                self.assertEqual(
+                    command[
+                        command.index("--run-id") + 1
+                    ],
+                    profile["run_id"],
+                )
+                self.assertEqual(
+                    command[
+                        command.index("--transition-label") + 1
+                    ],
+                    f"T{index}",
+                )
+                self.assertEqual(
+                    command[
+                        command.index("--transition-index") + 1
+                    ],
+                    str(index),
+                )
+                self.assertEqual(
+                    command[
+                        command.index("--requested-ratio-pct") + 1
+                    ],
+                    expected_ratios[index - 1],
+                )
+                self.assertEqual(
+                    command[
+                        command.index("--output") + 1
+                    ],
+                    profile["ratio_binding_paths"][
+                        index - 1
+                    ],
+                )
+
+                self.assertNotIn(
+                    expected_ratios[index - 1],
+                    transition["trigger_command"][-1:],
+                )
+
             self.assertTrue(all(
                 isinstance(value, list) and value
                 for value in (
@@ -150,16 +228,27 @@ class ProductionBindingBuilderTests(unittest.TestCase):
                 )
             ))
 
-    def test_generated_binding_is_accepted_by_plan_builder(self):
+            self.assertTrue(all(
+                not pathlib.Path(path).exists()
+                for path in profile["ratio_binding_paths"]
+            ))
+
+    def test_generated_binding_is_accepted_by_plan_builder_after_point_5(self):
         if not PLAN_BUILDER.is_file():
             self.skipTest("plan builder fixture unavailable")
+
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)
             _, profile_path = create_profile(root)
             binding = root / "binding.json"
             plan = root / "plan.json"
+
             built = run_builder(profile_path, binding)
-            self.assertEqual(built.returncode, 0, built.stderr)
+            self.assertEqual(
+                built.returncode,
+                0,
+                built.stderr,
+            )
 
             proc = subprocess.run(
                 [
@@ -176,11 +265,27 @@ class ProductionBindingBuilderTests(unittest.TestCase):
                 check=False,
             )
 
-            self.assertEqual(proc.returncode, 0, proc.stderr)
-            value = json.loads(plan.read_text(encoding="utf-8"))
             self.assertEqual(
-                value["schema"],
-                "sci_oran_prompt12_bounded_sequence_v1",
+                proc.returncode,
+                0,
+                proc.stderr,
+            )
+            self.assertTrue(plan.is_file())
+
+            value = json.loads(
+                plan.read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(
+                len(value["transitions"]),
+                6,
+            )
+
+            self.assertTrue(
+                all(
+                    "ratio_bind_command" in transition
+                    for transition in value["transitions"]
+                )
             )
 
     def test_existing_output_is_rejected_without_overwrite(self):
@@ -234,6 +339,128 @@ class ProductionBindingBuilderTests(unittest.TestCase):
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn(
                 "INCREMENTAL_TIMELINE_COMMAND_JSON_COUNT_INVALID",
+                proc.stderr,
+            )
+
+    def test_missing_ratio_binding_paths_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            profile, profile_path = create_profile(root)
+
+            del profile["ratio_binding_paths"]
+
+            profile_path.write_text(
+                json.dumps(profile) + "\n",
+                encoding="utf-8",
+            )
+
+            proc = run_builder(
+                profile_path,
+                root / "binding.json",
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "PROFILE_MISSING_KEYS:ratio_binding_paths",
+                proc.stderr,
+            )
+
+    def test_ratio_binding_path_count_is_exactly_six(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            profile, profile_path = create_profile(root)
+
+            profile["ratio_binding_paths"] = (
+                profile["ratio_binding_paths"][:5]
+            )
+
+            profile_path.write_text(
+                json.dumps(profile) + "\n",
+                encoding="utf-8",
+            )
+
+            proc = run_builder(
+                profile_path,
+                root / "binding.json",
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "RATIO_BINDING_PATHS_COUNT_INVALID",
+                proc.stderr,
+            )
+
+    def test_duplicate_ratio_binding_path_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            profile, profile_path = create_profile(root)
+
+            profile["ratio_binding_paths"][1] = (
+                profile["ratio_binding_paths"][0]
+            )
+
+            profile_path.write_text(
+                json.dumps(profile) + "\n",
+                encoding="utf-8",
+            )
+
+            proc = run_builder(
+                profile_path,
+                root / "binding.json",
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+
+    def test_out_of_order_ratio_binding_path_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            profile, profile_path = create_profile(root)
+
+            profile["ratio_binding_paths"][0], (
+                profile["ratio_binding_paths"][1]
+            ) = (
+                profile["ratio_binding_paths"][1],
+                profile["ratio_binding_paths"][0],
+            )
+
+            profile_path.write_text(
+                json.dumps(profile) + "\n",
+                encoding="utf-8",
+            )
+
+            proc = run_builder(
+                profile_path,
+                root / "binding.json",
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "RATIO_BINDING_PATH_ORDER_INVALID",
+                proc.stderr,
+            )
+
+    def test_relative_ratio_binding_path_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            profile, profile_path = create_profile(root)
+
+            profile["ratio_binding_paths"][0] = (
+                "T1.binding.json"
+            )
+
+            profile_path.write_text(
+                json.dumps(profile) + "\n",
+                encoding="utf-8",
+            )
+
+            proc = run_builder(
+                profile_path,
+                root / "binding.json",
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn(
+                "RATIO_BINDING_PATH_NOT_ABSOLUTE",
                 proc.stderr,
             )
 

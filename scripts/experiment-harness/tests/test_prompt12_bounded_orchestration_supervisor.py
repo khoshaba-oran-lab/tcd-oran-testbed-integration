@@ -29,6 +29,7 @@ def valid_plan(marker):
         "transitions": [
             {
                 "label": f"T{index}",
+                "ratio_bind_command": command,
                 "trigger_command": command,
                 "post_stationarity_command": command,
             }
@@ -140,7 +141,16 @@ class SupervisorTests(unittest.TestCase):
 
         def fake_run(argv, budget, reason, **kwargs):
             calls.append((argv, reason))
-            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                (
+                    "RATIO_BOUND=PASS\n"
+                    if "_RATIO_BIND_FAILED" in reason
+                    else "ok\n"
+                ),
+                "",
+            )
 
         environment = {
             "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
@@ -178,7 +188,16 @@ class SupervisorTests(unittest.TestCase):
         def fake_run(argv, budget, reason, **kwargs):
             if reason == "FINALIZATION_FAILED":
                 events.append("finalization")
-            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                (
+                    "RATIO_BOUND=PASS\n"
+                    if "_RATIO_BIND_FAILED" in reason
+                    else "ok\n"
+                ),
+                "",
+            )
 
         def fake_terminate(process):
             events.append(("terminate", process))
@@ -224,6 +243,218 @@ class SupervisorTests(unittest.TestCase):
             ],
         )
 
+    def test_ratio_bind_precedes_each_trigger(self):
+        plan = valid_plan(Path("unused"))
+        report = module.base_report("live")
+
+        class Traffic:
+            pid = 123
+
+            @staticmethod
+            def poll():
+                return None
+
+        reasons = []
+
+        def fake_run(argv, budget, reason, **kwargs):
+            reasons.append(reason)
+
+            stdout = (
+                "RATIO_BOUND=PASS\n"
+                if "_RATIO_BIND_FAILED" in reason
+                else "ok\n"
+            )
+
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                stdout,
+                "",
+            )
+
+        environment = {
+            "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
+        }
+
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(module.subprocess, "Popen", return_value=Traffic()), \
+             mock.patch.object(module, "stationarity_gate", return_value=0), \
+             mock.patch.object(module, "run_command", side_effect=fake_run), \
+             mock.patch.object(module, "terminate_process"):
+            rc = module.run_live(
+                plan,
+                report,
+                module.LIVE_TOKEN,
+            )
+
+        self.assertEqual(rc, 0)
+
+        transition_reasons = [
+            reason
+            for reason in reasons
+            if "_RATIO_BIND_FAILED" in reason
+            or "_TRIGGER_FAILED" in reason
+        ]
+
+        self.assertEqual(
+            transition_reasons,
+            [
+                item
+                for index in range(1, 7)
+                for item in (
+                    f"T{index}_RATIO_BIND_FAILED",
+                    f"T{index}_TRIGGER_FAILED",
+                )
+            ],
+        )
+
+        self.assertEqual(
+            report["TRIGGER_WRITE_ATTEMPT_COUNT"],
+            6,
+        )
+        self.assertEqual(
+            report["TRIGGER_WRITE_SUCCESS_COUNT"],
+            6,
+        )
+
+    def test_ratio_bind_failure_prohibits_trigger(self):
+        plan = valid_plan(Path("unused"))
+        report = module.base_report("live")
+
+        class Traffic:
+            pid = 123
+
+            @staticmethod
+            def poll():
+                return None
+
+        reasons = []
+
+        def fake_run(argv, budget, reason, **kwargs):
+            reasons.append(reason)
+
+            if reason == "T3_RATIO_BIND_FAILED":
+                raise module.SupervisorError(
+                    "T3_RATIO_BIND_FAILED:RC_1",
+                    1,
+                )
+
+            stdout = (
+                "RATIO_BOUND=PASS\n"
+                if "_RATIO_BIND_FAILED" in reason
+                else "ok\n"
+            )
+
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                stdout,
+                "",
+            )
+
+        environment = {
+            "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
+        }
+
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(module.subprocess, "Popen", return_value=Traffic()), \
+             mock.patch.object(module, "stationarity_gate", return_value=0), \
+             mock.patch.object(module, "run_command", side_effect=fake_run), \
+             mock.patch.object(module, "terminate_process"):
+            with self.assertRaises(module.SupervisorError):
+                module.run_live(
+                    plan,
+                    report,
+                    module.LIVE_TOKEN,
+                )
+
+        self.assertIn(
+            "T3_RATIO_BIND_FAILED",
+            reasons,
+        )
+        self.assertNotIn(
+            "T3_TRIGGER_FAILED",
+            reasons,
+        )
+        self.assertNotIn(
+            "T4_RATIO_BIND_FAILED",
+            reasons,
+        )
+        self.assertEqual(
+            report["TRIGGER_WRITE_ATTEMPT_COUNT"],
+            2,
+        )
+        self.assertEqual(
+            report["TRIGGER_WRITE_SUCCESS_COUNT"],
+            2,
+        )
+
+    def test_missing_ratio_bound_pass_marker_prohibits_trigger(self):
+        plan = valid_plan(Path("unused"))
+        report = module.base_report("live")
+
+        class Traffic:
+            pid = 123
+
+            @staticmethod
+            def poll():
+                return None
+
+        reasons = []
+
+        def fake_run(argv, budget, reason, **kwargs):
+            reasons.append(reason)
+
+            if reason == "T2_RATIO_BIND_FAILED":
+                stdout = "RATIO_BINDING_WRITTEN=YES\n"
+            elif "_RATIO_BIND_FAILED" in reason:
+                stdout = "RATIO_BOUND=PASS\n"
+            else:
+                stdout = "ok\n"
+
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                stdout,
+                "",
+            )
+
+        environment = {
+            "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
+        }
+
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(module.subprocess, "Popen", return_value=Traffic()), \
+             mock.patch.object(module, "stationarity_gate", return_value=0), \
+             mock.patch.object(module, "run_command", side_effect=fake_run), \
+             mock.patch.object(module, "terminate_process"):
+            with self.assertRaisesRegex(
+                module.SupervisorError,
+                "T2_RATIO_BIND_PASS_MARKER_MISSING",
+            ):
+                module.run_live(
+                    plan,
+                    report,
+                    module.LIVE_TOKEN,
+                )
+
+        self.assertNotIn(
+            "T2_TRIGGER_FAILED",
+            reasons,
+        )
+        self.assertNotIn(
+            "T3_RATIO_BIND_FAILED",
+            reasons,
+        )
+        self.assertEqual(
+            report["TRIGGER_WRITE_ATTEMPT_COUNT"],
+            1,
+        )
+        self.assertEqual(
+            report["TRIGGER_WRITE_SUCCESS_COUNT"],
+            1,
+        )
+
     def test_trigger_failure_prohibits_later_trigger(self):
         plan = valid_plan(Path("unused"))
         report = module.base_report("live")
@@ -246,7 +477,16 @@ class SupervisorTests(unittest.TestCase):
                 trigger_number += 1
                 if trigger_number == 3:
                     raise module.SupervisorError("T3_TRIGGER_FAILED:RC_1", 1)
-            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                (
+                    "RATIO_BOUND=PASS\n"
+                    if "_RATIO_BIND_FAILED" in reason
+                    else "ok\n"
+                ),
+                "",
+            )
 
         environment = {
             "SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE": "YES",
