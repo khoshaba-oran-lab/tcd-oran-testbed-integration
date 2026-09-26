@@ -27,7 +27,7 @@
   },
   "host_semantics": "supervisor_local_filesystem",
   "live_runtime_admitted": false,
-  "provider_implemented": false,
+  "provider_implemented": true,
   "required_admission_evidence": [
     "execution_host",
     "fifo_path",

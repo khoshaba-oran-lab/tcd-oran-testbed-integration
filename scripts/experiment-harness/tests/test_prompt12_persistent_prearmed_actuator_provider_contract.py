@@ -67,7 +67,7 @@ class PersistentPrearmedActuatorProviderContractTests(
         )
         self.assertIs(
             self.contract["provider_implemented"],
-            False,
+            True,
         )
         self.assertIs(
             self.contract["live_runtime_admitted"],
