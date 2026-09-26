@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "prompt12-v2-pretrigger-ratio-binding-contract-v1",
+  "status": "FROZEN_DESIGN",
+  "purpose": "Define a transition-specific, fail-closed ratio-binding boundary that precedes each Prompt 12 scientific trigger while preserving one persistent reader and a ratio-free TRIGGER token.",
+  "architecture": {
+    "mode": "PERSISTENT_READER_WITH_PRETRIGGER_RATIO_BINDING",
+    "runtime_host": "tb3-dell",
+    "persistent_reader_required": true,
+    "single_trigger_fifo_required": true,
+    "reader_restart_between_transitions": false,
+    "automatic_reader_restart": "PROHIBITED",
+    "automatic_trigger_replay": "PROHIBITED",
+    "ratio_in_trigger_payload": false,
+    "scientific_trigger_token": "TRIGGER"
+  },
+  "sequence": {
+    "transition_order": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6"
+    ],
+    "requested_ratio_sequence_pct": [
+      50,
+      75,
+      100,
+      75,
+      50,
+      25
+    ],
+    "one_ratio_binding_per_transition": true,
+    "distinct_allowed_ratio_values_pct": [
+      25,
+      50,
+      75,
+      100
+    ]
+  },
+  "binding_artifact": {
+    "representation": "ATOMIC_TRANSITION_SPECIFIC_JSON_FILE",
+    "ownership": "PRODUCTION_ORCHESTRATION_PATH",
+    "creation_time": "AFTER_PRETRIGGER_ADMISSION_BEFORE_SCIENTIFIC_TRIGGER",
+    "consumption_time": "AFTER_TRIGGER_ACCEPTANCE_BEFORE_ACTUATOR_EXECUTION",
+    "must_preexist_before_trigger": true,
+    "must_be_unique_per_transition": true,
+    "must_not_be_reused": true,
+    "must_not_be_overwritten": true,
+    "required_fields": [
+      "schema",
+      "binding_id",
+      "experiment_id",
+      "run_id",
+      "transition_label",
+      "transition_index",
+      "requested_ratio_pct",
+      "created_utc"
+    ],
+    "schema_value": "sci_oran_prompt12_v2_pretrigger_ratio_binding_v1"
+  },
+  "binding_identity": {
+    "identity_scope": [
+      "experiment_id",
+      "run_id",
+      "transition_label",
+      "transition_index",
+      "binding_id"
+    ],
+    "binding_id_must_be_unique": true,
+    "duplicate_identity_policy": "FAIL_CLOSED",
+    "stale_binding_policy": "FAIL_CLOSED",
+    "missing_binding_policy": "FAIL_CLOSED",
+    "transition_mismatch_policy": "FAIL_CLOSED",
+    "ratio_mismatch_policy": "FAIL_CLOSED",
+    "already_consumed_policy": "FAIL_CLOSED"
+  },
+  "ratio_semantics": {
+    "environment_key": "SCI_ORAN_MAX_PRB_RATIO",
+    "allowed_values_pct": [
+      25,
+      50,
+      75,
+      100
+    ],
+    "default_value": null,
+    "missing_value_policy": "FAIL_CLOSED",
+    "invalid_value_policy": "FAIL_CLOSED",
+    "binding_is_transition_specific": true,
+    "ratio_is_resolved_per_actuator_execution": true,
+    "ratio_is_not_frozen_for_reader_lifetime": true,
+    "ratio_is_not_positional_actuator_input": true
+  },
+  "trigger_semantics": {
+    "accepted_trigger_token": "TRIGGER",
+    "trigger_token_carries_ratio": false,
+    "trigger_acceptance_requires_valid_unconsumed_binding": true,
+    "accepted_trigger_to_binding_consumption_cardinality": "EXACTLY_ONE",
+    "accepted_trigger_to_actuator_execution_cardinality": "EXACTLY_ONE",
+    "binding_consumption_to_actuator_execution_cardinality": "EXACTLY_ONE",
+    "automatic_trigger_replay": "PROHIBITED",
+    "scientific_trigger_replay_after_uncertain_write": "PROHIBITED"
+  },
+  "reader_semantics": {
+    "persistent_across_full_sequence": true,
+    "binding_revalidated_for_each_accepted_trigger": true,
+    "binding_consumed_once": true,
+    "actuator_environment_built_per_execution": true,
+    "actuator_environment_includes_transition_ratio": true,
+    "actuator_environment_source": "CURRENT_VALIDATED_BINDING",
+    "actuator_execution_shell": false,
+    "automatic_actuator_restart": "PROHIBITED"
+  },
+  "production_order": [
+    "PREVIOUS_POST_STEP_STATIONARITY_PASS_OR_INITIAL_ADMISSION_PASS",
+    "MATERIALIZE_TRANSITION_RATIO_BINDING",
+    "RATIO_BOUND_GATE_PASS",
+    "SCIENTIFIC_TRIGGER",
+    "BINDING_CONSUME",
+    "EXACTLY_ONE_ACTUATOR_EXECUTION",
+    "APPLIED_READBACK",
+    "POST_STEP_STATIONARITY"
+  ],
+  "evidence_requirements": {
+    "ratio_bound_gate": "PASS",
+    "required_binding_evidence": [
+      "binding_id",
+      "experiment_id",
+      "run_id",
+      "transition_label",
+      "transition_index",
+      "requested_ratio_pct",
+      "binding_file_path",
+      "binding_file_sha256",
+      "binding_created_utc"
+    ],
+    "required_consumption_evidence": [
+      "binding_id",
+      "binding_consumed",
+      "trigger_accepted",
+      "actuator_execution_count"
+    ],
+    "scientific_time_origin": "PRB_ACTUATOR_APPLIED",
+    "ratio_bound_event_is_scientific_time_origin": false
+  },
+  "integration_boundaries": {
+    "six_transition_dry_run_orchestrator_modified_by_this_contract": false,
+    "production_binding_builder_requires_future_extension": true,
+    "production_reader_requires_future_extension": true,
+    "persistent_provider_requires_future_extension": false,
+    "trigger_executor_requires_future_extension": false,
+    "runtime_profile_requires_future_binding_path_field": true
+  },
+  "safety_invariants": {
+    "provider_admission_in_this_action": false,
+    "fifo_creation_in_this_action": false,
+    "reader_process_start_in_this_action": false,
+    "actuator_execution_in_this_action": false,
+    "prb_control_execution_in_this_action": false,
+    "scientific_trigger_execution_in_this_action": false,
+    "traffic_execution_in_this_action": false,
+    "docker_execution_in_this_action": false,
+    "model_fitting_in_this_action": false
+  },
+  "next_phase": "IMPLEMENT_AND_TEST_PRETRIGGER_RATIO_BINDING_AGAINST_THIS_FROZEN_CONTRACT"
+}
