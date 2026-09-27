@@ -126,9 +126,7 @@ class PersistentPrearmedActuatorProviderContractTests(
         self.assertEqual(len(evidence), len(set(evidence)))
         self.assertEqual(
             bindings,
-            [
-                "cleanup_argv",
-            ],
+            [],
         )
         self.assertEqual(len(bindings), len(set(bindings)))
         self.assertIn("fifo_path", evidence)

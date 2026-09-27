@@ -51,7 +51,5 @@
     "leave_cleanup_to_a_separate_lifecycle_action"
   ],
   "schema": "sci_oran_prompt12_persistent_prearmed_actuator_provider_contract_v1",
-  "unresolved_runtime_bindings": [
-    "cleanup_argv"
-  ]
+  "unresolved_runtime_bindings": []
 }

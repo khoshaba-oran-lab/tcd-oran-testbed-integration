@@ -1183,3 +1183,74 @@ After this closure, the only unresolved production binding in the persistent
 prearmed actuator provider contract is `cleanup_argv`.
 
 <!-- /PROMPT12_V2_PROVIDER_IDENTITY_AND_TIMING_BINDINGS_CLOSURE_V1 -->
+
+<!-- PROMPT12_V2_PHASE_C_FINAL_CLOSURE_V1 -->
+
+### Prompt 12 V2 Phase C final production-binding closure
+
+Phase C closes the final unresolved production binding,
+`cleanup_argv`.
+
+`cleanup_argv` has semantic class `RUN_ALLOCATED_DERIVED`.
+
+Its production argv is materialised by:
+
+`scripts/experiment-harness/prompt12-production-cleanup-argv-materializer.py`
+
+from the already resolved absolute `runtime_root`.
+
+The resulting argv invokes:
+
+`scripts/experiment-harness/prompt12-production-cleanup.py`
+
+with the explicit `--runtime-root` argument.
+
+The cleanup implementation obtains the exact cleanup target from
+`runtime_root/provider-admission.json` and validates both:
+
+- `provider_pid`; and
+- `provider_process_start_identity`
+  (`boot_id:pid:start_ticks`).
+
+It additionally requires exact process-group identity before sending a
+signal.  Cleanup sends `SIGTERM` first and uses a bounded `SIGKILL`
+fallback only if required.
+
+Linux zombie process state is handled explicitly: a process with the
+same strong start identity and `/proc/<pid>/stat` state `Z` is treated as
+terminated rather than as a surviving executable process.
+
+The cleanup action deliberately preserves:
+
+- `runtime_root`;
+- `actuator.fifo`;
+- provider admission evidence; and
+- all other experimental evidence.
+
+It provides no broad `pkill`/`killall`, Docker, lifecycle reset, PRB
+control, traffic generation, or scientific-trigger capability.
+
+With this checkpoint, all seven production bindings are closed:
+
+1. `provider_launch_argv` — CLOSED;
+2. `runtime_root` — CLOSED;
+3. `fifo_path` — CLOSED;
+4. `provider_identity` — CLOSED;
+5. `readiness_timeout_ms` — CLOSED;
+6. `readiness_poll_ms` — CLOSED;
+7. `cleanup_argv` — CLOSED.
+
+Therefore:
+
+`unresolved_runtime_bindings = []`
+
+and:
+
+`PROMPT12_V2_PHASE_C = CLOSED`
+
+Closing Phase C establishes the repository-side production binding
+contract only.  It does not itself execute provider admission, reader
+startup, actuator control, traffic, cleanup, PRB changes, or any
+scientific trigger.
+
+<!-- /PROMPT12_V2_PHASE_C_FINAL_CLOSURE_V1 -->
