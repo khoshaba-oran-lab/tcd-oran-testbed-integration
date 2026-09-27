@@ -52,9 +52,6 @@
   ],
   "schema": "sci_oran_prompt12_persistent_prearmed_actuator_provider_contract_v1",
   "unresolved_runtime_bindings": [
-    "provider_identity",
-    "readiness_timeout_ms",
-    "readiness_poll_ms",
     "cleanup_argv"
   ]
 }

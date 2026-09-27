@@ -1136,3 +1136,50 @@ The next work for this binding is repository implementation and testing
 of the scoped FIFO-path derivation materializer.
 
 No live runtime admission is authorised by this scope record.
+
+<!-- PROMPT12_V2_PROVIDER_IDENTITY_AND_TIMING_BINDINGS_CLOSURE_V1 -->
+
+### Prompt 12 V2 provider identity and readiness timing binding closure
+
+This checkpoint closes three production bindings without live runtime discovery.
+
+1. `provider_identity`
+   - semantic class: `RUN_ALLOCATED_DERIVED`;
+   - value owner: repository materialisation layer;
+   - production materialiser:
+     `scripts/experiment-harness/prompt12-production-provider-identity-materializer.py`;
+   - derivation inputs: `experiment_id` and `run_id`;
+   - derivation:
+     `prompt12-provider-` plus the first 32 hexadecimal characters of
+     `SHA256(experiment_id UTF-8 || NUL || run_id UTF-8)`;
+   - PID, process-start identity, wall-clock time, randomness, and live
+     discovery are not inputs;
+   - `provider_pid` and `provider_process_start_identity` remain separate
+     post-start admission evidence.
+
+2. `readiness_timeout_ms`
+   - semantic class: `STATIC_TRACKED`;
+   - production value: `5000`;
+   - source:
+     `experiments/manifests/prompt12-bounded-sequence-production-frozen-config-v1.json`;
+   - source field: `timeline_readiness_timeout_ms`;
+   - the tracked timing policy is reused for provider reader-readiness waiting.
+
+3. `readiness_poll_ms`
+   - semantic class: `STATIC_TRACKED`;
+   - production value: `100`;
+   - source:
+     `experiments/manifests/prompt12-bounded-sequence-production-frozen-config-v1.json`;
+   - source field: `timeline_readiness_poll_ms`;
+   - the tracked timing policy is reused for provider reader-readiness retry
+     cadence.
+
+The reuse of the `5000 ms / 100 ms` timing policy does not assert that the
+stationarity readiness predicate and provider FIFO-reader readiness predicate
+are identical.  It reuses the same bounded-wait and retry-cadence policy for
+two distinct readiness checks.
+
+After this closure, the only unresolved production binding in the persistent
+prearmed actuator provider contract is `cleanup_argv`.
+
+<!-- /PROMPT12_V2_PROVIDER_IDENTITY_AND_TIMING_BINDINGS_CLOSURE_V1 -->
