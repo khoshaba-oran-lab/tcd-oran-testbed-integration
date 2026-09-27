@@ -416,3 +416,195 @@ After this plan is committed and pushed, the next implementation phase begins wi
 `IMPLEMENT_AND_TEST_PRETRIGGER_RATIO_BINDING_WRITER`
 
 No other implementation sub-stage is implicitly authorised.
+
+## 13. Evidence-Backed Production Actuator Wrapper Scope Expansion
+
+<!-- PROMPT12_V2_PRODUCTION_ACTUATOR_WRAPPER_SCOPE_EXPANSION_V1 -->
+
+### 13.1 Adjudication Basis
+
+The repository-only V2 implementation phase defined in Sections 9--12 is complete.
+
+Subsequent read-only production-admission adjudication established that the
+persistent provider and persistent reader are implemented, but a production
+actuator invocation cannot yet be represented as a single tracked argv
+suitable for the reader execution boundary.
+
+The following facts were established without Docker mutation, actuator
+execution, PRB control, traffic, or scientific triggering:
+
+- the historical production execution class is a Docker container;
+- the canonical actuator binary is present and executable;
+- the canonical actuator binary SHA256 is
+  `de71dcc0298c50c433828ec80be60bd68447ad6ef2912b2dcf3da65e10d4700f`;
+- the canonical RIC configuration SHA256 is
+  `940d8e1a87b8e937fea3678ca9fc47dd765f3bdf9f68f731cf6d2d47dda8be68`;
+- the production image is
+  `sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb`;
+- the required Docker network is `tcd-base05-zmq_ran`;
+- no tracked single-argv production actuator wrapper currently exists;
+- the persistent reader already supplies the requested ratio through
+  `SCI_ORAN_MAX_PRB_RATIO`;
+- allowed ratio values remain exactly `25,50,75,100`;
+- one accepted trigger must cause at most one actuator invocation and one
+  control request;
+- automatic control retry remains prohibited.
+
+Therefore the previously frozen implementation surface is expanded by exactly
+one production wrapper and its isolated test file.
+
+### 13.2 Newly Authorised Implementation Files
+
+The following two files are added to the authorised implementation surface:
+
+1. `scripts/experiment-harness/prompt12-production-actuator-wrapper.py`
+2. `scripts/experiment-harness/tests/test_prompt12_production_actuator_wrapper.py`
+
+No other file is authorised for modification by this scope expansion unless a
+later evidence-backed adjudication explicitly extends the scope again.
+
+### 13.3 Frozen Wrapper Inputs
+
+The production actuator wrapper shall accept the requested PRB ratio only via:
+
+`SCI_ORAN_MAX_PRB_RATIO`
+
+The variable:
+
+- must be present;
+- must contain exactly one of `25`, `50`, `75`, or `100`;
+- must fail closed for every other value;
+- must not have a default value.
+
+The wrapper shall use the following frozen production execution contract:
+
+- execution image:
+  `sha256:02a7181afaf1cb5892bbaaaeb3808e9db9bcb7594fa48396e3da56e210bc60bb`;
+- execution network:
+  `tcd-base05-zmq_ran`;
+- actuator host source:
+  `/home/khoshaba/sci-oran/build/prompt12-actuator-bfd1a35b/build/examples/xApp/c/control/xapp_oran_slice_ctrl`;
+- actuator container destination:
+  `/opt/action11r/canonical-actuator`;
+- RIC configuration host source:
+  `/home/khoshaba/project/tcd-oran-testbed-integration/deploy/phase-2-flexric/tb3-runtime/configs/ric.conf`;
+- RIC configuration container destination:
+  `/opt/action11r/xapp_oran_sm.conf`;
+- actuator entrypoint:
+  `/opt/action11r/canonical-actuator`;
+- actuator argv:
+  `-c /opt/action11r/xapp_oran_sm.conf`;
+- restart policy:
+  `no`;
+- security option:
+  `no-new-privileges`;
+- automatic removal:
+  `false`.
+
+### 13.4 Required Wrapper Behaviour
+
+One wrapper invocation represents one admitted actuator attempt.
+
+The wrapper shall:
+
+1. validate `SCI_ORAN_MAX_PRB_RATIO` before any Docker mutation;
+2. validate the canonical actuator binary and RIC configuration identities;
+3. validate the required Docker image and network before actuator execution;
+4. use a unique invocation-specific container identity;
+5. create/start no more than one actuator container for one invocation;
+6. pass `SCI_ORAN_MAX_PRB_RATIO` explicitly into the container environment;
+7. mount the canonical actuator binary read-only;
+8. mount the canonical RIC configuration read-only;
+9. attach the exact frozen production network;
+10. use the exact frozen entrypoint and `-c` configuration argument;
+11. execute no automatic retry;
+12. propagate a non-zero Docker/actuator result as wrapper failure;
+13. fail closed on any precondition failure;
+14. emit machine-readable evidence sufficient to attribute the invocation.
+
+The wrapper must not implement trigger handling, ratio-binding consumption,
+stationarity evaluation, scientific scheduling, or orchestration.
+
+Those responsibilities remain in their existing V2 components.
+
+### 13.5 Exactly-Once Boundary
+
+The exactly-once control chain remains:
+
+`ratio binding -> accepted TRIGGER -> persistent reader -> one wrapper invocation -> one actuator control request`
+
+The wrapper is not a second orchestration path.
+
+It is only the production execution adapter behind the already frozen
+persistent-reader actuator boundary.
+
+No wrapper implementation may:
+
+- consume the FIFO trigger directly;
+- read or write ratio-binding state;
+- generate a second scientific trigger;
+- retry an actuator request;
+- alter transition order;
+- redefine scientific time origin.
+
+Scientific time origin remains:
+
+`PRB_ACTUATOR_APPLIED`
+
+### 13.6 Repository-Only Implementation Gate
+
+Implementation and tests for the two newly authorised files shall initially be
+repository-only.
+
+Tests shall use mocks, stubs, temporary files, or equivalent isolated
+mechanisms and shall prove at least:
+
+- missing ratio fails closed;
+- invalid ratio fails closed;
+- each allowed ratio is accepted;
+- binary identity mismatch fails closed;
+- configuration identity mismatch fails closed;
+- missing Docker image fails closed;
+- missing Docker network fails closed;
+- exact Docker argv construction;
+- exact environment propagation;
+- read-only mount semantics;
+- exact entrypoint and configuration argument;
+- no automatic retry;
+- one invocation produces at most one Docker execution attempt;
+- non-zero child status propagates as failure;
+- machine-readable evidence is emitted deterministically.
+
+During this implementation phase:
+
+- real Docker container creation is prohibited;
+- real actuator execution is prohibited;
+- PRB mutation is prohibited;
+- traffic generation is prohibited;
+- scientific triggering is prohibited.
+
+### 13.7 Runtime Admission Note
+
+At the time of this adjudication:
+
+- the required Docker image was present;
+- the required Docker network `tcd-base05-zmq_ran` was not present.
+
+This is a future runtime-admission condition, not an implementation blocker.
+
+The wrapper implementation shall not create the missing network.
+
+Network availability must be established through the authorised Tb3 lifecycle
+path before live production admission.
+
+### 13.8 Next Authorised Implementation Step
+
+After this scope-expansion record is verified, the next implementation Action
+may create only:
+
+1. `scripts/experiment-harness/prompt12-production-actuator-wrapper.py`
+2. `scripts/experiment-harness/tests/test_prompt12_production_actuator_wrapper.py`
+
+No provider, reader, trigger executor, orchestration supervisor, runtime
+profile, production binding, or lifecycle file is authorised for modification
+by that implementation Action.
