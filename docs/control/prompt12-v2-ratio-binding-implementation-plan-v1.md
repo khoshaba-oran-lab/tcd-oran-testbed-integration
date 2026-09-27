@@ -923,3 +923,96 @@ The future materializer MUST NOT:
 6. authoritative provider-contract closure.
 
 No live runtime admission is authorised by this scope expansion.
+
+## Static-tracked runtime-parent selection — Recovery R5
+
+PROMPT12_V2_STATIC_TRACKED_RUNTIME_PARENT_SELECTION_V1
+
+### Decision
+
+The canonical production value for the runtime-root materializer input
+`tracked_runtime_parent` is:
+
+`/home/khoshaba/sci-oran`
+
+Binding classification:
+
+- semantic input: `tracked_runtime_parent`
+- class: `STATIC_TRACKED`
+- canonical value: `/home/khoshaba/sci-oran`
+- selection status: `SELECTED`
+- filesystem creation ownership: external/pre-existing; the materializer
+  MUST NOT create this parent.
+
+### Selection evidence
+
+At qualification time `/home/khoshaba/sci-oran`:
+
+- existed;
+- resolved canonically to `/home/khoshaba/sci-oran`;
+- was a directory;
+- was owned by user `khoshaba` and group `khoshaba`;
+- had mode `755`;
+- was readable, writable, and searchable by the experiment user;
+- passed the runtime-root materializer's
+  `validate_tracked_runtime_parent()` validation;
+- already served as a stable Prompt 12 project namespace for tracked
+  runtime-related assets including build, lifecycle, and environment
+  references.
+
+### Rejected alternatives
+
+`/home/khoshaba/sci-oran/staging`
+
+- rejected because the directory did not exist at qualification time;
+- failed materializer validation with
+  `TRACKED_RUNTIME_PARENT_UNAVAILABLE`.
+
+`/home/khoshaba/sci-oran/staging/r5-readiness`
+
+- rejected because the directory did not exist at qualification time;
+- historical evidence-path references do not constitute a current
+  production parent binding.
+
+`/tmp/sci-oran`
+
+- rejected because the directory did not exist at qualification time;
+- historical transient-runtime references do not constitute a current
+  production parent binding.
+
+`/tmp`
+
+- rejected as a general-purpose transient system directory;
+- ownership/mode were `root:root` / `1777`;
+- it is not selected as the Prompt 12 production runtime-parent
+  namespace.
+
+### Anti-loop closure
+
+The canonical runtime-parent search is closed by this decision.
+
+The rejected parent candidates MUST NOT be reconsidered without new
+contradictory evidence.
+
+The next work for this binding is repository closure of the already
+implemented runtime-root materializer, not another runtime-parent
+filesystem search.
+
+### Runtime safety boundary
+
+This selection record:
+
+- does not create `/home/khoshaba/sci-oran`;
+- does not create a runtime root;
+- does not create a FIFO;
+- does not launch the provider;
+- does not launch the reader;
+- does not launch the actuator;
+- does not execute Docker;
+- does not mutate PRB state;
+- does not generate traffic;
+- does not generate or consume a scientific trigger.
+
+`runtime_root` remains unresolved in the provider contract until the
+runtime-root materializer implementation is repository-verified,
+committed, pushed, and the authoritative provider contract is closed.
