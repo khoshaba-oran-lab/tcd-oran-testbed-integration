@@ -787,3 +787,139 @@ Immediately after this plan update:
 
 The next phase after the scope checkpoint is the frozen repository-only
 materializer implementation path. No live production admission is implied.
+
+## Runtime-root allocator/materializer scope expansion — Recovery R5
+
+PROMPT12_V2_RUNTIME_ROOT_ALLOCATOR_SCOPE_EXPANSION_V1
+
+### Purpose
+
+Close the production `runtime_root` binding without introducing an
+ad-hoc runtime path or transferring directory-creation ownership away
+from the persistent prearmed actuator provider.
+
+### Current adjudication
+
+- binding: `runtime_root`
+- semantic class: `RUN_ALLOCATED`
+- current resolution status: `UNRESOLVED`
+- blocker:
+  `TRACKED_PRODUCTION_RUNTIME_ROOT_ALLOCATOR_ABSENT`
+
+The repository contains no tracked production producer of the
+provider's required `--runtime-root` argument and no tracked
+runtime-root allocator mechanism.
+
+### Future component role
+
+The authorised future component role is:
+
+`RUNTIME_ROOT_ALLOCATOR_MATERIALIZER`
+
+It is a path materializer only. It does not create runtime resources.
+
+### Required dynamic inputs
+
+The future materializer shall require exactly these semantic inputs:
+
+1. `experiment_id`
+   - class: `RUN_ALLOCATED`
+   - required
+   - non-empty
+   - no implicit default
+
+2. `run_id`
+   - class: `RUN_ALLOCATED`
+   - required
+   - non-empty
+   - no implicit default
+
+3. `tracked_runtime_parent`
+   - class: `STATIC_TRACKED`
+   - required
+   - absolute
+   - canonical
+   - existing directory
+   - no implicit default
+
+### Output contract
+
+The output semantic is:
+
+`runtime_root`
+
+Properties:
+
+- type: absolute filesystem path;
+- class: `RUN_ALLOCATED`;
+- deterministically bound to `experiment_id` and `run_id`;
+- located directly under the exact tracked runtime parent;
+- must not exist at materialization time;
+- must be suitable for subsequent provider validation.
+
+### Ownership boundary
+
+The future materializer:
+
+- computes the `runtime_root` path only;
+- MUST NOT create `runtime_root`;
+- MUST NOT create the FIFO.
+
+The persistent prearmed actuator provider retains exclusive ownership
+of:
+
+- validating that the runtime-root parent exists and is canonical;
+- validating that `runtime_root` does not already exist;
+- creating `runtime_root` exclusively;
+- creating the canonical FIFO beneath that runtime root.
+
+### Required fail-closed conditions
+
+The future materializer shall fail closed on at least:
+
+- missing `experiment_id`;
+- empty `experiment_id`;
+- missing `run_id`;
+- empty `run_id`;
+- missing `tracked_runtime_parent`;
+- relative `tracked_runtime_parent`;
+- non-canonical tracked runtime parent;
+- missing tracked runtime parent;
+- tracked runtime parent not a directory;
+- implicit default substitution;
+- fixture or placeholder substitution;
+- output escaping the exact tracked runtime parent;
+- output already existing.
+
+### Forbidden responsibilities
+
+The future materializer MUST NOT:
+
+- create `runtime_root`;
+- create a FIFO;
+- start the provider;
+- start the persistent reader;
+- start the actuator;
+- execute Docker;
+- create or modify a Docker network;
+- mutate PRB state;
+- generate scientific traffic;
+- generate or consume a scientific trigger;
+- perform automatic retries;
+- replay a control operation;
+- evaluate stationarity;
+- perform lifecycle mutation.
+
+### Resolution rule
+
+`runtime_root` MUST remain present in
+`unresolved_runtime_bindings` until all of the following are complete:
+
+1. tracked materializer implementation;
+2. repository-only verification and tests;
+3. read-only contract audit;
+4. commit;
+5. push;
+6. authoritative provider-contract closure.
+
+No live runtime admission is authorised by this scope expansion.
