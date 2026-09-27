@@ -1016,3 +1016,123 @@ This selection record:
 `runtime_root` remains unresolved in the provider contract until the
 runtime-root materializer implementation is repository-verified,
 committed, pushed, and the authoritative provider contract is closed.
+
+## FIFO-path derivation scope - Recovery R5
+
+PROMPT12_V2_FIFO_PATH_DERIVATION_SCOPE_V1
+
+### Binding reclassification
+
+The production `fifo_path` binding is reclassified from
+`LIVE_DISCOVERED` to `RUN_ALLOCATED_DERIVED`.
+
+The canonical derivation is:
+
+`fifo_path = <runtime_root>/actuator.fifo`
+
+The path value is therefore known before provider launch once
+`runtime_root` has been allocated.
+
+No live filesystem discovery is required to determine the FIFO path.
+
+### Ownership boundary
+
+Path-value ownership:
+
+- repository materialization layer computes `fifo_path`;
+- the derivation materializer returns the path value only.
+
+Filesystem-object ownership:
+
+- the persistent prearmed actuator provider remains the exclusive owner
+  of FIFO filesystem-object creation;
+- the provider creates the FIFO with `os.mkfifo`;
+- expected FIFO mode remains `0600`.
+
+The derivation materializer MUST NOT:
+
+- create `runtime_root`;
+- create the FIFO;
+- call `os.mkfifo`;
+- start the provider;
+- start the reader;
+- start the actuator;
+- execute Docker;
+- execute PRB control;
+- generate scientific traffic;
+- generate or consume a scientific trigger.
+
+### Future implementation boundary
+
+The authorised future implementation path is:
+
+`scripts/experiment-harness/prompt12-production-fifo-path-materializer.py`
+
+The authorised future test path is:
+
+`scripts/experiment-harness/tests/test_prompt12_production_fifo_path_materializer.py`
+
+No additional implementation files are authorised by this scope.
+
+### Input contract
+
+The materializer has exactly one semantic input:
+
+1. `runtime_root`
+   - class: `RUN_ALLOCATED`;
+   - required;
+   - non-empty;
+   - absolute;
+   - no implicit default;
+   - MUST identify the already allocated runtime-root path;
+   - MUST NOT be created by the materializer.
+
+### Output contract
+
+The materializer has exactly one semantic output:
+
+1. `fifo_path`
+   - class: `RUN_ALLOCATED_DERIVED`;
+   - value: `<runtime_root>/actuator.fifo`;
+   - absolute;
+   - direct child of `runtime_root`;
+   - MUST NOT already exist at materialization time;
+   - MUST NOT be created by the materializer.
+
+### Fail-closed conditions
+
+The future materializer MUST fail closed on at least:
+
+- missing `runtime_root`;
+- empty `runtime_root`;
+- relative `runtime_root`;
+- invalid runtime-root path structure;
+- derived FIFO path not equal to `<runtime_root>/actuator.fifo`;
+- derived FIFO path already existing;
+- unexpected extra input;
+- implicit default substitution.
+
+### Architectural closure
+
+The previous `LIVE_DISCOVERED` classification for `fifo_path` is closed.
+
+The production semantic class is:
+
+`RUN_ALLOCATED_DERIVED`
+
+The canonical formula is:
+
+`<runtime_root>/actuator.fifo`
+
+`runtime_root` materialization is not reopened by this scope.
+
+Provider-launch materialization is not reopened by this scope.
+
+The current blocker is:
+
+`TRACKED_FIFO_PATH_DERIVATION_MATERIALIZER_ABSENT`
+
+The next work for this binding is repository implementation and testing
+of the scoped FIFO-path derivation materializer.
+
+No live runtime admission is authorised by this scope record.
