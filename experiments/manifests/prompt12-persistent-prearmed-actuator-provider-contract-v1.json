@@ -54,7 +54,6 @@
   "unresolved_runtime_bindings": [
     "runtime_root",
     "fifo_path",
-    "provider_launch_argv",
     "provider_identity",
     "readiness_timeout_ms",
     "readiness_poll_ms",
