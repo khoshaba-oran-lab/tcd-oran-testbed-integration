@@ -52,7 +52,6 @@
   ],
   "schema": "sci_oran_prompt12_persistent_prearmed_actuator_provider_contract_v1",
   "unresolved_runtime_bindings": [
-    "runtime_root",
     "fifo_path",
     "provider_identity",
     "readiness_timeout_ms",

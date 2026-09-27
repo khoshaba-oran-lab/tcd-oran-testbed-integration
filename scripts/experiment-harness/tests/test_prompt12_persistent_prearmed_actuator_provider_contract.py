@@ -124,12 +124,19 @@ class PersistentPrearmedActuatorProviderContractTests(
 
         self.assertEqual(len(evidence), 10)
         self.assertEqual(len(evidence), len(set(evidence)))
-        self.assertEqual(len(bindings), 7)
+        self.assertEqual(
+            bindings,
+            [
+                "fifo_path",
+                "provider_identity",
+                "readiness_timeout_ms",
+                "readiness_poll_ms",
+                "cleanup_argv",
+            ],
+        )
         self.assertEqual(len(bindings), len(set(bindings)))
         self.assertIn("fifo_path", evidence)
         self.assertIn("reader_readiness_gate", evidence)
-        self.assertIn("provider_launch_argv", bindings)
-        self.assertIn("cleanup_argv", bindings)
 
     def test_exact_guards_are_false(self):
         guards = self.contract["guards"]
