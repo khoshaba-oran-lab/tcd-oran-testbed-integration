@@ -608,3 +608,182 @@ may create only:
 No provider, reader, trigger executor, orchestration supervisor, runtime
 profile, production binding, or lifecycle file is authorised for modification
 by that implementation Action.
+
+## 14. Production provider launch materializer scope expansion
+
+Control marker:
+
+`PROMPT12_V2_PROVIDER_LAUNCH_MATERIALIZER_SCOPE_EXPANSION_V1`
+
+### 14.1 Scope decision
+
+The Prompt 12 V2 production path requires a tracked repository component
+that materializes the complete production provider launch argument vector
+from explicit run-allocated and live-discovered inputs.
+
+This scope expansion authorises repository-only implementation of exactly:
+
+- `scripts/experiment-harness/prompt12-production-provider-launch-materializer.py`
+- `scripts/experiment-harness/tests/test_prompt12_production_provider_launch_materializer.py`
+
+The materializer is an argv constructor only. It MUST NOT execute the
+constructed argv and this scope expansion does not admit live runtime use.
+
+The contract schema identifier is:
+
+`sci_oran_prompt12_v2_production_provider_launch_materializer_contract_v1`
+
+### 14.2 Dynamic required inputs
+
+The materializer accepts exactly four dynamic required inputs.
+
+1. `experiment_id`
+   - class: `RUN_ALLOCATED`
+   - required
+   - non-empty
+   - no default
+
+2. `run_id`
+   - class: `RUN_ALLOCATED`
+   - required
+   - non-empty
+   - no default
+
+3. `fifo_path`
+   - class: `LIVE_DISCOVERED`
+   - required
+   - non-empty
+   - absolute path
+   - no default
+
+4. `ratio_binding_paths`
+   - class: `RUN_ALLOCATED`
+   - required
+   - cardinality exactly six
+   - every path non-empty
+   - every path absolute
+   - input order preserved
+   - no default
+
+### 14.3 Static tracked inputs
+
+The materializer uses exactly two static tracked inputs:
+
+1. the production local FIFO reader executable:
+
+   `scripts/experiment-harness/prompt12-production-local-fifo-reader.py`
+
+2. the production actuator argv containing only:
+
+   `scripts/experiment-harness/prompt12-production-actuator-wrapper.py`
+
+No fixture, placeholder, fallback executable, or implicit substitute is
+permitted.
+
+### 14.4 Output contract
+
+The semantic output name is:
+
+`provider_launch_argv`
+
+The output type is:
+
+`ARGV_JSON_COMPATIBLE_LIST`
+
+The resulting argv MUST have the production reader launch shape:
+
+- reader executable
+- `--fifo-path`
+- `<fifo_path>`
+- `--actuator-argv-json`
+- JSON array containing only the production actuator wrapper
+- `--experiment-id`
+- `<experiment_id>`
+- `--run-id`
+- `<run_id>`
+- `--ratio-binding-paths-json`
+- JSON-encoded ordered list of exactly six ratio-binding paths
+
+The materializer constructs this argv and returns or emits its
+representation only. It MUST NOT execute it.
+
+### 14.5 Fail-closed conditions
+
+The materializer MUST fail closed for every one of the following:
+
+- missing `experiment_id`;
+- empty `experiment_id`;
+- missing `run_id`;
+- empty `run_id`;
+- missing `fifo_path`;
+- empty `fifo_path`;
+- non-absolute `fifo_path`;
+- missing `ratio_binding_paths`;
+- `ratio_binding_paths` cardinality other than six;
+- any empty ratio-binding path;
+- any non-absolute ratio-binding path;
+- missing reader executable;
+- reader executable not executable;
+- missing production actuator wrapper;
+- production actuator wrapper not executable;
+- any unexpected extra input;
+- any implicit or default substitution.
+
+### 14.6 Forbidden responsibilities
+
+The materializer MUST NOT:
+
+- create a FIFO;
+- start the provider;
+- start the reader;
+- start the actuator;
+- consume a ratio binding;
+- generate a scientific trigger;
+- execute Docker;
+- create a Docker network;
+- mutate PRB state;
+- generate scientific traffic;
+- evaluate stationarity;
+- orchestrate an experiment;
+- retry control;
+- replay a consumed trigger.
+
+### 14.7 Repository-only verification boundary
+
+Implementation verification MUST remain repository-only.
+
+The implementation phase MUST include at least the frozen twenty contract
+test cases covering valid construction and all required fail-closed
+boundaries.
+
+Before implementation commit, a separate read-only contract audit MUST
+verify:
+
+- only the two authorised future files were introduced;
+- the materializer performs construction only;
+- no runtime execution path was introduced;
+- no default or fixture substitution was introduced;
+- all frozen fail-closed conditions are covered;
+- all repository-only tests pass.
+
+No provider, reader, actuator, Docker, PRB, traffic, lifecycle, or
+scientific-trigger activity is authorised by this section.
+
+### 14.8 Admission status after this scope expansion
+
+Recording this section authorises the future repository implementation
+scope only.
+
+Immediately after this plan update:
+
+- production provider launch materializer implementation remains
+  `NOT_IMPLEMENTED`;
+- production provider launch materializer test remains
+  `NOT_IMPLEMENTED`;
+- live runtime admission remains `false`;
+- `provider_launch_argv` MUST NOT be treated as production-resolved until
+  implementation, repository-only verification, contract audit, commit,
+  and push are completed.
+
+The next phase after the scope checkpoint is the frozen repository-only
+materializer implementation path. No live production admission is implied.
