@@ -127,7 +127,6 @@ class PersistentPrearmedActuatorProviderContractTests(
         self.assertEqual(
             bindings,
             [
-                "fifo_path",
                 "provider_identity",
                 "readiness_timeout_ms",
                 "readiness_poll_ms",
