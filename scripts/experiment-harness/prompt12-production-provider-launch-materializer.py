@@ -24,6 +24,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 READER_PATH = SCRIPT_DIR / "prompt12-production-local-fifo-reader.py"
 WRAPPER_PATH = SCRIPT_DIR / "prompt12-production-actuator-wrapper.py"
+FIFO_TOKEN = "@PROMPT12_ACTUATOR_FIFO@"
 
 
 class ContractError(ValueError):
@@ -104,7 +105,7 @@ def build_provider_launch_argv(
     return [
         str(reader),
         "--fifo-path",
-        fifo_path,
+        FIFO_TOKEN,
         "--actuator-argv-json",
         actuator_argv_json,
         "--experiment-id",

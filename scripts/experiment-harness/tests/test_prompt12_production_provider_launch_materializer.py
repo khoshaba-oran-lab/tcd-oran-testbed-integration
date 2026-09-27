@@ -84,7 +84,7 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
             [
                 str(self.reader),
                 "--fifo-path",
-                "/runtime/provider.fifo",
+                "@PROMPT12_ACTUATOR_FIFO@",
                 "--actuator-argv-json",
                 json.dumps([str(self.wrapper)], separators=(",", ":")),
                 "--experiment-id",
@@ -105,6 +105,20 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
         result = self.build()
         encoded = result[result.index("--actuator-argv-json") + 1]
         self.assertEqual(json.loads(encoded), [str(self.wrapper)])
+
+    def test_03a_fifo_token_occurs_exactly_once(self):
+        result = self.build()
+        token = "@PROMPT12_ACTUATOR_FIFO@"
+        occurrence_count = sum(
+            item.count(token)
+            for item in result
+            if isinstance(item, str)
+        )
+        self.assertEqual(occurrence_count, 1)
+
+    def test_03b_concrete_fifo_path_is_not_persisted(self):
+        result = self.build()
+        self.assertNotIn("/runtime/provider.fifo", result)
 
     def test_04_empty_experiment_id_fails_closed(self):
         with self.assertRaises(materializer.ContractError):
