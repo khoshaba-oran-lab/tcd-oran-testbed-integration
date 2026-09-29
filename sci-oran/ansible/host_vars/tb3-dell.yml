@@ -1,0 +1,4 @@
+---
+sci_oran_expected_inventory_host: "tb3-dell"
+sci_oran_expected_hostname: "tb3-dell"
+sci_oran_repo_root: "/home/khoshaba/project/tcd-oran-testbed-integration"

@@ -5,7 +5,7 @@ usage()
 {
     cat <<'USAGE'
 Usage:
-  tb3-lifecycle.sh <operation> --confirm [operation-id]
+  tb3-lifecycle.sh <operation> --target <inventory-host> --confirm [operation-id]
 
 Operations:
   deploy
@@ -16,11 +16,16 @@ Operations:
   day-stop
 
 Examples:
-  tb3-lifecycle.sh day-start --confirm
-  tb3-lifecycle.sh day-stop --confirm
+  tb3-lifecycle.sh day-start --target tb3-dell --confirm
+  tb3-lifecycle.sh day-stop --target tb3-dell --confirm
 
-An explicit operation ID may be supplied as the third argument.
+Every state-changing lifecycle operation requires exactly one explicit
+inventory target and --confirm.
+
+An explicit operation ID may be supplied as the final positional argument.
 Otherwise a new UTC-based operation ID is generated automatically.
+
+The selected target must exist in the sci_oran_vms inventory group.
 
 This wrapper is intended to run on the Sci_O-RAN Ansible controller.
 USAGE
@@ -38,8 +43,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 OPERATION="$1"
-CONFIRM="${2:-}"
-EXPLICIT_ID="${3:-}"
+shift
 
 if [ "$OPERATION" = "-h" ] ||
    [ "$OPERATION" = "--help" ] ||
@@ -49,16 +53,95 @@ then
     exit 0
 fi
 
-if [ "$CONFIRM" != "--confirm" ]; then
-    fail "state-changing lifecycle operations require --confirm"
-fi
+TARGET=""
+CONFIRM="NO"
+EXPLICIT_ID=""
 
-ANSIBLE_ROOT="${SCI_ORAN_ANSIBLE_ROOT:-$HOME/sci-oran/ansible}"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --target)
+            [ -z "$TARGET" ] ||
+                fail "--target may be supplied only once"
+
+            [ "$#" -ge 2 ] ||
+                fail "--target requires an inventory host"
+
+            [ -n "$2" ] ||
+                fail "--target requires a non-empty inventory host"
+
+            TARGET="$2"
+            shift 2
+            ;;
+
+        --confirm)
+            [ "$CONFIRM" = "NO" ] ||
+                fail "--confirm may be supplied only once"
+
+            CONFIRM="YES"
+            shift
+            ;;
+
+        --*)
+            fail "unknown option: $1"
+            ;;
+
+        *)
+            [ -z "$EXPLICIT_ID" ] ||
+                fail "unexpected extra argument: $1"
+
+            EXPLICIT_ID="$1"
+            shift
+            ;;
+    esac
+done
+
+[ -n "$TARGET" ] ||
+    fail "state-changing lifecycle operations require --target <inventory-host>"
+
+[ "$CONFIRM" = "YES" ] ||
+    fail "state-changing lifecycle operations require --confirm"
+
+case "$TARGET" in
+    *[!A-Za-z0-9._-]*|'')
+        fail "invalid inventory target: $TARGET"
+        ;;
+esac
+
+case "$TARGET" in
+    -*)
+        fail "invalid inventory target: $TARGET"
+        ;;
+esac
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DEFAULT_ANSIBLE_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
+
+ANSIBLE_ROOT="${SCI_ORAN_ANSIBLE_ROOT:-$DEFAULT_ANSIBLE_ROOT}"
 INVENTORY="${SCI_ORAN_INVENTORY:-$ANSIBLE_ROOT/inventory.ini}"
 PLAYBOOK_DIR="${SCI_ORAN_PLAYBOOK_DIR:-$ANSIBLE_ROOT/lifecycle/playbooks}"
 
 test -f "$INVENTORY" ||
     fail "inventory not found: $INVENTORY"
+
+if ! ansible-inventory \
+        -i "$INVENTORY" \
+        --list |
+    python3 -c '
+import json
+import sys
+
+target = sys.argv[1]
+data = json.load(sys.stdin)
+
+group = data.get("sci_oran_vms", {})
+hosts = group.get("hosts", [])
+
+if target not in hosts:
+    sys.exit(1)
+' "$TARGET"
+then
+    fail "target is not a member of sci_oran_vms: $TARGET"
+fi
 
 UTC_ID="$(date -u '+%Y%m%dT%H%M%SZ')"
 NONCE="$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
@@ -130,6 +213,7 @@ case "$OPERATION_ID" in
 esac
 
 echo "SCI_ORAN_LIFECYCLE_OPERATION=$OPERATION"
+echo "SCI_ORAN_LIFECYCLE_TARGET=$TARGET"
 echo "SCI_ORAN_LIFECYCLE_OPERATION_ID=$OPERATION_ID"
 echo "SCI_ORAN_LIFECYCLE_PLAYBOOK=$PLAYBOOK"
 echo "SCI_ORAN_LIFECYCLE_INVENTORY=$INVENTORY"
@@ -137,6 +221,7 @@ echo
 
 exec ansible-playbook \
     -i "$INVENTORY" \
+    --limit "$TARGET" \
     "$PLAYBOOK" \
     -e "${ID_VAR}=${OPERATION_ID}" \
     -e "${CONFIRM_VAR}=true"

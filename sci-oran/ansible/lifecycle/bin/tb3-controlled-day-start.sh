@@ -12,7 +12,7 @@ PLAYBOOK="$SCRIPT_DIR/../playbooks/tb3-day-start.yml"
 LOG_ROOT="${SCI_ORAN_CONTROLLER_LOG_ROOT:-/home/khoshaba/sci-oran/staging/r5-readiness/controller-logs}"
 
 usage() {
-    echo "Usage: $0 --preflight | --execute" >&2
+    echo "Usage: $0 --preflight --target <inventory-host> | --execute --target <inventory-host>" >&2
 }
 
 preflight() {
@@ -35,6 +35,25 @@ preflight() {
         echo "BLOCKER=DAY_START_PLAYBOOK_MISSING"
         return 2
     }
+
+    if ! ansible-inventory -i "$INVENTORY" --list |
+         python3 -c '
+import json
+import sys
+
+target = sys.argv[1]
+data = json.load(sys.stdin)
+hosts = data.get("sci_oran_vms", {}).get("hosts", [])
+
+if target not in hosts:
+    sys.exit(1)
+' "$TARGET"
+    then
+        echo "PREFLIGHT_RESULT=BLOCKED"
+        echo "BLOCKER=TARGET_NOT_IN_SCI_ORAN_VMS"
+        echo "TARGET=$TARGET"
+        return 2
+    fi
 
     test -d "$LOG_ROOT" || {
         echo "PREFLIGHT_RESULT=BLOCKED"
@@ -70,6 +89,7 @@ preflight() {
     echo "PYTHON_FILESYSTEM_ENCODING=$encoding"
     echo "INVENTORY=$INVENTORY"
     echo "PLAYBOOK=$PLAYBOOK"
+    echo "TARGET=$TARGET"
     echo "ANSIBLE_VERSION=$(printf '%s\n' "$ansible_output" | head -n 1)"
     echo "ANSIBLE_PLAYBOOK_INVOCATION_COUNT=0"
 }
@@ -109,7 +129,7 @@ execute_once() {
         return 2
     }
 
-    ansible-playbook -i "$INVENTORY" "$PLAYBOOK" \
+    ansible-playbook -i "$INVENTORY" --limit "$TARGET" "$PLAYBOOK" \
         -e confirm_day_start=true \
         -e "day_start_operation_id=$requested_operation_id" \
         >"$log" 2>&1
@@ -160,7 +180,28 @@ execute_once() {
     return 1
 }
 
-case "${1:-}" in
+MODE="${1:-}"
+
+if [ "$#" -ne 3 ] ||
+   [ "${2:-}" != "--target" ] ||
+   [ -z "${3:-}" ]
+then
+    usage
+    exit 64
+fi
+
+TARGET="$3"
+
+case "$TARGET" in
+    *[!A-Za-z0-9._-]*|''|-*)
+        echo "RESULT=BLOCKED"
+        echo "BLOCKER=INVALID_TARGET"
+        echo "TARGET=$TARGET"
+        exit 64
+        ;;
+esac
+
+case "$MODE" in
     --preflight)
         preflight
         ;;
