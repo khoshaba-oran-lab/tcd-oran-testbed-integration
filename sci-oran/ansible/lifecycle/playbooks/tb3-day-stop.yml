@@ -1,4 +1,6 @@
 ---
+- import_playbook: tb3-preflight.yml
+
 - name: Sci-O-RAN Tb3 day-stop evidence capture
   hosts: sci_oran_vms
   gather_facts: true
