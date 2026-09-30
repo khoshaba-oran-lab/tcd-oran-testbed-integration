@@ -1,2 +1,7 @@
 ---
 sci_oran_expected_branch: "main"
+
+# Recovery R6-D canonical runtime storage defaults.
+sci_oran_runtime_storage_root: "/home/khoshaba/sci-oran"
+sci_oran_runtime_ephemeral_root: "{{ sci_oran_runtime_storage_root }}/runtime"
+sci_oran_runtime_acquisition_root: "/home/khoshaba/sci-oran-evidence"
