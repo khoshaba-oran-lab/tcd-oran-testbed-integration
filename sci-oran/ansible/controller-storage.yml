@@ -1,0 +1,26 @@
+---
+# Recovery R6-D canonical controller storage configuration.
+#
+# This file defines controller-local storage paths only.
+# It is not a runtime-VM group_vars or host_vars surface.
+#
+# Physical directory creation is separately authorised.
+
+sci_oran_controller_storage_root: "/home/khoshaba/sci-oran"
+
+sci_oran_controller_retained_evidence_root: >-
+  {{ sci_oran_controller_storage_root }}/retained-evidence
+
+sci_oran_controller_release_root: >-
+  {{ sci_oran_controller_storage_root }}/releases
+
+# Compatibility rule:
+# SCI_ORAN_STAGING_DIR, when non-empty, overrides the repository default.
+sci_oran_controller_staging_root: >-
+  {{
+    lookup('ansible.builtin.env', 'SCI_ORAN_STAGING_DIR')
+    | default(
+        sci_oran_controller_storage_root ~ '/staging',
+        true
+      )
+  }}
