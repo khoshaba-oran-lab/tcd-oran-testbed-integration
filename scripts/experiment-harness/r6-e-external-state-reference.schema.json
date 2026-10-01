@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sci-oran.local/schema/r6-e-external-state-reference-v1.0.0",
+  "title": "Sci_O-RAN R6-E External State Reference",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "record_id",
+    "host",
+    "absolute_path",
+    "artifact_class",
+    "logical_role",
+    "existence_expectation",
+    "liveness_expectation",
+    "liveness_state",
+    "retention_state",
+    "disposition",
+    "blocking_classification",
+    "provenance_note"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "const": "sci_oran_r6e_external_state_reference_v1"
+    },
+    "record_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "absolute_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^/"
+    },
+    "artifact_class": {
+      "type": "string",
+      "enum": [
+        "REPOSITORY_CONTROLLED_REFERENCE",
+        "PERSISTENT_EXTERNAL_OPERATIONAL_STATE",
+        "VM_LOCAL_ACQUISITION_STATE",
+        "AUTHORITATIVE_RETAINED_EVIDENCE",
+        "DERIVED_OR_STAGING_EVIDENCE",
+        "TRANSIENT_RUNTIME_STATE",
+        "LEGACY_OR_HISTORICAL_EXTERNAL_STATE",
+        "RETAINED_RELEASE_ARTIFACT_STATE",
+        "STALE_OR_HISTORICAL_REFERENCE_TARGET_ABSENT",
+        "STALE_PRESERVED_RUNTIME_RESIDUE",
+        "MIXED_EXTERNAL_OPERATIONAL_STATE",
+        "LEGACY_PRESERVATION_STATE",
+        "LEGACY_REPRODUCIBILITY_EVIDENCE"
+      ]
+    },
+    "logical_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "existence_expectation": {
+      "type": "string",
+      "enum": [
+        "PRESENT",
+        "ABSENT",
+        "MAY_EXIST",
+        "HISTORICAL_ONLY"
+      ]
+    },
+    "liveness_expectation": {
+      "type": "string",
+      "enum": [
+        "REQUIRED",
+        "NOT_REQUIRED",
+        "UNKNOWN"
+      ]
+    },
+    "liveness_state": {
+      "type": "string",
+      "enum": [
+        "LIVE",
+        "NOT_LIVE",
+        "UNKNOWN",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "liveness_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path_present": {
+          "type": "boolean"
+        },
+        "admission_metadata_present": {
+          "type": "boolean"
+        },
+        "live_process_confirmed": {
+          "type": "boolean"
+        },
+        "open_file_or_fifo_confirmed": {
+          "type": "boolean"
+        },
+        "current_control_plane_evidence": {
+          "type": "boolean"
+        },
+        "process_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "process_start_identity": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "manifest_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^/"
+    },
+    "manifest_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "object_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "repository_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{40}$"
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "experiment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retention_state": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "ACQUISITION",
+        "STAGING",
+        "RETAINED",
+        "RELEASED",
+        "LEGACY",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "original_historical_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^/"
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "KEEP",
+        "PRESERVE",
+        "RETAIN",
+        "RELEASE",
+        "TRANSIENT",
+        "LEGACY",
+        "STALE",
+        "UNRESOLVED"
+      ]
+    },
+    "blocking_classification": {
+      "type": "string",
+      "enum": [
+        "BLOCKING_CURRENT_R6_STEP",
+        "NONBLOCKING_BACKLOG",
+        "NOT_BLOCKING",
+        "UNRESOLVED"
+      ]
+    },
+    "provenance_note": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "dependentRequired": {
+    "manifest_sha256": [
+      "manifest_path"
+    ],
+    "manifest_path": [
+      "manifest_sha256"
+    ]
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}
