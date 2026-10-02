@@ -12,11 +12,18 @@ bundle transfer and Tb3 lifecycle playbooks.
 
 ## Repository source
 
-Run the repository wrapper:
+Run the repository compatibility wrapper:
 
 ```text
 scripts/tb3-lifecycle.sh
 ```
+
+This top-level script is a compatibility proxy only. It delegates all
+arguments to `sci-oran/ansible/lifecycle/bin/tb3-lifecycle.sh`, which is
+the canonical lifecycle mutation authority. The top-level compatibility
+proxy must not invoke `ansible-playbook`, generate lifecycle operation
+identities, or implement state-changing lifecycle logic independently.
+
 
 It resolves the default Ansible root relative to the repository. An alternative
 installation may set `SCI_ORAN_ANSIBLE_ROOT`.
@@ -72,6 +79,12 @@ The controlled day-start interface follows the same rule:
 and, only with separate execution authorisation:
 
 `lifecycle/bin/tb3-controlled-day-start.sh --execute --target <inventory-host>`
+
+`tb3-controlled-day-start.sh` is retained as an R5 compatibility facade.
+Its `--preflight` mode remains read-only. Its state-changing `--execute`
+mode delegates to `lifecycle/bin/tb3-lifecycle.sh day-start` and must not
+invoke `ansible-playbook` directly.
+
 
 An implicit state-changing operation against all hosts in `sci_oran_vms` is
 forbidden.

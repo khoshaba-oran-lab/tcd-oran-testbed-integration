@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ANSIBLE_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
 INVENTORY="$ANSIBLE_ROOT/inventory.ini"
 PLAYBOOK="$SCRIPT_DIR/../playbooks/tb3-day-start.yml"
+CANONICAL_WRAPPER="$SCRIPT_DIR/tb3-lifecycle.sh"
 LOG_ROOT="${SCI_ORAN_CONTROLLER_LOG_ROOT:-/home/khoshaba/sci-oran/staging/r5-readiness/controller-logs}"
 
 usage() {
@@ -16,6 +17,11 @@ usage() {
 }
 
 preflight() {
+    test -x "$CANONICAL_WRAPPER" || {
+        echo "BLOCKER=CANONICAL_LIFECYCLE_WRAPPER_NOT_EXECUTABLE"
+        return 1
+    }
+
     local encoding ansible_output ansible_rc
 
     test "$(hostname)" = "coll.vntu.org" || {
@@ -129,9 +135,10 @@ execute_once() {
         return 2
     }
 
-    ansible-playbook -i "$INVENTORY" --limit "$TARGET" "$PLAYBOOK" \
-        -e confirm_day_start=true \
-        -e "day_start_operation_id=$requested_operation_id" \
+    "$CANONICAL_WRAPPER" day-start \
+        --target "$TARGET" \
+        --confirm \
+        "$requested_operation_id" \
         >"$log" 2>&1
     playbook_rc=$?
 
@@ -155,6 +162,8 @@ execute_once() {
         handoff_gate="PASS"
 
     echo "ANSIBLE_PLAYBOOK_INVOCATION_COUNT=1"
+    echo "CANONICAL_WRAPPER_INVOCATION_COUNT=1"
+    echo "DIRECT_ANSIBLE_PLAYBOOK_INVOCATION_COUNT=0"
     echo "PLAYBOOK_RC=$playbook_rc"
     echo "REQUESTED_DAY_START_OPERATION_ID=$requested_operation_id"
     echo "DAY_START_OPERATION_ID=${observed_operation_id:-NOT_AVAILABLE}"
