@@ -131,6 +131,73 @@ class RuntimeProfileTemplateContractTests(unittest.TestCase):
         self.assertNotIn("/tmp/", raw)
         self.assertNotIn(".fifo", raw)
 
+
+    def test_python_executable_uses_portable_runtime_admission_provenance(self):
+        root = pathlib.Path(
+            __file__
+        ).resolve().parents[3]
+
+        path = (
+            root
+            / "experiments"
+            / "manifests"
+            / "prompt12-bounded-sequence-runtime-profile-template-contract-v1.json"
+        )
+
+        value = json.loads(
+            path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        hits = []
+
+        def visit(item):
+            if isinstance(item, dict):
+                for key, child in item.items():
+                    if (
+                        key == "python_executable"
+                        and isinstance(
+                            child,
+                            dict,
+                        )
+                    ):
+                        hits.append(child)
+
+                    visit(child)
+
+            elif isinstance(item, list):
+                for child in item:
+                    visit(child)
+
+        visit(value)
+
+        self.assertEqual(
+            len(hits),
+            1,
+        )
+
+        field = hits[0]
+
+        self.assertEqual(
+            field["source"],
+            "portable runtime admission",
+        )
+
+        self.assertEqual(
+            field["materialization"],
+            "materialize from a qualified portable runtime admission",
+        )
+
+        raw = path.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertNotIn(
+            "prompt12-python39-jsonschema.lock and environment provenance",
+            raw,
+        )
+
     def test_builder_rejects_template_as_concrete_profile(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = pathlib.Path(temporary) / "binding.json"

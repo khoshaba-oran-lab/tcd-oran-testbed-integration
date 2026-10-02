@@ -5,12 +5,24 @@ import datetime
 import json
 import os
 import pathlib
+import socket
 import re
 import stat
 import sys
 
 
 PROFILE_SCHEMA = "sci_oran_prompt12_bounded_sequence_runtime_profile_v1"
+ADMISSION_SCHEMA = "sci_oran_r6_f_portable_runtime_admission_v1"
+ADMISSION_KEYS = {
+    "schema",
+    "host",
+    "python_executable",
+    "python_version",
+    "jsonschema_required",
+    "jsonschema_version",
+    "draft202012_capability",
+    "qualification_gate",
+}
 TIMELINE_TOKEN = "@PROMPT12_ACTUATOR_TIMELINE@"
 RATIOS = (50, 75, 100, 75, 50, 25)
 
@@ -112,6 +124,10 @@ def parse_args():
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--frozen-config", required=True)
+    parser.add_argument(
+        "--portable-runtime-admission",
+        required=True,
+    )
     parser.add_argument("--actuator-fifo-path", required=True)
     parser.add_argument("--max-age-ms", required=True, type=int)
     parser.add_argument("--control-authorization-token", required=True)
@@ -201,35 +217,146 @@ def validate_fifo(value):
     return path
 
 
-def validate_frozen(path):
-    frozen = load_object(path, "FROZEN_CONFIG")
-    require_exact_keys(frozen, FROZEN_KEYS, "FROZEN_CONFIG")
+
+def validate_portable_runtime_admission(path):
+    root = load_object(
+        path,
+        "PORTABLE_RUNTIME_ADMISSION",
+    )
+
+    require_exact_keys(
+        root,
+        ADMISSION_KEYS,
+        "PORTABLE_RUNTIME_ADMISSION",
+    )
+
+    if root["schema"] != ADMISSION_SCHEMA:
+        raise MaterializerError(
+            "PORTABLE_RUNTIME_ADMISSION_SCHEMA_INVALID"
+        )
+
+    host = nonempty_string(
+        root["host"],
+        "PORTABLE_RUNTIME_ADMISSION_HOST",
+    )
+
+    current_host = socket.getfqdn()
+
+    if host != current_host:
+        raise MaterializerError(
+            "PORTABLE_RUNTIME_ADMISSION_HOST_MISMATCH:"
+            + host
+            + ":"
+            + current_host
+        )
+
     python_path = absolute_file(
-        frozen["python_executable"],
-        "PYTHON_EXECUTABLE",
+        root["python_executable"],
+        "PORTABLE_RUNTIME_ADMISSION_PYTHON_EXECUTABLE",
         executable=True,
     )
+
+    python_version = nonempty_string(
+        root["python_version"],
+        "PORTABLE_RUNTIME_ADMISSION_PYTHON_VERSION",
+    )
+
+    if root["jsonschema_required"] is not True:
+        raise MaterializerError(
+            "PORTABLE_RUNTIME_ADMISSION_JSONSCHEMA_REQUIRED_NOT_TRUE"
+        )
+
+    jsonschema_version = nonempty_string(
+        root["jsonschema_version"],
+        "PORTABLE_RUNTIME_ADMISSION_JSONSCHEMA_VERSION",
+    )
+
+    if root["draft202012_capability"] is not True:
+        raise MaterializerError(
+            "PORTABLE_RUNTIME_ADMISSION_DRAFT202012_NOT_PASS"
+        )
+
+    if root["qualification_gate"] != "PASS":
+        raise MaterializerError(
+            "PORTABLE_RUNTIME_ADMISSION_QUALIFICATION_NOT_PASS"
+        )
+
+    return {
+        "schema": ADMISSION_SCHEMA,
+        "host": host,
+        "python_executable": str(python_path),
+        "python_version": python_version,
+        "jsonschema_required": True,
+        "jsonschema_version": jsonschema_version,
+        "draft202012_capability": True,
+        "qualification_gate": "PASS",
+    }
+
+def validate_frozen(path):
+    frozen = load_object(
+        path,
+        "FROZEN_CONFIG",
+    )
+
+    require_exact_keys(
+        frozen,
+        FROZEN_KEYS,
+        "FROZEN_CONFIG",
+    )
+
+    legacy_python = nonempty_string(
+        frozen["python_executable"],
+        "LEGACY_PYTHON_EXECUTABLE",
+    )
+
+    if not pathlib.Path(
+        legacy_python
+    ).is_absolute():
+        raise MaterializerError(
+            "LEGACY_PYTHON_EXECUTABLE_NOT_ABSOLUTE"
+        )
+
     tools = frozen["tool_paths"]
+
     if not isinstance(tools, dict):
-        raise MaterializerError("TOOL_PATHS_NOT_OBJECT")
-    require_exact_keys(tools, TOOL_KEYS, "TOOL_PATHS")
+        raise MaterializerError(
+            "TOOL_PATHS_NOT_OBJECT"
+        )
+
+    require_exact_keys(
+        tools,
+        TOOL_KEYS,
+        "TOOL_PATHS",
+    )
+
     validated_tools = {}
+
     for name in sorted(TOOL_KEYS):
         validated_tools[name] = str(
-            absolute_file(tools[name], f"TOOL_PATH_{name.upper()}")
+            absolute_file(
+                tools[name],
+                f"TOOL_PATH_{name.upper()}",
+            )
         )
+
     return {
-        "python_executable": str(python_path),
+        "legacy_python_executable": legacy_python,
         "tool_paths": validated_tools,
         "traffic_duration_s": positive_int(
-            frozen["traffic_duration_s"], "TRAFFIC_DURATION_S"
+            frozen["traffic_duration_s"],
+            "TRAFFIC_DURATION_S",
         ),
         "trigger_token": nonempty_string(
-            frozen["trigger_token"], "TRIGGER_TOKEN"
+            frozen["trigger_token"],
+            "TRIGGER_TOKEN",
         ),
-        "stable_ms": nonnegative_int(frozen["stable_ms"], "STABLE_MS"),
+        "stable_ms": nonnegative_int(
+            frozen["stable_ms"],
+            "STABLE_MS",
+        ),
         "snapshot_timeout_ms": positive_int(
-            frozen["snapshot_timeout_ms"], "SNAPSHOT_TIMEOUT_MS"
+            frozen["snapshot_timeout_ms"],
+            "SNAPSHOT_TIMEOUT_MS",
         ),
         "timeline_readiness_poll_ms": positive_int(
             frozen["timeline_readiness_poll_ms"],
@@ -266,10 +393,10 @@ def receiver_name(run_id):
     return value
 
 
-def timeline_command(frozen, experiment_id, run_id, data_paths, ratios):
+def timeline_command(frozen, python_executable, experiment_id, run_id, data_paths, ratios):
     tools = frozen["tool_paths"]
     return [
-        frozen["python_executable"],
+        python_executable,
         tools["timeline_builder"],
         "--schema",
         tools["schema"],
@@ -294,6 +421,13 @@ def execute(args):
     validate_identity(args.experiment_id, args.run_id)
     frozen_path = absolute_file(args.frozen_config, "FROZEN_CONFIG")
     frozen = validate_frozen(frozen_path)
+    admission_path = absolute_file(
+        args.portable_runtime_admission,
+        "PORTABLE_RUNTIME_ADMISSION",
+    )
+    admission = validate_portable_runtime_admission(
+        admission_path
+    )
     fifo_path = validate_fifo(args.actuator_fifo_path)
     max_age_ms = positive_int(args.max_age_ms, "MAX_AGE_MS")
     authorization = nonempty_string(
@@ -367,6 +501,7 @@ def execute(args):
             path,
             timeline_command(
                 frozen,
+                admission["python_executable"],
                 args.experiment_id,
                 args.run_id,
                 data_paths,
@@ -383,7 +518,7 @@ def execute(args):
         "receiver_container_name": receiver_name(args.run_id),
         "actuator_fifo_path": str(fifo_path),
         "ratio_binding_paths": ratio_binding_paths,
-        "python_executable": frozen["python_executable"],
+        "python_executable": admission["python_executable"],
         "tool_paths": frozen["tool_paths"],
         "data_paths": data_paths,
         "traffic_duration_s": frozen["traffic_duration_s"],

@@ -3,6 +3,7 @@
 import json
 import os
 import pathlib
+import socket
 import subprocess
 import sys
 import tempfile
@@ -127,6 +128,38 @@ class ProductionFrozenConfigTests(unittest.TestCase):
             self.assertTrue(path.is_file(), path)
 
     def test_materializer_accepts_production_config(self):
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix=".json",
+            prefix="r6f-production-frozen-admission-",
+            delete=False,
+        ) as admission_handle:
+            json.dump(
+                {
+                    "schema": "sci_oran_r6_f_portable_runtime_admission_v1",
+                    "host": socket.getfqdn(),
+                    "python_executable": sys.executable,
+                    "python_version": sys.version.split()[0],
+                    "jsonschema_required": True,
+                    "jsonschema_version": "test-qualified",
+                    "draft202012_capability": True,
+                    "qualification_gate": "PASS",
+                },
+                admission_handle,
+                sort_keys=True,
+            )
+            admission_handle.write("\n")
+            admission_path = pathlib.Path(
+                admission_handle.name
+            )
+
+        self.addCleanup(
+            lambda: admission_path.unlink(
+                missing_ok=True
+            )
+        )
+
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)
             evidence = root / "evidence"
@@ -140,6 +173,8 @@ class ProductionFrozenConfigTests(unittest.TestCase):
                     str(MATERIALIZER),
                     "--frozen-config",
                     str(CONFIG),
+                    "--portable-runtime-admission",
+                    str(admission_path),
                     "--evidence-root",
                     str(evidence),
                     "--experiment-id",

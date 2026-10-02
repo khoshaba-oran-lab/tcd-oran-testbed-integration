@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import socket
 import subprocess
 import sys
 import tempfile
@@ -77,6 +78,23 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
         }
         self.frozen_path = self.root / "frozen.json"
         write_json(self.frozen_path, self.frozen)
+        self.admission = {
+            "schema": "sci_oran_r6_f_portable_runtime_admission_v1",
+            "host": socket.getfqdn(),
+            "python_executable": sys.executable,
+            "python_version": sys.version.split()[0],
+            "jsonschema_required": True,
+            "jsonschema_version": "test-qualified",
+            "draft202012_capability": True,
+            "qualification_gate": "PASS",
+        }
+        self.admission_path = (
+            self.root / "portable-runtime-admission.json"
+        )
+        write_json(
+            self.admission_path,
+            self.admission,
+        )
         self.fifo = self.root / "actuator.fifo"
         os.mkfifo(self.fifo)
         self.evidence = self.root / "evidence"
@@ -91,6 +109,7 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
             "experiment_id": self.baseline["experiment_id"],
             "run_id": self.baseline["run_id"],
             "frozen_config": str(self.frozen_path),
+            "portable_runtime_admission": str(self.admission_path),
             "actuator_fifo_path": str(self.fifo),
             "max_age_ms": str(self.baseline["max_age_ms"]),
             "control_authorization_token": self.baseline[
@@ -109,6 +128,8 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
             values["run_id"],
             "--frozen-config",
             values["frozen_config"],
+            "--portable-runtime-admission",
+            values["portable_runtime_admission"],
             "--actuator-fifo-path",
             values["actuator_fifo_path"],
             "--max-age-ms",
@@ -268,6 +289,140 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
         proc = self.run_materializer()
         self.assertNotEqual(proc.returncode, 0)
         self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve\n")
+
+
+    def test_invalid_portable_runtime_admission_is_rejected_before_allocation(self):
+        broken = dict(self.admission)
+        broken["qualification_gate"] = "FAIL"
+
+        broken_path = (
+            self.root
+            / "broken-portable-runtime-admission.json"
+        )
+
+        write_json(
+            broken_path,
+            broken,
+        )
+
+        proc = self.run_materializer(
+            portable_runtime_admission=str(
+                broken_path
+            )
+        )
+
+        self.assertNotEqual(
+            proc.returncode,
+            0,
+        )
+
+        self.assertEqual(
+            list(self.evidence.iterdir()),
+            [],
+        )
+
+    def test_missing_portable_runtime_admission_is_rejected_before_allocation(self):
+        missing = (
+            self.root
+            / "missing-portable-runtime-admission.json"
+        )
+
+        proc = self.run_materializer(
+            portable_runtime_admission=str(
+                missing
+            )
+        )
+
+        self.assertNotEqual(
+            proc.returncode,
+            0,
+        )
+
+        self.assertEqual(
+            list(self.evidence.iterdir()),
+            [],
+        )
+
+    def test_legacy_frozen_python_does_not_control_profile_or_timeline(self):
+        self.frozen["python_executable"] = (
+            "/definitely/missing/"
+            "legacy-prompt12-python"
+        )
+
+        write_json(
+            self.frozen_path,
+            self.frozen,
+        )
+
+        proc = self.run_materializer()
+
+        self.assertEqual(
+            proc.returncode,
+            0,
+            proc.stderr,
+        )
+
+        profiles = list(
+            self.evidence.rglob(
+                "runtime-profile.json"
+            )
+        )
+
+        self.assertEqual(
+            len(profiles),
+            1,
+        )
+
+        profile = json.loads(
+            profiles[0].read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertEqual(
+            profile["python_executable"],
+            self.admission["python_executable"],
+        )
+
+        self.assertNotEqual(
+            profile["python_executable"],
+            self.frozen["python_executable"],
+        )
+
+        for command_path in profile[
+            "incremental_timeline_command_json"
+        ]:
+            command = json.loads(
+                pathlib.Path(
+                    command_path
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                command[0],
+                self.admission[
+                    "python_executable"
+                ],
+            )
+
+    def test_materializer_source_preserves_only_legacy_frozen_python_reference(self):
+        source = SCRIPT.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertEqual(
+            source.count(
+                'frozen["python_executable"]'
+            ),
+            1,
+        )
+
+        self.assertIn(
+            '"python_executable": admission["python_executable"]',
+            source,
+        )
 
     def test_missing_frozen_key_is_rejected_before_allocation(self):
         broken = dict(self.frozen)

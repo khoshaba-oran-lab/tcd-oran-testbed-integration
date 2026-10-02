@@ -49,8 +49,8 @@
     },
     "python_executable": {
       "class": "FROZEN_STATIC",
-      "materialization": "resolve from the qualified isolated Python toolchain",
-      "source": "prompt12-python39-jsonschema.lock and environment provenance"
+      "materialization": "materialize from a qualified portable runtime admission",
+      "source": "portable runtime admission"
     },
     "receiver_container_name": {
       "class": "RUN_ALLOCATED",
