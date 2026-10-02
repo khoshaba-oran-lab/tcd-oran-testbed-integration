@@ -11,6 +11,12 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/identity.sh"
 source "${SCRIPT_DIR}/lib/manifest.sh"
 source "${SCRIPT_DIR}/lib/preflight.sh"
+# R6-H canonical generic-preflight bindings are owned by this entrypoint.
+# Ambient values are not accepted as implicit defaults.
+unset SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE
+unset SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA
+unset SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT
+
 source "${SCRIPT_DIR}/lib/logger-stack.sh"
 source "${SCRIPT_DIR}/lib/traffic-window.sh"
 source "${SCRIPT_DIR}/lib/finalization.sh"
@@ -89,7 +95,7 @@ trap 'handle_signal TERM' TERM
 trap 'rc=$?; trap - EXIT INT TERM; cleanup_on_exit; exit "$rc"' EXIT
 
 usage() {
-    echo "Usage: $(basename "$0") --experiment-id ID --workspace-root PATH --traffic-command COMMAND [--cooldown-s N] [--kpm-command COMMAND] [--kpm-ready-marker MARKER]"
+    echo "Usage: $(basename "$0") --experiment-id ID --workspace-root PATH --traffic-command COMMAND [--cooldown-s N] [--kpm-command COMMAND] [--kpm-ready-marker MARKER] --preflight-python-executable PATH --preflight-require-jsonschema yes|no --preflight-portable-admission-output PATH"
 }
 
 if [[ "${1:-}" == "--version" ]]; then
@@ -136,6 +142,21 @@ while [[ "$#" -gt 0 ]]; do
         --kpm-ready-marker)
             [[ "$#" -ge 2 ]] || exit "$EX_USAGE"
             KPM_READY_MARKER="$2"
+            shift 2
+            ;;
+        --preflight-python-executable)
+            [[ "$#" -ge 2 ]] || exit "$EX_USAGE"
+            export SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE="$2"
+            shift 2
+            ;;
+        --preflight-require-jsonschema)
+            [[ "$#" -ge 2 ]] || exit "$EX_USAGE"
+            export SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA="$2"
+            shift 2
+            ;;
+        --preflight-portable-admission-output)
+            [[ "$#" -ge 2 ]] || exit "$EX_USAGE"
+            export SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT="$2"
             shift 2
             ;;
         --help|-h)

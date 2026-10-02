@@ -91,8 +91,201 @@ sci_oran_precheck() {
         return 70
     fi
 
+    local portable_path
+    local portable_output
+    local portable_rc
+    local portable_gate
+    local portable_qualification_gate
+
+    portable_path="${repo_root}/scripts/experiment-harness/r6-f-portable-runtime-preflight.py"
+
+    if [[ -z "${SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE:-}" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=MISSING_PREFLIGHT_PYTHON_EXECUTABLE" \
+            >&2
+        return 64
+    fi
+
+    if [[ "${SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE}" != /* ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PREFLIGHT_PYTHON_EXECUTABLE_NOT_ABSOLUTE" \
+            >&2
+        return 64
+    fi
+
+    if [[ ! -x "${SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE}" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PREFLIGHT_PYTHON_EXECUTABLE_NOT_EXECUTABLE" \
+            >&2
+        return 69
+    fi
+
+    if [[ -z "${SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA:-}" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=MISSING_PREFLIGHT_REQUIRE_JSONSCHEMA" \
+            >&2
+        return 64
+    fi
+
+    if [[ "${SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA}" != "yes" ]] && \
+       [[ "${SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA}" != "no" ]]
+    then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PREFLIGHT_REQUIRE_JSONSCHEMA_INVALID" \
+            >&2
+        return 64
+    fi
+
+    if [[ -z "${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT:-}" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=MISSING" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=MISSING_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT" \
+            >&2
+        return 64
+    fi
+
+    if [[ "${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" != /* ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PREFLIGHT_PORTABLE_ADMISSION_OUTPUT_NOT_ABSOLUTE" \
+            >&2
+        return 64
+    fi
+
+    if [[ ! -x "$portable_path" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=NOT_EXECUTED" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PORTABLE_RUNTIME_PROVIDER_UNAVAILABLE" \
+            >&2
+        return 66
+    fi
+
+    if portable_output="$(
+        "$portable_path" \
+            --python-executable "${SCI_ORAN_PREFLIGHT_PYTHON_EXECUTABLE}" \
+            --require-jsonschema "${SCI_ORAN_PREFLIGHT_REQUIRE_JSONSCHEMA}" \
+            --output "${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            2>&1
+    )"
+    then
+        portable_rc=0
+    else
+        portable_rc=$?
+    fi
+
+    portable_gate="$(
+        printf '%s\n' "$portable_output" |
+        awk -F= '
+            $1 == "R6_F_PORTABLE_RUNTIME_PREFLIGHT_GATE" {
+                value = substr($0, index($0, "=") + 1)
+            }
+            END {
+                if (value != "")
+                    print value
+            }
+        '
+    )"
+
+    portable_qualification_gate="$(
+        printf '%s\n' "$portable_output" |
+        awk -F= '
+            $1 == "ADMISSION_QUALIFICATION_GATE" {
+                value = substr($0, index($0, "=") + 1)
+            }
+            END {
+                if (value != "")
+                    print value
+            }
+        '
+    )"
+
+    if [[ "$portable_rc" -ne 0 ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=${portable_rc}" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=${portable_gate:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_QUALIFICATION_GATE=${portable_qualification_gate:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PORTABLE_RUNTIME_PROVIDER_FAILED" \
+            >&2
+
+        return "$portable_rc"
+    fi
+
+    if [[ "$portable_gate" != "PASS" ]] || \
+       [[ "$portable_qualification_gate" != "PASS" ]]
+    then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=${portable_gate:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_QUALIFICATION_GATE=${portable_qualification_gate:-MISSING}" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PORTABLE_RUNTIME_GATE_NOT_PASS" \
+            >&2
+
+        return 70
+    fi
+
+    if [[ ! -s "${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" ]]; then
+        printf '%s\n' \
+            "SCI_ORAN_PREFLIGHT_READY_GATE=FAIL" \
+            "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=0" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=PASS" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_QUALIFICATION_GATE=PASS" \
+            "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}" \
+            "SCI_ORAN_PREFLIGHT_FAILURE_REASON=PORTABLE_RUNTIME_ADMISSION_ARTIFACT_MISSING" \
+            >&2
+
+        return 65
+    fi
+
     echo "SCI_ORAN_PREFLIGHT_READY_GATE=PASS"
     echo "SCI_ORAN_PREFLIGHT_DOCTOR_EXIT_CODE=0"
+    echo "SCI_ORAN_PREFLIGHT_PORTABLE_EXIT_CODE=0"
+    echo "SCI_ORAN_PREFLIGHT_PORTABLE_GATE=PASS"
+    echo "SCI_ORAN_PREFLIGHT_PORTABLE_QUALIFICATION_GATE=PASS"
+    echo "SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_PATH=${SCI_ORAN_PREFLIGHT_PORTABLE_ADMISSION_OUTPUT}"
     echo "SCI_ORAN_PREFLIGHT_FAILURE_REASON=NONE"
 
     return 0
