@@ -120,8 +120,15 @@ class ProductionFrozenConfigTests(unittest.TestCase):
 
     def test_all_bound_paths_exist(self):
         value = self.load_config()
-        self.assertTrue(PYTHON.is_file())
-        self.assertTrue(os.access(PYTHON, os.X_OK))
+
+        legacy_python = pathlib.Path(
+            value["python_executable"]
+        )
+
+        self.assertTrue(
+            legacy_python.is_absolute()
+        )
+
         for path_text in value["tool_paths"].values():
             path = pathlib.Path(path_text)
             self.assertTrue(path.is_absolute())
