@@ -137,7 +137,7 @@ The historical bulk migration backlog does not block progression to R6-E.
 ## R6-E - External Runtime Evidence
 
 PURPOSE=Define and qualify how runtime evidence external to Git is discovered, identified, referenced, and preserved under the authoritative control model.
-STATUS=NEXT_NOT_STARTED
+STATUS=CLOSED_PASS
 
 R6-E must address runtime evidence that exists outside the repository while
 preserving provenance and avoiding silent dependency on undocumented local
@@ -151,7 +151,7 @@ explicit scientific admission permits them.
 ## R6-F - Portable Experiment Runtime
 
 PURPOSE=Make experiment runtime dependencies portable and reproducible across compatible execution hosts.
-STATUS=NOT_STARTED
+STATUS=ACTIVE
 
 R6-F follows R6-E.
 
@@ -202,18 +202,19 @@ R6_A_STATUS=CLOSED_PASS
 R6_B_STATUS=CLOSED_PASS
 R6_C_STATUS=CLOSED_PASS
 R6_D_STATUS=CLOSED_PASS
-R6_E_STATUS=NEXT_NOT_STARTED
-R6_F_STATUS=NOT_STARTED
+R6_E_STATUS=CLOSED_PASS
+R6_F_STATUS=ACTIVE
 R6_G_STATUS=NOT_STARTED
 R6_H_STATUS=NOT_STARTED
 R6_I_STATUS=NOT_STARTED
 R6_J_STATUS=NOT_STARTED
 
-CURRENT_COMPLETED_WORKSTREAM=R6-D_STORAGE_ARCHITECTURE
-NEXT_WORKSTREAM=R6-E_EXTERNAL_RUNTIME_EVIDENCE
+CURRENT_COMPLETED_WORKSTREAM=R6-E_EXTERNAL_RUNTIME_EVIDENCE
+NEXT_WORKSTREAM=R6-F_PORTABLE_EXPERIMENT_RUNTIME
 
 SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
 R6_E_EXECUTION_AUTHORISED=NO
+R6_F_EXECUTION_AUTHORISED=NO
 PROMPT12_RESUMPTION_AUTHORISED=NO
 
 ## Backlog classification
@@ -232,8 +233,22 @@ PLAN_DRIFT_ALLOWED=NO
 IMPLICIT_REORDERING_ALLOWED=NO
 UNAUTHORISED_WORKSTREAM_JUMP_ALLOWED=NO
 
-The next workstream after the current closed R6-D state is:
+The next workstream after the current closed R6-E state is:
 
-NEXT_WORKSTREAM=R6-E_EXTERNAL_RUNTIME_EVIDENCE
+NEXT_WORKSTREAM=R6-F_PORTABLE_EXPERIMENT_RUNTIME
 
-Execution of R6-E requires a separate Action and explicit authorization.
+Execution of R6-F requires a separate Action and explicit authorization.
+
+
+## R6-E closure and R6-F transition checkpoint
+
+TRANSITION_DATE=2026-10-02
+R6_E_CLOSURE_FILE=sci-oran/ansible/lifecycle/docs/r6-e-external-runtime-evidence-closure.md
+R6_E_CLOSURE_SHA256=db9bc50f8637b38f492cf0ca0d193906411b9da4b1e2ee4eb8c6c7534a1a8dc6
+R6_E_IMPLEMENTATION_HEAD=184884e081c34bd8b4c8bc711218babcda41231e
+
+R6F_EXACT_TOOLCHAIN_PORTABILITY_GAP=OPEN
+R6F_EXACT_TOOLCHAIN_PORTABILITY_GAP_CLASSIFICATION=NEXT_WORKSTREAM_INPUT
+R6F_EXACT_TOOLCHAIN_PORTABILITY_GAP_BLOCKS_R6E_CLOSURE=NO
+
+R6_E_TO_R6_F_TRANSITION=PASS
