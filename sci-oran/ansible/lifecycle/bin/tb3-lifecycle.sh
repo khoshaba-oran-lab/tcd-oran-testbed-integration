@@ -120,13 +120,20 @@ ANSIBLE_ROOT="${SCI_ORAN_ANSIBLE_ROOT:-$DEFAULT_ANSIBLE_ROOT}"
 INVENTORY="${SCI_ORAN_INVENTORY:-$ANSIBLE_ROOT/inventory.ini}"
 PLAYBOOK_DIR="${SCI_ORAN_PLAYBOOK_DIR:-$ANSIBLE_ROOT/lifecycle/playbooks}"
 
-# Host-specific lifecycle identity and repository-path contracts are
-# repository-controlled even when connection inventory is materialized
-# outside the repository on the Ansible controller.
+# Lifecycle contracts remain repository-controlled even when connection
+# inventory is materialized outside the repository on the Ansible controller.
+#
+# Group variables provide group-wide lifecycle policy such as the expected
+# repository branch. Host variables provide target-specific identity and
+# repository-path bindings.
+GROUP_VARS_FILE="$DEFAULT_ANSIBLE_ROOT/group_vars/sci_oran_vms.yml"
 HOST_VARS_FILE="$DEFAULT_ANSIBLE_ROOT/host_vars/$TARGET.yml"
 
 test -f "$INVENTORY" ||
     fail "inventory not found: $INVENTORY"
+
+test -f "$GROUP_VARS_FILE" ||
+    fail "repository group-vars contract not found: $GROUP_VARS_FILE"
 
 test -f "$HOST_VARS_FILE" ||
     fail "repository host-vars contract not found: $HOST_VARS_FILE"
@@ -225,6 +232,7 @@ echo "SCI_ORAN_LIFECYCLE_TARGET=$TARGET"
 echo "SCI_ORAN_LIFECYCLE_OPERATION_ID=$OPERATION_ID"
 echo "SCI_ORAN_LIFECYCLE_PLAYBOOK=$PLAYBOOK"
 echo "SCI_ORAN_LIFECYCLE_INVENTORY=$INVENTORY"
+echo "SCI_ORAN_LIFECYCLE_GROUP_VARS_FILE=$GROUP_VARS_FILE"
 echo "SCI_ORAN_LIFECYCLE_HOST_VARS_FILE=$HOST_VARS_FILE"
 echo
 
@@ -232,6 +240,7 @@ exec ansible-playbook \
     -i "$INVENTORY" \
     --limit "$TARGET" \
     "$PLAYBOOK" \
+    -e "@$GROUP_VARS_FILE" \
     -e "@$HOST_VARS_FILE" \
     -e "${ID_VAR}=${OPERATION_ID}" \
     -e "${CONFIRM_VAR}=true"
