@@ -151,7 +151,7 @@ explicit scientific admission permits them.
 ## R6-F - Portable Experiment Runtime
 
 PURPOSE=Make experiment runtime dependencies portable and reproducible across compatible execution hosts.
-STATUS=ACTIVE
+STATUS=CLOSED_PASS
 
 R6-F follows R6-E.
 
@@ -161,21 +161,21 @@ explicitly revised.
 ## R6-G - Canonical Lifecycle
 
 PURPOSE=Consolidate the complete intended experiment-platform lifecycle into one canonical repository-controlled operational model.
-STATUS=NOT_STARTED
+STATUS=CLOSED_PASS
 
 R6-G follows R6-F.
 
 ## R6-H - Canonical Experiment Preflight
 
 PURPOSE=Define a canonical preflight that proves experiment admission conditions before scientific execution.
-STATUS=NOT_STARTED
+STATUS=CLOSED_PASS
 
 R6-H follows R6-G.
 
 ## R6-I - Legacy Data Catalogue
 
 PURPOSE=Catalogue existing historical and legacy evidence without making bulk historical migration a prerequisite for prospective work.
-STATUS=NOT_STARTED
+STATUS=ACTIVE
 
 R6-I follows R6-H.
 
@@ -205,12 +205,12 @@ R6_D_STATUS=CLOSED_PASS
 R6_E_STATUS=CLOSED_PASS
 R6_F_STATUS=CLOSED_PASS
 R6_G_STATUS=CLOSED_PASS
-R6_H_STATUS=ACTIVE
-R6_I_STATUS=NOT_STARTED
+R6_H_STATUS=CLOSED_PASS
+R6_I_STATUS=ACTIVE
 R6_J_STATUS=NOT_STARTED
 
-CURRENT_COMPLETED_WORKSTREAM=R6-G_CANONICAL_LIFECYCLE
-NEXT_WORKSTREAM=R6-H_CANONICAL_EXPERIMENT_PREFLIGHT
+CURRENT_COMPLETED_WORKSTREAM=R6-H_CANONICAL_EXPERIMENT_PREFLIGHT
+NEXT_WORKSTREAM=R6-I_LEGACY_DATA_CATALOGUE
 
 SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
 R6_E_EXECUTION_AUTHORISED=NO
@@ -233,11 +233,11 @@ PLAN_DRIFT_ALLOWED=NO
 IMPLICIT_REORDERING_ALLOWED=NO
 UNAUTHORISED_WORKSTREAM_JUMP_ALLOWED=NO
 
-The next workstream after the current closed R6-E state is:
+The next workstream after the current closed R6-H state is:
 
-NEXT_WORKSTREAM=R6-F_PORTABLE_EXPERIMENT_RUNTIME
+NEXT_WORKSTREAM=R6-I_LEGACY_DATA_CATALOGUE
 
-Execution of R6-F requires a separate Action and explicit authorization.
+Execution of R6-I requires a separate Action and explicit authorization.
 
 
 ## R6-E closure and R6-F transition checkpoint
@@ -252,3 +252,24 @@ R6F_EXACT_TOOLCHAIN_PORTABILITY_GAP_CLASSIFICATION=NEXT_WORKSTREAM_INPUT
 R6F_EXACT_TOOLCHAIN_PORTABILITY_GAP_BLOCKS_R6E_CLOSURE=NO
 
 R6_E_TO_R6_F_TRANSITION=PASS
+
+## R6-H closure and R6-I transition checkpoint
+
+TRANSITION_DATE=2026-10-03
+
+R6_H_CLOSURE_FILE=sci-oran/ansible/lifecycle/docs/r6-h-canonical-experiment-preflight-closure.md
+R6_H_IMPLEMENTATION_HEAD=228d5c3ee172b932e3e859815e8d706ae5694f97
+R6_H_IMPLEMENTATION_CONTRACT_COMMIT=14fe3f9e7e211667f90df86463a1c570407b66a6
+
+R6_H_CONTROLLER_IMPLEMENTATION_QUALIFICATION=PASS
+R6_H_TB3_CROSS_HOST_QUALIFICATION=PASS
+R6_H_LIVE_QUALIFICATION_REQUIRED=NO
+
+R6_H_CLOSURE_RESULT=CLOSED_PASS
+R6_H_WORKSTREAM_CLOSED=YES
+
+R6_I_STATUS=ACTIVE
+R6_H_TO_R6_I_TRANSITION=PASS
+
+SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
+PROMPT12_RESUMPTION_AUTHORISED=NO
