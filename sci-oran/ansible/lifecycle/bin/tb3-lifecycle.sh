@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Canonical lifecycle controller environment.
+# Keep locale handling inside this entrypoint so callers do not need
+# external LANG/LC_ALL prefixes for Ansible.
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
 usage()
 {
     cat <<'USAGE'
