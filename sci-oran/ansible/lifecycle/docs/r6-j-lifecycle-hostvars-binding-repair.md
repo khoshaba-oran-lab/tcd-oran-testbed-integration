@@ -1,0 +1,111 @@
+# Recovery R6-J Canonical Lifecycle Host-Variables Binding Repair
+
+STATUS=PASS
+UTC_TIME=2026-10-03T04:54:38Z
+
+## Failed lifecycle transaction
+
+FAILED_DAY_START_OPERATION_ID=lifecycle-day-start-20261003T044257Z-7f376414
+FAILED_RECOVERY_OPERATION_ID=lifecycle-recover-20261003T044257Z-7f376414
+FAILED_TEARDOWN_OPERATION_ID=lifecycle-teardown-20261003T044257Z-7f376414
+FAILED_DEPLOY_OPERATION_ID=lifecycle-deploy-20261003T044257Z-7f376414
+
+FAILED_TRANSACTION_REPLAY_ALLOWED=NO
+FAILED_TRANSACTION_CHANGED_TASKS=NO
+
+FAILED_LOG=/home/khoshaba/sci-oran/staging/r6-j-resumption/controller-logs/lifecycle-day-start-20261003T044257Z-7f376414.log
+FAILED_LOG_SHA256=36f4109aea8d613307579f98a26720e681caa018ec357b34fbc835b52ec660d1
+
+## Root cause
+
+J03_R1_FAILURE_ROOT_CAUSE=REPOSITORY_HOST_VARS_NOT_LOADED_BY_EXTERNAL_INVENTORY_CONTEXT
+J03_R1_FAILURE_SUBCLASS=REPOSITORY_PLAYBOOK_EXTERNAL_INVENTORY_VARIABLE_SCOPE_MISMATCH
+
+The authoritative repository lifecycle playbooks obtain host identity and
+repository-path contracts from:
+
+sci-oran/ansible/host_vars/tb3-dell.yml
+
+The controller connection inventory remains materialized outside the repository:
+
+/home/khoshaba/sci-oran/ansible/inventory.ini
+
+That external inventory does not automatically load the repository host_vars
+tree. The canonical repository wrapper therefore has to bind the selected
+repository-controlled host contract explicitly.
+
+## Repair
+
+CANONICAL_LIFECYCLE_MUTATION_AUTHORITY=sci-oran/ansible/lifecycle/bin/tb3-lifecycle.sh
+CANONICAL_HOST_CONTRACT=sci-oran/ansible/host_vars/tb3-dell.yml
+
+The wrapper derives:
+
+HOST_VARS_FILE=$DEFAULT_ANSIBLE_ROOT/host_vars/$TARGET.yml
+
+and fails closed if the selected target has no repository-controlled host-vars
+contract.
+
+The wrapper then invokes ansible-playbook with:
+
+-e "@$HOST_VARS_FILE"
+
+Therefore:
+
+EXTERNAL_INVENTORY_ROLE=CONNECTION_AND_MEMBERSHIP
+REPOSITORY_HOSTVARS_ROLE=HOST_IDENTITY_AND_REPOSITORY_CONTRACT
+
+EXTERNAL_INVENTORY_MUTATED=NO
+EXTERNAL_LEGACY_WRAPPER_MUTATED=NO
+
+## Regression adjudication
+
+J03_R2_FAILURE_ROOT_CAUSE=REGRESSION_TEST_EXPECTED_LATER_MEMBERSHIP_FAILURE_BUT_NEW_FAIL_CLOSED_HOSTVARS_CHECK_OCCURS_FIRST
+J03_R2_REPAIR_SEMANTICS_INVALIDATED=NO
+J03_R2_WRAPPER_REPAIR_REQUIRES_ROLLBACK=NO
+J03_R2_TEST_EXPECTATION_REQUIRES_ADJUSTMENT=YES
+
+For an unknown target without a repository host-vars contract, the canonical
+wrapper now fails closed before inventory-membership evaluation. This is an
+intentional consequence of the repository-controlled host-contract boundary.
+
+## Qualification
+
+WRAPPER_SHA256_BEFORE=3293bd1b61c2d852d2956b1bede975ef0d17f62be13db19702c71c364ce52c40
+WRAPPER_SHA256_AFTER=2ad882670b3246d2779f8328b88db770fcd7dc2a1bcdaede9ad4f7851dc321a0
+HOSTVARS_SHA256=9b2f4d2e11a66dcfd04fd5e8bd05ec881b8ed64daff9aa11af21733e8028ecad
+INVENTORY_SHA256=1c2a0cb44efa677afd2f43c62bb23ab9204d8aabbcfa0338e4810bf43952c09c
+
+WRAPPER_BASH_SYNTAX_GATE=PASS
+REPOSITORY_HOSTVARS_PATH_GATE=PASS
+HOSTVARS_FAIL_CLOSED_GATE=PASS
+HOSTVARS_PROVENANCE_GATE=PASS
+HOSTVARS_EXTRA_VARS_GATE=PASS
+REAL_TARGET_EFFECTIVE_BINDING_GATE=PASS
+TARGET_MEMBERSHIP_GATE=PASS
+BOUND_DAY_START_SYNTAX_GATE=PASS
+HELP_INTERFACE_GATE=PASS
+MISSING_TARGET_FAIL_CLOSED_GATE=PASS
+FAKE_TARGET_FAIL_CLOSED_GATE=PASS
+FAKE_TARGET_FAILURE_CLASS=MISSING_REPOSITORY_HOSTVARS_CONTRACT
+
+## Execution boundary
+
+DAY_START_EXECUTED_BY_THIS_REPAIR=NO
+LIFECYCLE_OPERATION_PERFORMED_BY_THIS_REPAIR=NO
+TB3_MUTATION_PERFORMED_BY_THIS_REPAIR=NO
+DOCKER_MUTATION_PERFORMED_BY_THIS_REPAIR=NO
+
+TRAFFIC_GENERATION_PERFORMED=NO
+PRB_CONTROL_PERFORMED=NO
+PROMPT12_PRECONTROL_EXECUTED=NO
+PROMPT12_TRIGGER_PERFORMED=NO
+SCIENTIFIC_OPERATION_PERFORMED=NO
+
+R6J_GATE_02=NOT_YET_PASS
+
+SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
+PROMPT12_RESUMPTION_AUTHORISED=NO
+
+A future canonical day-start requires a new lifecycle operation ID and separate
+authorization. None of the failed J03-R1 operation IDs may be replayed.
