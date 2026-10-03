@@ -175,7 +175,7 @@ R6-H follows R6-G.
 ## R6-I - Legacy Data Catalogue
 
 PURPOSE=Catalogue existing historical and legacy evidence without making bulk historical migration a prerequisite for prospective work.
-STATUS=ACTIVE
+STATUS=CLOSED_PASS
 
 R6-I follows R6-H.
 
@@ -185,7 +185,7 @@ storage readiness.
 ## R6-J - Resume Prompt-12
 
 PURPOSE=Return to Prompt-12 scientific work only after the Recovery R6 platform-readiness sequence has been completed and separately admitted.
-STATUS=NOT_STARTED
+STATUS=ACTIVE
 
 R6-J is the first workstream in this plan that explicitly targets resumption of
 Prompt-12 scientific work.
@@ -206,11 +206,11 @@ R6_E_STATUS=CLOSED_PASS
 R6_F_STATUS=CLOSED_PASS
 R6_G_STATUS=CLOSED_PASS
 R6_H_STATUS=CLOSED_PASS
-R6_I_STATUS=ACTIVE
-R6_J_STATUS=NOT_STARTED
+R6_I_STATUS=CLOSED_PASS
+R6_J_STATUS=ACTIVE
 
-CURRENT_COMPLETED_WORKSTREAM=R6-H_CANONICAL_EXPERIMENT_PREFLIGHT
-NEXT_WORKSTREAM=R6-I_LEGACY_DATA_CATALOGUE
+CURRENT_COMPLETED_WORKSTREAM=R6-I_LEGACY_DATA_CATALOGUE
+NEXT_WORKSTREAM=R6-J_RESUME_PROMPT12
 
 SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
 R6_E_EXECUTION_AUTHORISED=NO
@@ -233,11 +233,15 @@ PLAN_DRIFT_ALLOWED=NO
 IMPLICIT_REORDERING_ALLOWED=NO
 UNAUTHORISED_WORKSTREAM_JUMP_ALLOWED=NO
 
-The next workstream after the current closed R6-H state is:
+The next workstream after the current closed R6-I state is:
 
-NEXT_WORKSTREAM=R6-I_LEGACY_DATA_CATALOGUE
+NEXT_WORKSTREAM=R6-J_RESUME_PROMPT12
 
-Execution of R6-I requires a separate Action and explicit authorization.
+Execution of R6-J requires a separate Action and explicit authorization.
+
+R6-J becoming active does not authorize scientific execution or a Prompt-12
+trigger. Scientific execution remains subject to separate experiment-specific
+admission, exactly-once, evidence, runtime, and authorization gates.
 
 
 ## R6-E closure and R6-F transition checkpoint
@@ -270,6 +274,35 @@ R6_H_WORKSTREAM_CLOSED=YES
 
 R6_I_STATUS=ACTIVE
 R6_H_TO_R6_I_TRANSITION=PASS
+
+SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
+PROMPT12_RESUMPTION_AUTHORISED=NO
+
+## R6-I closure and R6-J transition checkpoint
+
+TRANSITION_DATE=2026-10-03
+
+R6_I_CATALOGUE_FILE=sci-oran/ansible/lifecycle/docs/r6-i-legacy-data-catalogue-v1.tsv
+R6_I_CATALOGUE_SHA256=efe614a757bc27176cbb2cb9869d027297a0e421902967fc05e9ae268296093e
+
+R6_I_CLOSURE_FILE=sci-oran/ansible/lifecycle/docs/r6-i-legacy-data-catalogue-closure.md
+R6_I_CLOSURE_SHA256=6292c8894363a9bea8fc93a2120e42e6a50e290ca800b6dbb86972adc3f7043b
+
+R6_I_INPUT_HEAD=7613261be1296761d350a02ee55e3cbdc8bdddf5
+
+R6_I_CATALOGUE_MODEL=REFERENCE_BASED_LEGACY_CATALOGUE
+R6_I_HISTORICAL_BULK_MIGRATION_REQUIRED=NO
+R6_I_HISTORICAL_BULK_MIGRATION_STATUS=NONBLOCKING_BACKLOG
+
+R6_I_CATALOGUE_ENTRY_COUNT=11
+R6_I_TRACKED_DATASET_RECORD_COUNT=2
+R6_I_HISTORICAL_EVIDENCE_ROOT_COUNT=8
+
+R6_I_CLOSURE_RESULT=CLOSED_PASS
+R6_I_WORKSTREAM_CLOSED=YES
+
+R6_J_STATUS=ACTIVE
+R6_I_TO_R6_J_TRANSITION=PASS
 
 SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
 PROMPT12_RESUMPTION_AUTHORISED=NO
