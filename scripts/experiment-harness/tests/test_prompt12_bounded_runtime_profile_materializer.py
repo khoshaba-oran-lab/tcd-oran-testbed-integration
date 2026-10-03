@@ -134,8 +134,6 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
             values["actuator_fifo_path"],
             "--max-age-ms",
             values["max_age_ms"],
-            "--control-authorization-token",
-            values["control_authorization_token"],
         ]
 
     def run_materializer(self, **overrides):
@@ -213,6 +211,10 @@ class RuntimeProfileMaterializerTests(unittest.TestCase):
     def test_profile_has_exact_fields_and_private_mode(self):
         _, report, profile_path, profile = self.successful_materialization()
         self.assertEqual(len(profile), 19)
+        self.assertEqual(
+            profile["control_authorization_token"],
+            "@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@",
+        )
         self.assertEqual(profile["schema"], "sci_oran_prompt12_bounded_sequence_runtime_profile_v1")
         self.assertEqual(profile_path.stat().st_mode & 0o777, 0o600)
         allocation = json.loads(

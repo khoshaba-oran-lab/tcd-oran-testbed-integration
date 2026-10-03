@@ -13,6 +13,9 @@ import sys
 
 PROFILE_SCHEMA = "sci_oran_prompt12_bounded_sequence_runtime_profile_v1"
 ADMISSION_SCHEMA = "sci_oran_r6_f_portable_runtime_admission_v1"
+CONTROL_AUTHORIZATION_TOKEN_PLACEHOLDER = (
+    "@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@"
+)
 ADMISSION_KEYS = {
     "schema",
     "host",
@@ -106,6 +109,12 @@ def show_contract():
     print("ACTUATOR_FIFO_DISCOVERY=BROAD_SCAN_FORBIDDEN")
     print("ACTUATOR_FIFO_VALIDATION=EXPLICIT_PATH_AND_FIFO_TYPE")
     print("AUTHORIZATION_DEFAULTS_ALLOWED=NO")
+    print("REAL_CONTROL_AUTHORIZATION_INPUT=ABSENT")
+    print("CONTROL_AUTHORIZATION_BINDING=DEFERRED_PLACEHOLDER")
+    print(
+        "CONTROL_AUTHORIZATION_PLACEHOLDER="
+        + CONTROL_AUTHORIZATION_TOKEN_PLACEHOLDER
+    )
     print("COMMAND_EXECUTION_CAPABILITY=ABSENT")
     print("DOCKER_EXECUTION_CAPABILITY=ABSENT")
     print("TRAFFIC_EXECUTION_CAPABILITY=ABSENT")
@@ -130,7 +139,6 @@ def parse_args():
     )
     parser.add_argument("--actuator-fifo-path", required=True)
     parser.add_argument("--max-age-ms", required=True, type=int)
-    parser.add_argument("--control-authorization-token", required=True)
     return parser.parse_args()
 
 
@@ -430,9 +438,8 @@ def execute(args):
     )
     fifo_path = validate_fifo(args.actuator_fifo_path)
     max_age_ms = positive_int(args.max_age_ms, "MAX_AGE_MS")
-    authorization = nonempty_string(
-        args.control_authorization_token,
-        "CONTROL_AUTHORIZATION_TOKEN",
+    authorization = (
+        CONTROL_AUTHORIZATION_TOKEN_PLACEHOLDER
     )
 
     evidence_root = pathlib.Path(args.evidence_root)

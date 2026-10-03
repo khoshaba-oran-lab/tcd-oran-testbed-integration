@@ -18,6 +18,9 @@ CANONICAL_INTERVALS_TOKEN = "@PROMPT12_CANONICAL_INTERVALS@"
 PRECONTROL_JSON_TOKEN = "@PROMPT12_PRECONTROL_JSON@"
 DECISION_UTC_NS_TOKEN = "@PROMPT12_DECISION_UTC_NS@"
 ACTUATOR_TIMELINE_TOKEN = "@PROMPT12_ACTUATOR_TIMELINE@"
+CONTROL_AUTHORIZATION_TOKEN_PLACEHOLDER = (
+    "@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@"
+)
 
 TOOL_KEYS = {
     "traffic_adapter",
@@ -166,6 +169,15 @@ def validate_profile(root):
         root["control_authorization_token"],
         "CONTROL_AUTHORIZATION_TOKEN",
     )
+
+    if (
+        authorization
+        != CONTROL_AUTHORIZATION_TOKEN_PLACEHOLDER
+    ):
+        raise BuilderError(
+            "CONTROL_AUTHORIZATION_TOKEN_"
+            "NOT_PREAUTHORIZED_PLACEHOLDER"
+        )
     trigger_token = require_string(root["trigger_token"], "TRIGGER_TOKEN")
 
     tool_paths = root["tool_paths"]

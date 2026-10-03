@@ -24,8 +24,8 @@
     },
     "control_authorization_token": {
       "class": "AUTHORIZATION_BOUND",
-      "materialization": "supply only after separate live-control authorization",
-      "source": "explicit live-control authorization"
+      "materialization": "materialize fail-closed placeholder before live-control authorization; bind real token only after separate live-control authorization",
+      "source": "deferred Stage06 explicit live-control authorization"
     },
     "data_paths": {
       "class": "RUN_ALLOCATED",

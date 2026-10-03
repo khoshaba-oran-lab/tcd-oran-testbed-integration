@@ -192,8 +192,6 @@ class ProductionFrozenConfigTests(unittest.TestCase):
                     str(fifo),
                     "--max-age-ms",
                     "500",
-                    "--control-authorization-token",
-                    "AUTHORISE_PROMPT12_FIFO_CONTROL",
                 ],
                 text=True,
                 stdout=subprocess.PIPE,

@@ -92,7 +92,7 @@ def create_profile(root):
             )
             for index in range(1, 7)
         ],
-        "control_authorization_token": "AUTHORISE_PROMPT12_FIFO_CONTROL",
+        "control_authorization_token": "@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@",
         "trigger_token": "TRIGGER",
         "max_age_ms": 500,
         "stable_ms": 0,
