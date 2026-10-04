@@ -4218,3 +4218,30 @@ Required runtime continuation:
 - J35 exactly-once scientific T2 trigger remains unconsumed
 
 <!-- R6_J35B_EXPLICIT_RESUME_CURSOR_STATUS_V1_END -->
+
+<!-- R6_J35U_RESUME_PRECONTROL_REPAIR_CHECKPOINT_V1_BEGIN -->
+## R6 J35U resume-aware precontrol repair checkpoint
+
+Repository repair scope:
+
+- add canonical resume-aware precontrol materializer;
+- require explicit resume cursor 1..6;
+- preserve index-1 full-sequence behaviour;
+- derive fresh initial-pre-step precontrol for the selected resumed
+  transition;
+- do not synthesize skipped T1 command/ack/applied evidence;
+- do not consume skipped ratio bindings;
+- leave existing post-step incremental-timeline semantics unchanged.
+
+Current R6 target remains:
+
+- applied state before science: 26 PRB;
+- initial_transition_index: 2;
+- first scientific transition: T2;
+- requested T2 ratio: 75 percent;
+- scientific T2 authorization remains separate and unconsumed.
+
+This checkpoint performs no deployment, provider readmission, traffic,
+FIFO trigger, actuator request, PRB control, T2 execution or lifecycle
+operation.
+<!-- R6_J35U_RESUME_PRECONTROL_REPAIR_CHECKPOINT_V1_END -->

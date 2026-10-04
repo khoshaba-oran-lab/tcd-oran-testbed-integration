@@ -1283,3 +1283,49 @@ For the current R6 continuation:
   actuator request, PRB control, or scientific traffic.
 
 <!-- R6_J35B_EXPLICIT_RESUME_CURSOR_V1_END -->
+
+<!-- R6_J35U_RESUME_PRECONTROL_CONTRACT_V1_BEGIN -->
+## R6 J35U resume-aware precontrol contract
+
+The Stage06 resume cursor has two independent responsibilities.
+
+The persistent FIFO reader already uses the explicit
+`initial_transition_index` to select the first accepted ratio binding.
+For example, index 2 selects `T2.binding.json` and does not consume the
+T1 binding.
+
+The pretrigger stationarity boundary must use the same explicit resume
+index.  A resumed run must not manufacture a skipped T1
+command/ack/applied timeline merely to satisfy the original full-sequence
+post-T1 precontrol path.
+
+The canonical repair is
+`scripts/experiment-harness/prompt12-resume-precontrol-materializer.py`.
+
+Its contract is:
+
+- `--initial-transition-index` is mandatory and fail-closed outside 1..6;
+- index 1 preserves the original full-sequence initial-stationarity argv;
+- index N greater than 1 derives a fresh initial-pre-step command for TN;
+- the derived command produces `precontrol/TN.json`;
+- the resumed initial boundary has no `control-index`;
+- the resumed initial boundary has no incremental actuator timeline;
+- no synthetic command, acknowledgement, or applied-readback event is
+  created for skipped transitions;
+- skipped ratio bindings are not consumed;
+- the source production binding manifest is read-only;
+- command execution, traffic, FIFO trigger, actuator request and PRB
+  control are outside the materializer capability.
+
+After the resumed transition is executed, the existing post-step
+incremental-timeline semantics remain authoritative for the following
+transition.
+
+For the current R6 continuation, index 2 therefore means:
+
+- current initial plant state: 26 PRB;
+- first scientific transition: T2;
+- first requested ratio: 75 percent;
+- fresh pretrigger boundary: `precontrol/T2.json`;
+- T1 scientific timeline: absent and not synthesized.
+<!-- R6_J35U_RESUME_PRECONTROL_CONTRACT_V1_END -->
