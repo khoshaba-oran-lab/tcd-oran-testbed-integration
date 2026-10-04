@@ -171,6 +171,8 @@ raise SystemExit(rc)
                 self.experiment_id,
                 "--run-id",
                 self.run_id,
+                "--initial-transition-index",
+                "1",
                 "--ratio-binding-paths-json",
                 json.dumps(
                     [str(path) for path in paths]

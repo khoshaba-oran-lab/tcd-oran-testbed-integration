@@ -343,6 +343,7 @@ def run_reader(
     ratio_binding_paths,
     experiment_id,
     run_id,
+    initial_transition_index,
 ):
     experiment_id = validate_identity(
         experiment_id,
@@ -360,7 +361,16 @@ def run_reader(
     ).replace(microsecond=0)
 
     consumed_binding_ids = set()
-    next_transition_index = 1
+    if (
+        isinstance(initial_transition_index, bool)
+        or not isinstance(initial_transition_index, int)
+        or not 1 <= initial_transition_index <= 6
+    ):
+        raise ReaderContractError(
+            "INITIAL_TRANSITION_INDEX_INVALID"
+        )
+
+    next_transition_index = initial_transition_index
 
     print(
         "PROMPT12_V2_READER_PREARMED=YES "
@@ -498,6 +508,13 @@ def parse_args(argv=None):
         required=True,
     )
 
+    parser.add_argument(
+        "--initial-transition-index",
+        required=True,
+        type=int,
+        choices=range(1, 7),
+    )
+
     return parser.parse_args(argv)
 
 
@@ -516,6 +533,7 @@ def main(argv=None):
         fifo_path=args.fifo_path,
         actuator_argv=actuator_argv,
         ratio_binding_paths=ratio_binding_paths,
+        initial_transition_index=args.initial_transition_index,
         experiment_id=args.experiment_id,
         run_id=args.run_id,
     )

@@ -4203,3 +4203,18 @@ R6_STAGE06_STATUS=NOT_EXECUTED
 SCIENTIFIC_OPERATIONS_REMAIN_FROZEN=YES
 NEXT_STAGE=R6_STAGE06_SEPARATE_EXACTLY_ONCE_T2_SCIENTIFIC_AUTHORIZATION
 <!-- R6_J32_STAGE05_CLOSURE_V1_END -->
+
+
+<!-- R6_J35B_EXPLICIT_RESUME_CURSOR_STATUS_V1_BEGIN -->
+R6_J35B_REPOSITORY_REPAIR=IMPLEMENTED_PENDING_TB3_CONVERGENCE_AND_READMISSION
+
+Required runtime continuation:
+
+- initial_transition_index=2
+- first accepted persistent-reader transition=T2
+- expected requested_ratio_pct=75
+- T1 binding must remain unconsumed by resume admission
+- provider/reader runtime readmission is a separate authorised action
+- J35 exactly-once scientific T2 trigger remains unconsumed
+
+<!-- R6_J35B_EXPLICIT_RESUME_CURSOR_STATUS_V1_END -->

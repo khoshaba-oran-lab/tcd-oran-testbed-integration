@@ -72,6 +72,7 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
             "run_id": "run-001",
             "fifo_path": "/runtime/provider.fifo",
             "ratio_binding_paths": list(self.paths),
+            'initial_transition_index': 1,
         }
         values.update(overrides)
         return materializer.build_provider_launch_argv(**values)
@@ -91,6 +92,8 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
                 "exp-001",
                 "--run-id",
                 "run-001",
+                "--initial-transition-index",
+                "1",
                 "--ratio-binding-paths-json",
                 json.dumps(self.paths, separators=(",", ":")),
             ],
@@ -234,6 +237,8 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
             "--experiment-id", "exp-001",
             "--run-id", "run-001",
             "--fifo-path", "/runtime/provider.fifo",
+            "--initial-transition-index",
+            "1",
             "--ratio-binding-paths-json", "{bad-json",
         ]
 
@@ -253,6 +258,8 @@ class ProductionProviderLaunchMaterializerTests(unittest.TestCase):
             "--experiment-id", "exp-001",
             "--run-id", "run-001",
             "--fifo-path", "/runtime/provider.fifo",
+            "--initial-transition-index",
+            "1",
             "--ratio-binding-paths-json", json.dumps(self.paths),
         ]
 

@@ -83,11 +83,21 @@ def build_provider_launch_argv(
     run_id: str,
     fifo_path: str,
     ratio_binding_paths: object,
+    initial_transition_index: int,
 ) -> list[str]:
     experiment_id = _require_nonempty(experiment_id, "experiment_id")
     run_id = _require_nonempty(run_id, "run_id")
     fifo_path = _require_absolute_path(fifo_path, "fifo_path")
     paths = validate_ratio_binding_paths(ratio_binding_paths)
+
+    if (
+        isinstance(initial_transition_index, bool)
+        or not isinstance(initial_transition_index, int)
+        or not 1 <= initial_transition_index <= 6
+    ):
+        raise ContractError(
+            "INITIAL_TRANSITION_INDEX_INVALID"
+        )
 
     reader = _require_executable(READER_PATH, "reader")
     wrapper = _require_executable(WRAPPER_PATH, "wrapper")
@@ -112,6 +122,8 @@ def build_provider_launch_argv(
         experiment_id,
         "--run-id",
         run_id,
+        "--initial-transition-index",
+        str(initial_transition_index),
         "--ratio-binding-paths-json",
         ratio_binding_paths_json,
     ]
@@ -135,6 +147,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
+    parser.add_argument(
+        "--initial-transition-index",
+        required=True,
+        type=int,
+        choices=range(1, 7),
+    )
+
     args = parser.parse_args(argv)
 
     try:
@@ -145,6 +164,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             run_id=args.run_id,
             fifo_path=args.fifo_path,
             ratio_binding_paths=ratio_binding_paths,
+            initial_transition_index=args.initial_transition_index,
         )
     except (ContractError, json.JSONDecodeError) as exc:
         print(f"ERROR={exc}", file=sys.stderr)

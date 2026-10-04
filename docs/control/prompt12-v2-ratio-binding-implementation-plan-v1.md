@@ -1254,3 +1254,32 @@ startup, actuator control, traffic, cleanup, PRB changes, or any
 scientific trigger.
 
 <!-- /PROMPT12_V2_PHASE_C_FINAL_CLOSURE_V1 -->
+
+
+<!-- R6_J35B_EXPLICIT_RESUME_CURSOR_V1_BEGIN -->
+## R6 J35B explicit persistent-reader resume cursor
+
+Stage05 established the applied initial state at 26 PRB outside the
+persistent six-transition reader. Therefore the persistent reader MUST
+NOT infer that the next transition is T1 when resuming Stage06.
+
+The production reader and provider-launch materializer now require an
+explicit `initial_transition_index` in the closed interval 1..6. There
+is no implicit default.
+
+For the current R6 continuation:
+
+- current applied state: 26 PRB;
+- next scientific transition: T2;
+- required initial transition index: 2;
+- the first accepted reader trigger therefore selects the existing
+  `T2.binding.json`;
+- the requested T2 ratio remains 75 percent;
+- `T1.binding.json` remains in its original position and is not
+  consumed merely by resuming at T2;
+- provider launch provenance continues to bind the complete argv,
+  including the explicit resume cursor;
+- this repository repair performs no provider restart, FIFO trigger,
+  actuator request, PRB control, or scientific traffic.
+
+<!-- R6_J35B_EXPLICIT_RESUME_CURSOR_V1_END -->
