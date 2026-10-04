@@ -1,0 +1,56 @@
+{
+  "schema": "sci_oran_prompt12_v2_stale_runtime_retirement_contract_v1",
+  "implementation": "scripts/experiment-harness/prompt12-stale-runtime-retirement.py",
+  "purpose": "Retire a stale Prompt-12 runtime root whose recorded provider process is absent while preserving all runtime evidence and releasing the canonical source path for a later separately authorised provider admission.",
+  "required_arguments": [
+    "--runtime-root",
+    "--retirement-root"
+  ],
+  "implicit_defaults_allowed": false,
+  "preconditions": [
+    "runtime_root is an absolute canonical existing directory",
+    "provider-admission.json is an absolute canonical regular file under runtime_root",
+    "provider admission schema and runtime_root/fifo_path bindings are exact",
+    "recorded provider_pid is syntactically valid and is absent from /proc",
+    "provider_process_start_identity is syntactically valid and contains the recorded provider_pid",
+    "actuator.fifo exists and is a FIFO",
+    "no other live process has the exact runtime_root or fifo_path as an argv token",
+    "retirement_root is an explicit absent sibling path under the same canonical parent"
+  ],
+  "fail_closed_reasons": [
+    "recorded provider PID still exists",
+    "live process references runtime_root",
+    "live process references fifo_path",
+    "admission missing or invalid",
+    "admission runtime_root mismatch",
+    "admission fifo_path mismatch",
+    "FIFO missing or not FIFO",
+    "retirement root already exists",
+    "retirement root is not a sibling",
+    "atomic rename fails",
+    "post-retirement evidence verification fails"
+  ],
+  "mutation_semantics": {
+    "retirement_container_creation": "exclusive mkdir",
+    "runtime_root_retirement": "atomic same-filesystem rename into the exclusive retirement container",
+    "source_runtime_root_released": true,
+    "provider_admission_preserved": true,
+    "fifo_preserved": true,
+    "runtime_evidence_preserved": true,
+    "artifact_deletion": false
+  },
+  "forbidden_capabilities": [
+    "process termination",
+    "broad process matching",
+    "artifact deletion",
+    "Docker mutation",
+    "lifecycle mutation",
+    "FIFO write",
+    "Prompt-12 trigger",
+    "PRB control",
+    "actuator request",
+    "scientific traffic",
+    "automatic provider readmission"
+  ],
+  "output_schema": "sci_oran_prompt12_v2_stale_runtime_retirement_v1"
+}
