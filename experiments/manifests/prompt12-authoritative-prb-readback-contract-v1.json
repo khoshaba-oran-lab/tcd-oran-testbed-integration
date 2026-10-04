@@ -1,0 +1,44 @@
+{
+  "schema": "sci_oran_prompt12_authoritative_prb_readback_contract_v1",
+  "purpose": "Canonical applied PRB readback for Prompt-12",
+  "authoritative_source": {
+    "type": "container_file",
+    "path": "/tmp/gnb.log",
+    "source_label": "CONTAINER:/tmp/gnb.log",
+    "docker_logs_authoritative": false
+  },
+  "marker": {
+    "name": "PRB_ACTUATOR_APPLIED",
+    "required_fields": [
+      "applied_min_prbs",
+      "applied_max_prbs"
+    ]
+  },
+  "runtime_identity": {
+    "container": "required_input",
+    "expected_image_id": "required_input",
+    "expected_started_at": "required_input"
+  },
+  "operation_binding": {
+    "operation_id": "required_input",
+    "window_start": "required_input",
+    "window_end": "required_input",
+    "expected_min_prbs": "required_input",
+    "expected_max_prbs": "required_input"
+  },
+  "pass_condition": {
+    "expected_marker_cardinality": 1
+  },
+  "fail_closed": [
+    "container not running",
+    "container image identity mismatch",
+    "container incarnation mismatch",
+    "authoritative log unavailable",
+    "invalid observation window",
+    "expected applied readback absent",
+    "expected applied readback cardinality greater than one"
+  ],
+  "forbidden_authoritative_sources": [
+    "docker logs"
+  ]
+}

@@ -4284,3 +4284,37 @@ PUSH_EXECUTED=NO
 NEXT_AUTHORISED_ACTION=RECOVERY.R5.PROMPT12-BOUNDED-SEQUENCE-PRODUCTION-PERSISTENT-PREARMED-ACTUATOR-PROVIDER-IMPLEMENTATION-CHECKPOINT-COMMIT
 
 <!-- END RECOVERY.R5 PROMPT12 PERSISTENT PREARMED ACTUATOR PROVIDER IMPLEMENTATION -->
+
+<!-- R6_J32_AUTHORITATIVE_PRB_READBACK_V1_BEGIN -->
+## R6 Prompt-12 authoritative PRB readback canonicalization
+
+R6 Stage05 is PASS.
+
+Authoritative applied-readback source:
+
+`CONTAINER:/tmp/gnb.log`
+
+`docker logs` is not an authoritative Prompt-12 applied-PRB readback source.
+
+Canonical collector:
+
+`scripts/experiment-harness/prompt12-authoritative-prb-readback.py`
+
+Canonical contract:
+
+`experiments/manifests/prompt12-authoritative-prb-readback-contract-v1.json`
+
+Stage05 evidence was retrospectively recovered from the consumed exactly-once operation:
+
+`prompt12-r6-stage05-initial26-20261004T091825Z-7fd698a7`
+
+Observed native applied readback:
+
+`2026-10-04T09:18:27.644785`
+
+`applied_min_prbs=0`
+
+`applied_max_prbs=26`
+
+Stage06 remains separately authorised only. Scientific operations remain frozen until that authorisation.
+<!-- R6_J32_AUTHORITATIVE_PRB_READBACK_V1_END -->
