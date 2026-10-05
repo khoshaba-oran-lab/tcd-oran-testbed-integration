@@ -185,6 +185,35 @@ trigger or T3-to-T6 execution is authorised by this checkpoint.
 
 R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V1_END
 
+
+## R6 post-late-bind qualification next action
+
+R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V2_BEGIN
+
+SUPERSEDES=R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V1
+
+CURRENT_WORK_MODE=OFFLINE_COMPLETE
+OFFLINE_READY=YES
+LIVE_READY=NO
+
+QUALIFIED_IMPLEMENTATION_SHA=969cb60e15b277f8afe292735e3ac63ce3a7701b
+
+NEXT_AUTHORISED_ACTION=NONE
+NEXT_PLANNED_ACTION=RECOVERY.R6.SPRINT01-PUBLISH-REFRESHED-APPROVED-SHA
+
+The next operation shall publish the refreshed authoritative main containing
+the late-binding repair and this superseding qualification checkpoint.
+
+After publication, tb3-dell shall be converged to the exact published SHA.
+
+Only after that convergence shall the bounded read-only live GO/NO-GO
+preflight be repeated.
+
+No lifecycle start, scientific traffic, FIFO write, actuator request, PRB
+transition, T2 trigger or T3-to-T6 execution is authorised by this checkpoint.
+
+R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V2_END
+
 <!-- R6_READ_FIRST_WORKING_MODE_V1_END -->
 
 # Next authorised action
