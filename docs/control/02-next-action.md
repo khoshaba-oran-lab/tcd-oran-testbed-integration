@@ -122,6 +122,41 @@ Default maximum live window:
 
 `2 hours`
 
+
+## R6 Offline Sprint 01 next action
+
+R6_OFFLINE_SPRINT01_NEXT_V1_BEGIN
+
+CURRENT_WORK_MODE=OFFLINE_IMPLEMENTATION
+SPRINT_ID=R6_OFFLINE_SPRINT01
+SPRINT_ARCHITECTURE_STATUS=FROZEN
+OFFLINE_READY=NO
+LIVE_READY=NO
+
+NEXT_AUTHORISED_ACTION=NONE
+NEXT_PLANNED_ACTION=RECOVERY.R6.OFFLINE-SPRINT01-IMPLEMENTATION-DESIGN
+
+The next action must design the minimum repository changes required to provide
+one Ansible-managed resumed single-transition T2 execution path.
+
+The implementation design must:
+
+- reuse the existing resume precontrol materializer;
+- reuse existing traffic, ratio-bind, trigger, readback, stationarity and
+  finalization leaf tools where their contracts fit;
+- provide pure T2 post-step stationarity without T3 handoff;
+- preserve exactly-once trigger semantics;
+- preserve fail-closed behavior;
+- avoid modifying the full T1-to-T6 supervisor unless a separately proven
+  defect requires it;
+- introduce no Python supervisor;
+- introduce no generated production wrapper;
+- introduce no new shell orchestration framework.
+
+No live execution is authorised by this checkpoint.
+
+R6_OFFLINE_SPRINT01_NEXT_V1_END
+
 <!-- R6_READ_FIRST_WORKING_MODE_V1_END -->
 
 # Next authorised action

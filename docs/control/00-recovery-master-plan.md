@@ -343,6 +343,99 @@ R6_K_CURRENT_T2_CRITICAL_PATH=NO
 The Ireland VM must not delay the current VNTU T2 critical path unless a later
 explicit master-plan decision changes that priority.
 
+
+## R6 Offline Sprint 01 architecture freeze
+
+R6_OFFLINE_SPRINT01_ARCHITECTURE_FREEZE_V1_BEGIN
+
+SPRINT_ID=R6_OFFLINE_SPRINT01
+SPRINT_NAME=CANONICAL_T2_EXECUTION_CLOSURE
+SPRINT_MODE=OFFLINE
+SPRINT_ARCHITECTURE_STATUS=FROZEN
+SCIENTIFIC_GOAL=prepare_one_resumed_T2_26_to_39_live_sprint
+CURRENT_LIVE_READY=NO
+
+### Evidence-based orchestration decision
+
+The existing `prompt12-bounded-orchestration-supervisor.py` is retained
+unchanged for its full T1-to-T6 use case.
+
+It requires exactly six ordered transitions and is not the canonical consumer
+for a resumed T2-only run.
+
+The existing `prompt12-resume-precontrol-materializer.py` is retained as a
+pure resume-aware initial-precontrol materializer. It does not execute control
+and does not constitute a full orchestration plan.
+
+No existing production consumer was found that composes the resume artifact
+into a bounded resumed T2-only execution.
+
+No existing Ansible Prompt-12 scientific orchestration path was found.
+
+Therefore the reusable orchestration layer for the resumed T2 run shall be
+Ansible.
+
+NEW_PYTHON_SUPERVISOR=PROHIBITED
+GENERATED_PRODUCTION_WRAPPER=PROHIBITED
+NEW_SHELL_ORCHESTRATION_FRAMEWORK=PROHIBITED
+
+Existing tested Python and shell utilities remain leaf tools under Ansible
+orchestration.
+
+### T2 post-step safety finding
+
+The production binding builder constructs transitions by first creating the
+transition's post-step stationarity command and, for transitions T1 through T5,
+wrapping that command in the next-transition precontrol handoff.
+
+For T2 this means the existing full-sequence `post_stationarity_command`
+contains T3 handoff semantics.
+
+T2_EXISTING_POST_COMMAND_INCLUDES_T3_HANDOFF=YES
+T2_EXISTING_POST_COMMAND_ALLOWED_UNCHANGED_IN_T2_ONLY_SPRINT=NO
+
+The resumed T2-only execution must perform:
+
+1. bounded scientific traffic;
+2. resume-aware T2 initial-pre-step precontrol;
+3. pre-step stationarity gate;
+4. T2 ratio binding;
+5. exactly-once T2 trigger;
+6. authoritative applied readback;
+7. pure T2 post-step stationarity;
+8. finalization;
+9. controlled termination.
+
+It must not prepare or execute T3.
+
+T3_PRECONTROL_DURING_T2_ONLY_SPRINT=PROHIBITED
+T3_TRIGGER_DURING_T2_ONLY_SPRINT=PROHIBITED
+
+### Lifecycle boundary
+
+Lifecycle namespace cleanup is not part of this sprint.
+
+No lifecycle path is deleted or redesigned during Sprint 01.
+
+Before live GO, the lifecycle entrypoint selected for the live sprint must be
+repository-controlled and associated with the approved repository SHA. Any
+required deployed/live copy must pass an identity/integrity gate against that
+approved source.
+
+LIFECYCLE_NAMESPACE_CLEANUP_IN_SPRINT01=NO
+LIFECYCLE_APPROVED_SHA_GATE_BEFORE_LIVE=MANDATORY
+
+### Sprint completion requirement
+
+Sprint 01 completes only when offline tests and rehearsal demonstrate the exact
+producer-to-consumer chain for the single resumed T2 transition without
+executing Docker, scientific traffic, FIFO control, actuator control or PRB
+mutation.
+
+OFFLINE_READY remains NO until those gates pass.
+
+R6_OFFLINE_SPRINT01_ARCHITECTURE_FREEZE_V1_END
+
 <!-- R6_ADAPTIVE_WORKING_REGULATION_V1_END -->
 
 # Sci-O-RAN recovery and experiment resumption plan
