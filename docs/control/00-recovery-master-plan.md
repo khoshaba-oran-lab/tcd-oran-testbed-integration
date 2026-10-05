@@ -1,3 +1,296 @@
+<!-- R6_ADAPTIVE_WORKING_REGULATION_V1_BEGIN -->
+
+# READ FIRST — R6 Adaptive Working Regulation v1
+
+Effective from: 2026-10-05
+
+This block is the current normative operating regulation for Recovery R6.
+Historical checkpoints below remain valid provenance but do not override this
+block.
+
+The regulation is versioned and adaptive. It may be revised when evidence from
+a sprint, post-mortem or architecture review shows that a rule is ineffective.
+Rules are not treated as permanent constants.
+
+A live scientific sprint must not be redesigned while it is running. If a new
+structural problem requires a rule, architecture or orchestration change, the
+live sprint stops first and the change is designed offline.
+
+## 1. Authoritative planning documents
+
+The required read order before planning or execution is:
+
+1. `docs/control/00-recovery-master-plan.md`
+2. `docs/control/01-current-state.md`
+3. `docs/control/02-next-action.md`
+
+`docs/control/00-recovery-master-plan.md` is the single authoritative order of
+work.
+
+Other plans, handoffs and architecture documents may provide detail, but they
+must not silently redefine the master-plan order.
+
+## 2. Repository authority model
+
+Single source of truth means one authoritative repository state, not one
+physical Git clone.
+
+Authoritative operational repository:
+
+- controller: `coll.vntu.org`
+- path: `/home/khoshaba/project/tcd-oran-testbed-integration`
+- authoritative branch: `main`
+
+The Git remote provides transport, history and exchange of commits.
+
+Experimental VM repository copies are allowed and expected. They are execution
+or development replicas and are not independent authorities.
+
+VM-originated development is allowed on explicit topic branches.
+
+A VM-originated change becomes authoritative only through the following
+promotion path:
+
+VM topic branch
+→ commit
+→ Git transport
+→ review/test on `coll.vntu.org`
+→ explicit promotion into controller `main`
+→ approved commit distributed to required VM replicas.
+
+An experimental VM must never independently redefine authoritative `main`.
+
+Every live scientific sprint must pin an exact approved repository SHA before
+the runtime is started.
+
+## 3. Logical target identity
+
+Automation must distinguish logical experiment identity from physical host
+identity.
+
+Current physical runtime hostname remains:
+
+`tb3-dell`
+
+Target future logical inventory naming model:
+
+`tb3-vntu-01`
+
+Future compatible VM:
+
+`tb3-vntu-02`
+
+The physical hostname must not be renamed merely to satisfy this naming model.
+
+The logical alias migration is an offline architecture task and is not yet
+declared operational by this regulation.
+
+Reusable playbooks should obtain host-specific physical identity from inventory
+or host variables rather than hard-code `tb3-dell` into generic automation.
+
+## 4. Automation and orchestration rule
+
+Reusable orchestration MUST use Ansible.
+
+A reusable specialised Python program is permitted when it is:
+
+- tracked in Git;
+- tested;
+- used as a bounded leaf tool;
+- invoked or managed through the approved orchestration layer.
+
+Generated terminal Python or shell programs must not become a second
+production orchestration layer.
+
+Generated production/live execution wrappers are prohibited.
+
+A short one-off shell or Python command is permitted only for bounded
+diagnostics or one-time repository maintenance when making it reusable would
+provide no benefit.
+
+If the same diagnostic or operation is needed repeatedly, it must be promoted
+to tracked reusable automation.
+
+## 5. Operator interface rule
+
+Platform complexity must be hidden behind the automation rather than delegated
+to the operator.
+
+A logical lifecycle operation such as:
+
+- day-start;
+- day-stop;
+- deploy;
+- recover;
+
+is one operator-level action.
+
+Its internal:
+
+- preconditions;
+- validation;
+- evidence capture;
+- mutation;
+- teardown;
+- final state verification;
+
+must not require repeated operator confirmations when they remain inside the
+already approved bounded operation.
+
+The long-term target is one canonical operator command per lifecycle operation.
+
+## 6. Sprint-first working model
+
+Sprint work is the default operating model.
+
+Before each live sprint perform a detailed offline analysis covering:
+
+- scientific goal;
+- expected scientific output;
+- required initial state;
+- required final state;
+- exact approved repository SHA;
+- required scripts/playbooks;
+- reusable versus one-off tooling;
+- command sequence;
+- expected PASS markers;
+- evidence outputs;
+- stop conditions;
+- authorization envelope;
+- maximum live window;
+- mandatory closeout.
+
+Default maximum Tb3 live sprint window:
+
+`2 hours`
+
+A different duration requires an explicit sprint contract.
+
+Required sequence:
+
+post-mortem / plan review
+→ offline design
+→ offline repair
+→ offline rehearsal
+→ GO / NO-GO
+→ bounded live sprint
+→ controlled closeout
+→ result analysis
+→ post-mortem.
+
+## 7. Live sprint rule
+
+A live sprint is for scientific execution, not architecture development.
+
+During an active live sprint:
+
+- do not invent new wrappers;
+- do not redesign architecture;
+- do not introduce a new execution layer;
+- do not silently alter the master plan;
+- do not repair code ad hoc and continue as if the sprint were unchanged.
+
+An expected failure may use an already defined recovery path.
+
+An unexpected structural failure requires:
+
+STOP
+→ preserve evidence
+→ controlled closeout when needed
+→ discuss
+→ offline repair
+→ new GO / NO-GO decision.
+
+## 8. Planning rule
+
+Do not forecast readiness from the number of remaining macro activities.
+
+Before giving a meaningful live-time estimate require:
+
+`OFFLINE_READY=YES`
+
+Only after offline readiness is demonstrated may live execution time be
+estimated.
+
+## 9. Authorization model
+
+Authorization is issued at the operator-level bounded macro-action or sprint
+envelope.
+
+Internal Ansible tasks that remain inside the approved envelope do not require
+repeated user authorization.
+
+A new authorization is required when execution would leave the approved
+envelope, for example:
+
+- an additional scientific transition;
+- an unexpected PRB control;
+- reset or recovery not included in the sprint;
+- automatic retry of an exactly-once operation;
+- architecture mutation;
+- an additional live experiment.
+
+## 10. Scientific safeguards retained
+
+The following safeguards remain mandatory:
+
+- fail closed;
+- no automatic scientific-trigger replay;
+- no replay of consumed operation IDs;
+- exactly-once control semantics;
+- authoritative applied readback;
+- stationarity gates;
+- evidence provenance;
+- explicit scientific transition boundaries;
+- read-only forensics after an unexpected partial mutation.
+
+The purpose of the new regulation is not to weaken scientific rigor. It is to
+move rigor into reusable automation instead of manual operator bureaucracy.
+
+## 11. Post-mortem 2026-10-04 decisions
+
+PM-01 — Planning
+
+Do not estimate time-to-data from the number of remaining macro activities.
+Require offline dependency-chain proof first.
+
+PM-02 — Source of truth
+
+The authoritative operational repository state is controller `main` on
+`coll.vntu.org`. VM clones are replicas, not competing authorities.
+
+PM-03 — Orchestration
+
+Reusable orchestration uses Ansible. Generated production execution wrappers
+are prohibited.
+
+PM-04 — Authorization
+
+Authorize bounded operator-level actions and sprint envelopes rather than
+individual internal tasks.
+
+PM-05 — Structural failure
+
+The first unexpected structural failure during a live sprint invokes
+STOP-AND-DISCUSS instead of a sequence of speculative repairs.
+
+PM-06 — Adaptive regulation
+
+Working rules are versioned and may be corrected after evidence-based review.
+They must not be treated as immutable.
+
+PM-07 — Repository promotion
+
+Changes developed on an experimental VM are allowed, but become authoritative
+only after controlled promotion and validation on `coll.vntu.org`.
+
+PM-08 — Scalable target identity
+
+Move toward logical inventory identities such as `tb3-vntu-01` and
+`tb3-vntu-02` without requiring immediate physical hostname changes.
+
+<!-- R6_ADAPTIVE_WORKING_REGULATION_V1_END -->
+
 # Sci-O-RAN recovery and experiment resumption plan
 
 ## Canonical sources

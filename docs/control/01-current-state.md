@@ -1,3 +1,148 @@
+<!-- R6_CURRENT_STATE_20261005_V1_BEGIN -->
+
+# READ FIRST — Current R6 state, 2026-10-05
+
+This block supersedes older current-state summaries below when they conflict
+with it. Historical material remains provenance.
+
+R6_CURRENT_STATE_CHECKPOINT=2026-10-05
+BASE_REPOSITORY_HEAD=baf7492b65e7c4d73b9e12492efed84441c40018
+AUTHORITATIVE_CONTROLLER=coll.vntu.org
+AUTHORITATIVE_REPOSITORY=/home/khoshaba/project/tcd-oran-testbed-integration
+AUTHORITATIVE_BRANCH=main
+
+## Runtime closeout
+
+The 2026-10-04 canonical day-stop completed successfully.
+
+DAY_STOP_OPERATION_ID=lifecycle-day-stop-20261004T181012Z-cbc0c46a
+DAY_STOP_TEARDOWN_OPERATION_ID=lifecycle-teardown-20261004T181012Z-cbc0c46a
+DAY_STOP_RUNTIME_CAPTURE_GATE=PASS
+DAY_STOP_EVIDENCE_GATE=PASS
+DAY_STOP_TEARDOWN_GATE=PASS
+DAY_STOP_CLEAN_STATE_GATE=PASS
+DAY_STOP_GATE=PASS
+
+PLAY_RECAP_OK=143
+PLAY_RECAP_CHANGED=21
+PLAY_RECAP_UNREACHABLE=0
+PLAY_RECAP_FAILED=0
+PLAY_RECAP_SKIPPED=1
+
+A subsequent `docker ps` check returned zero running containers.
+
+O_RAN_RUNTIME=STOPPED
+TB3_LIVE_SPRINT_ACTIVE=NO
+
+The external Prompt-12 provider/reader process state was not independently
+re-adjudicated after day-stop and must not be inferred solely from the Docker
+container result.
+
+## Scientific state
+
+R6_STAGE05_INITIAL_APPLIED_PRB_BEFORE_STOP=26
+R6_T2_TARGET=26_TO_39
+T2_SCIENTIFIC_TRIGGER_ATTEMPTED=NO
+T2_SCIENTIFIC_DATASET_OBTAINED=NO
+T3_TO_T6_EXECUTED=NO
+
+The exactly-once T2 scientific transition remains unconsumed.
+
+## 2026-10-04 post-mortem findings
+
+Primary failure class:
+
+`PROCESS_AND_ORCHESTRATION_FAILURE`
+
+The day did not demonstrate a fundamental inability of the O-RAN plant to
+perform T2.
+
+The main observed problems were:
+
+1. live work began before the complete execution dependency chain was proven;
+2. temporary generated wrappers created synthetic blockers;
+3. the resume precontrol materializer was incorrectly treated as a full
+   orchestration-plan producer;
+4. ONE-ACTION authorization was applied too deeply to internal implementation
+   steps;
+5. lifecycle automation existed through multiple executable/copy paths;
+6. the live `tb3-preflight.yml` copy diverged from the repository copy;
+7. significant live time was spent debugging orchestration rather than
+   collecting scientific evidence.
+
+## Current source-of-truth issue
+
+Observed lifecycle-related paths include:
+
+- `/home/khoshaba/sci-oran/ansible/lifecycle/bin/tb3-lifecycle.sh`
+- `/home/khoshaba/project/tcd-oran-testbed-integration/sci-oran/ansible/lifecycle/bin/tb3-lifecycle.sh`
+- `/home/khoshaba/project/tcd-oran-testbed-integration/scripts/tb3-lifecycle.sh`
+
+Their exact long-term roles must be adjudicated offline.
+
+The target architecture is one authoritative tracked implementation in the
+repository, with no independently maintained executable lifecycle copy outside
+Git.
+
+Do not delete or replace these paths until references and responsibilities have
+been audited.
+
+## Current orchestration issue
+
+The resume-aware precontrol materializer correctly supports:
+
+- `initial_transition_index=2`;
+- first scientific transition `T2`;
+- initial-pre-step semantics;
+- no synthetic T1 timeline;
+- no T1 binding consumption.
+
+However, the current production path lacks a proven canonical consumer that
+composes the resume artifact into the required bounded single-transition T2
+execution without reverting to the full T1-to-T6 supervisor semantics.
+
+This is an offline repair problem.
+
+## Current planning state
+
+CURRENT_WORK_MODE=OFFLINE_ONLY
+OFFLINE_READY=NO
+LIVE_READY=NO
+TB3_START_AUTHORISED=NO
+SCIENTIFIC_TRAFFIC_AUTHORISED=NO
+PRB_CONTROL_AUTHORISED=NO
+T2_AUTHORISED=NO
+T3_TO_T6_AUTHORISED=NO
+
+Required order from this checkpoint:
+
+1. install the adaptive working regulation in the three control documents;
+2. reread and adjudicate the large master plan;
+3. correct the master plan only where new evidence requires it;
+4. define one bounded offline repair sprint;
+5. implement and rehearse the repair offline;
+6. produce GO / NO-GO for a maximum two-hour Tb3 sprint;
+7. run the live sprint only after GO;
+8. perform closeout and post-mortem.
+
+## Future target naming
+
+Current physical hostname:
+
+`tb3-dell`
+
+Planned logical inventory identity:
+
+`tb3-vntu-01`
+
+Planned second compatible target:
+
+`tb3-vntu-02`
+
+No inventory alias migration has yet been executed.
+
+<!-- R6_CURRENT_STATE_20261005_V1_END -->
+
 # Sci_O-RAN current state
 
 Updated from RECOVERY.R0.1-R0.6 evidence on 2026-09-13.

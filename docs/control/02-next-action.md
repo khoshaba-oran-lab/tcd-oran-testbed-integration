@@ -1,3 +1,111 @@
+<!-- R6_READ_FIRST_WORKING_MODE_V1_BEGIN -->
+
+# READ FIRST — Current working mode
+
+Required document read order:
+
+1. `docs/control/00-recovery-master-plan.md`
+2. `docs/control/01-current-state.md`
+3. `docs/control/02-next-action.md`
+
+Before proposing execution, confirm that the proposed action is consistent with
+all three.
+
+CURRENT_WORK_MODE=OFFLINE_PLAN_REVIEW
+TB3_RUNTIME=STOPPED
+TB3_START_AUTHORISED=NO
+LIVE_SCIENTIFIC_EXECUTION_AUTHORISED=NO
+
+Core operating rules:
+
+1. Read and preserve the authoritative master-plan order.
+2. Reusable orchestration uses Ansible.
+3. Generated production/live execution wrappers are prohibited.
+4. A live sprint is for scientific execution, not development.
+5. Unexpected structural blocker means STOP-AND-DISCUSS.
+6. Do not change the master plan implicitly.
+7. Authorization applies to bounded operator-level macro-actions or sprint
+   envelopes, not every internal Ansible task.
+8. Working rules are adaptive and may be revised after post-mortem.
+9. Rule or architecture changes are performed offline, not during an active
+   scientific sprint.
+10. A meaningful time-to-data estimate requires `OFFLINE_READY=YES`.
+
+Repository authority:
+
+- authoritative operational repository:
+  `coll.vntu.org:/home/khoshaba/project/tcd-oran-testbed-integration`
+- authoritative branch: `main`
+- VM clones: execution/development replicas
+- VM-originated changes require controlled promotion through controller `main`
+
+Current physical runtime hostname:
+
+`tb3-dell`
+
+Target future logical inventory identity:
+
+`tb3-vntu-01`
+
+No alias migration is authorised by this checkpoint.
+
+## Next planned action
+
+NEXT_AUTHORISED_ACTION=NONE
+NEXT_PLANNED_ACTION=RECOVERY.R6.MASTER-PLAN-REVIEW-AND-SPRINT-DESIGN-READ-ONLY
+
+Purpose:
+
+- reread the large R6 master plan from the beginning;
+- compare its intended order with the current 2026-10-05 state;
+- identify which parts remain valid;
+- identify which parts are complete;
+- identify obsolete assumptions;
+- identify new blockers from the 2026-10-04 post-mortem;
+- decide whether the large plan requires explicit correction;
+- define the scope of exactly one following offline repair sprint.
+
+The plan-review action is read-only.
+
+It must not:
+
+- start Tb3;
+- deploy;
+- recover;
+- reset;
+- start scientific traffic;
+- execute FIFO trigger;
+- issue actuator request;
+- change PRB state;
+- execute T2-T6;
+- implement the offline repair before the plan review is accepted.
+
+## Required sprint contract after plan review
+
+Before the next live Tb3 session define:
+
+SCIENTIFIC_GOAL
+EXPECTED_OUTPUT
+START_STATE
+END_STATE
+APPROVED_REPOSITORY_SHA
+REQUIRED_INPUTS
+REUSABLE_AUTOMATION
+ONE_OFF_DIAGNOSTICS
+EXACT_COMMAND_SEQUENCE
+EXPECTED_PASS_MARKERS
+EVIDENCE_OUTPUTS
+STOP_CONDITIONS
+AUTHORIZATION_ENVELOPE
+MAX_LIVE_WINDOW
+MANDATORY_CLOSEOUT
+
+Default maximum live window:
+
+`2 hours`
+
+<!-- R6_READ_FIRST_WORKING_MODE_V1_END -->
+
 # Next authorised action
 
 - UPDATED_UTC=2026-09-13T20:17:43Z
