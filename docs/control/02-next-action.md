@@ -134,7 +134,8 @@ OFFLINE_READY=NO
 LIVE_READY=NO
 
 NEXT_AUTHORISED_ACTION=NONE
-NEXT_PLANNED_ACTION=RECOVERY.R6.OFFLINE-SPRINT01-IMPLEMENTATION-DESIGN
+NEXT_PLANNED_ACTION=RECOVERY.R6.OFFLINE-SPRINT01-IMPLEMENT
+IMPLEMENTATION_DESIGN=docs/control/03-r6-offline-sprint01-implementation-design.md
 
 The next action must design the minimum repository changes required to provide
 one Ansible-managed resumed single-transition T2 execution path.
