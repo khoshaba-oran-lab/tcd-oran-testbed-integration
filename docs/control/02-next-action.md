@@ -158,6 +158,33 @@ No live execution is authorised by this checkpoint.
 
 R6_OFFLINE_SPRINT01_NEXT_V1_END
 
+
+## R6 post-qualification next action
+
+R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V1_BEGIN
+
+CURRENT_WORK_MODE=OFFLINE_COMPLETE
+OFFLINE_READY=YES
+LIVE_READY=NO
+
+NEXT_AUTHORISED_ACTION=NONE
+NEXT_PLANNED_ACTION=RECOVERY.R6.OFFLINE-SPRINT01-PUBLISH-APPROVED-SHA
+
+APPROVED_CONTROLLER_SHA=0b4ae3569a297261217339b318c33c61a9bdd2b9
+
+The next operation shall publish the approved authoritative controller SHA.
+
+After publication, the runtime clone shall be converged to that exact approved
+SHA through the controlled repository workflow.
+
+Only after repository convergence shall a separate bounded GO/NO-GO live
+preflight be considered.
+
+No scientific traffic, FIFO trigger, actuator request, PRB transition, T2
+trigger or T3-to-T6 execution is authorised by this checkpoint.
+
+R6_OFFLINE_SPRINT01_POSTQUAL_NEXT_V1_END
+
 <!-- R6_READ_FIRST_WORKING_MODE_V1_END -->
 
 # Next authorised action
