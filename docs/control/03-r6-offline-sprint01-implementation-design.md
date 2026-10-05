@@ -82,6 +82,9 @@ Required invariants:
 
 FIRST_SCIENTIFIC_TRANSITION=T2
 INITIAL_TRANSITION_INDEX=2
+SCIENTIFIC_TRANSITION_LABEL=T2
+SCIENTIFIC_TRANSITION_INDEX=2
+EXECUTED_TRANSITION_ORDINAL=1
 SYNTHETIC_PRIOR_TRANSITION_EVENTS=NO
 SKIPPED_TRANSITION_BINDINGS_CONSUMED=NO
 T3_HANDOFF_PRESENT=NO
@@ -89,6 +92,26 @@ T3_TRIGGER_PRESENT=NO
 COMMAND_EXECUTED=NO
 CONTROL_EXECUTED=NO
 TRAFFIC_EXECUTED=NO
+
+The resumed run contains one actually executed actuator transition.
+
+The canonical actuator transaction evidence for that transition is the
+command / acknowledgement / applied-readback triplet.
+
+Therefore the resumed T2-only timeline must be local to the actually executed
+transition rather than pretending that T1 was executed in this run.
+
+T2_ONLY_EXECUTED_TRANSITION_COUNT=1
+T2_ONLY_EXPECTED_TIMELINE_EVENT_COUNT=3
+SYNTHETIC_T1_TIMELINE_EVENTS=PROHIBITED
+
+Scientific identity and local execution ordinal are distinct:
+
+- scientific transition identity remains T2 / index 2;
+- local executed-transition ordinal is 1.
+
+The pure T2 post-step stationarity and resumed-T2 finalization commands must be
+materialized consistently with this resume-local timeline semantics.
 
 The materializer must fail closed on malformed or inconsistent source
 artifacts.
@@ -101,16 +124,27 @@ Its intended live order is:
 
 1. validate approved repository/input state;
 2. materialize the T2-only execution description;
-3. start the bounded traffic session asynchronously;
+3. start the existing bounded traffic session asynchronously;
 4. execute resume-aware T2 initial-precontrol;
 5. enforce the pre-step minimum duration and stationarity gate;
 6. execute the already-approved T2 ratio-binding step;
 7. execute the exactly-once T2 trigger;
 8. obtain authoritative applied PRB readback;
 9. execute pure T2 post-step stationarity;
-10. execute finalization;
-11. terminate/collect owned traffic execution state;
-12. emit bounded evidence and final result.
+10. wait for the same bounded traffic session to finish naturally;
+11. verify the traffic-session result;
+12. execute resumed-T2 finalization;
+13. emit bounded evidence and final result.
+
+The Ansible layer shall not introduce a second process-ownership protocol for
+the traffic session.
+
+The existing bounded traffic adapter remains the owner of its receiver,
+capture process, signal handling and cleanup.
+
+ANSIBLE_EXTERNAL_TRAFFIC_KILL_REQUIRED=NO
+TRAFFIC_SESSION_NATURAL_BOUNDED_COMPLETION=YES
+TRAFFIC_FINALIZATION_ORDER=TRAFFIC_COMPLETE_BEFORE_FINALIZATION
 
 The scientific trigger task must never have automatic retries.
 
@@ -160,5 +194,41 @@ EXACT_COMMAND_SEQUENCE_GATE=PASS
 FAIL_CLOSED_GATE=PASS
 
 No Tb3 live start or scientific execution is authorised by this design.
+
+
+## Evidence-based implementation correction
+
+R6_OFFLINE_SPRINT01_IMPLEMENTATION_CORRECTION_V1_BEGIN
+
+CORRECTION_REASON=TRAFFIC_OWNERSHIP_AND_RESUME_TIMELINE_SEMANTICS
+ORIGINAL_NEW_CODE_FILE_COUNT=3
+ORIGINAL_FILESET_VALID=YES
+ADDITIONAL_CODE_FILE_REQUIRED=NO
+
+The existing bounded traffic session already owns receiver creation/removal,
+capture-process lifecycle, signal handling and cleanup.
+
+The Ansible orchestration shall therefore launch that bounded session
+asynchronously and later wait for its natural bounded completion. It shall not
+invent another traffic PID/control protocol.
+
+The resumed T2 execution contains one actually executed scientific actuator
+transition. It must not synthesize T1 actuator events merely because the
+scientific transition is named T2.
+
+SCIENTIFIC_TRANSITION_LABEL=T2
+SCIENTIFIC_TRANSITION_INDEX=2
+EXECUTED_TRANSITION_ORDINAL=1
+EXPECTED_ACTUATOR_TRANSACTION_COUNT=1
+EXPECTED_TIMELINE_EVENT_COUNT=3
+SYNTHETIC_T1_TIMELINE_EVENTS=PROHIBITED
+
+The single-transition materializer is responsible for producing a pure T2
+post-step stationarity command and resumed-T2 finalization command consistent
+with those semantics.
+
+The full T1-to-T6 binding and supervisor semantics remain unchanged.
+
+R6_OFFLINE_SPRINT01_IMPLEMENTATION_CORRECTION_V1_END
 
 R6_OFFLINE_SPRINT01_IMPLEMENTATION_DESIGN_V1_END
