@@ -186,6 +186,21 @@
           - "'RATIO_BOUND=PASS' in sci_oran_prompt12_ratio_bind.stdout_lines"
         fail_msg: PROMPT12_T2_RATIO_BIND_FAILED
 
+    - name: Read bounded traffic status immediately before T2 trigger
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_pretrigger
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic active immediately before T2 trigger
+      ansible.builtin.assert:
+        that:
+          - not (sci_oran_prompt12_traffic_pretrigger.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_pretrigger.finished is defined
+          - not (sci_oran_prompt12_traffic_pretrigger.finished | bool)
+        fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_BEFORE_T2_TRIGGER
+
     - name: Execute exactly-once T2 scientific trigger
       ansible.builtin.command:
         argv: "{{ sci_oran_prompt12_single.trigger_command }}"
@@ -197,6 +212,28 @@
         argv: "{{ sci_oran_prompt12_authoritative_readback_argv }}"
       register: sci_oran_prompt12_applied_readback
       changed_when: false
+
+    - name: Decode authoritative applied PRB readback
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_applied_readback_report: >-
+          {{
+            sci_oran_prompt12_applied_readback.stdout
+            | from_json
+          }}
+
+    - name: Require authoritative T2 applied state 39 PRB
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_applied_readback.rc == 0
+          - sci_oran_prompt12_applied_readback_report.schema == 'sci_oran_prompt12_authoritative_prb_readback_v1'
+          - sci_oran_prompt12_applied_readback_report.authoritative_source == 'CONTAINER:/tmp/gnb.log'
+          - not sci_oran_prompt12_applied_readback_report.docker_logs_is_authoritative
+          - sci_oran_prompt12_applied_readback_report.expected_min_prbs == 0
+          - sci_oran_prompt12_applied_readback_report.expected_max_prbs == 39
+          - sci_oran_prompt12_applied_readback_report.u_applied_readback_gate == 'PASS'
+          - sci_oran_prompt12_applied_readback_report.selected.applied_min_prbs == 0
+          - sci_oran_prompt12_applied_readback_report.selected.applied_max_prbs == 39
+        fail_msg: PROMPT12_T2_AUTHORITATIVE_APPLIED_READBACK_FAILED
 
     - name: Execute pure resumed T2 post-step stationarity
       ansible.builtin.command:
