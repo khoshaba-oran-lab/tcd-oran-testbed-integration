@@ -158,6 +158,16 @@
           - sci_oran_prompt12_authoritative_readback_argv | length > 0
         fail_msg: PROMPT12_LIVE_AUTHORIZATION_INVALID
 
+    - name: Require explicit T2 control authorization before traffic
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_control_authorization_token is defined
+          - sci_oran_prompt12_control_authorization_token == 'PROMPT12_T2_EXPLICIT_FIFO_CONTROL'
+          - (sci_oran_prompt12_single.trigger_command | select('equalto', '--control-authorization-token') | list | length) == 1
+          - (sci_oran_prompt12_single.trigger_command | select('equalto', '@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@') | list | length) == 1
+          - (sci_oran_prompt12_single.trigger_command | select('equalto', 'PROMPT12_T2_EXPLICIT_FIFO_CONTROL') | list | length) == 0
+        fail_msg: PROMPT12_T2_CONTROL_AUTHORIZATION_NOT_EXPLICIT
+
     - name: Start bounded scientific traffic asynchronously
       ansible.builtin.command:
         argv: "{{ sci_oran_prompt12_single.traffic_command }}"
@@ -201,9 +211,31 @@
           - not (sci_oran_prompt12_traffic_pretrigger.finished | bool)
         fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_BEFORE_T2_TRIGGER
 
+    - name: Late-bind T2 control authorization in memory
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_effective_trigger_command: >-
+          {{
+            sci_oran_prompt12_single.trigger_command
+            | map(
+                'regex_replace',
+                '^@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@$',
+                sci_oran_prompt12_control_authorization_token
+              )
+            | list
+          }}
+
+    - name: Require effective T2 control authorization binding
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_prompt12_effective_trigger_command | length) == (sci_oran_prompt12_single.trigger_command | length)
+          - (sci_oran_prompt12_effective_trigger_command | select('equalto', '@PROMPT12_CONTROL_AUTHORIZATION_TOKEN@') | list | length) == 0
+          - (sci_oran_prompt12_effective_trigger_command | select('equalto', 'PROMPT12_T2_EXPLICIT_FIFO_CONTROL') | list | length) == 1
+          - (sci_oran_prompt12_effective_trigger_command | select('equalto', '--control-authorization-token') | list | length) == 1
+        fail_msg: PROMPT12_T2_CONTROL_AUTHORIZATION_LATE_BIND_FAILED
+
     - name: Execute exactly-once T2 scientific trigger
       ansible.builtin.command:
-        argv: "{{ sci_oran_prompt12_single.trigger_command }}"
+        argv: "{{ sci_oran_prompt12_effective_trigger_command }}"
       register: sci_oran_prompt12_trigger
       changed_when: true
 
