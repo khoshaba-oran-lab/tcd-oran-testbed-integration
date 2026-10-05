@@ -1,0 +1,253 @@
+---
+- name: Prompt12 resumed single-transition orchestration
+  hosts: "{{ sci_oran_prompt12_inventory_target | default('tb3-dell') }}"
+  gather_facts: false
+  any_errors_fatal: true
+
+  vars:
+    sci_oran_prompt12_repo_root_default: >-
+      /home/khoshaba/project/tcd-oran-testbed-integration
+    sci_oran_prompt12_materializer_relpath: >-
+      scripts/experiment-harness/prompt12-resume-single-transition-materializer.py
+    sci_oran_prompt12_live_authorization_token_expected: >-
+      AUTHORISE_PROMPT12_RESUMED_T2_26_TO_39_LIVE
+
+  pre_tasks:
+    - name: Validate orchestration mode
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_mode | default('offline-validate') in ['offline-validate', 'live']
+        fail_msg: PROMPT12_MODE_INVALID
+
+    - name: Validate required common inputs
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_expected_repo_sha is defined
+          - sci_oran_prompt12_expected_repo_sha | length == 40
+          - sci_oran_prompt12_binding_manifest is defined
+          - sci_oran_prompt12_binding_manifest | length > 0
+          - sci_oran_prompt12_resume_materialization is defined
+          - sci_oran_prompt12_resume_materialization | length > 0
+          - sci_oran_prompt12_single_transition_output is defined
+          - sci_oran_prompt12_single_transition_output | length > 0
+        fail_msg: PROMPT12_REQUIRED_INPUT_MISSING
+
+    - name: Resolve repository root
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_repo_root: >-
+          {{
+            sci_oran_prompt12_repo_root
+            | default(sci_oran_prompt12_repo_root_default)
+          }}
+
+    - name: Read target repository HEAD
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_prompt12_repo_root }}"
+          - rev-parse
+          - HEAD
+      register: sci_oran_prompt12_repo_head
+      changed_when: false
+
+    - name: Prove approved repository SHA
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_repo_head.stdout | trim == sci_oran_prompt12_expected_repo_sha
+        fail_msg: PROMPT12_REPOSITORY_SHA_MISMATCH
+
+    - name: Read target repository worktree state
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ sci_oran_prompt12_repo_root }}"
+          - status
+          - --porcelain
+      register: sci_oran_prompt12_repo_status
+      changed_when: false
+
+    - name: Require clean target repository
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_repo_status.stdout | trim == ''
+        fail_msg: PROMPT12_TARGET_REPOSITORY_DIRTY
+
+    - name: Check single-transition output path
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single_transition_output }}"
+      register: sci_oran_prompt12_output_stat
+
+    - name: Require fresh single-transition output
+      ansible.builtin.assert:
+        that:
+          - not sci_oran_prompt12_output_stat.stat.exists
+        fail_msg: PROMPT12_SINGLE_TRANSITION_OUTPUT_ALREADY_EXISTS
+
+  tasks:
+    - name: Materialize resumed T2 single-transition description
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ sci_oran_prompt12_repo_root }}/{{ sci_oran_prompt12_materializer_relpath }}"
+          - --binding-manifest
+          - "{{ sci_oran_prompt12_binding_manifest }}"
+          - --resume-materialization
+          - "{{ sci_oran_prompt12_resume_materialization }}"
+          - --initial-transition-index
+          - "2"
+          - --output
+          - "{{ sci_oran_prompt12_single_transition_output }}"
+      register: sci_oran_prompt12_materialize
+      changed_when: true
+
+    - name: Require successful nonexecuting materialization markers
+      ansible.builtin.assert:
+        that:
+          - "'MATERIALIZATION_GATE=PASS' in sci_oran_prompt12_materialize.stdout"
+          - "'FIRST_SCIENTIFIC_TRANSITION=T2' in sci_oran_prompt12_materialize.stdout"
+          - "'EXPECTED_TIMELINE_EVENT_COUNT=3' in sci_oran_prompt12_materialize.stdout"
+          - "'T3_HANDOFF_PRESENT=NO' in sci_oran_prompt12_materialize.stdout"
+          - "'CONTROL_EXECUTED=NO' in sci_oran_prompt12_materialize.stdout"
+          - "'TRAFFIC_EXECUTED=NO' in sci_oran_prompt12_materialize.stdout"
+        fail_msg: PROMPT12_SINGLE_TRANSITION_MATERIALIZATION_INVALID
+
+    - name: Read materialized single-transition description
+      ansible.builtin.slurp:
+        src: "{{ sci_oran_prompt12_single_transition_output }}"
+      register: sci_oran_prompt12_materialized_raw
+
+    - name: Decode materialized single-transition description
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_single: >-
+          {{
+            sci_oran_prompt12_materialized_raw.content
+            | b64decode
+            | from_json
+          }}
+
+    - name: Validate frozen T2-only invariants
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_single.schema == 'sci_oran_prompt12_resume_single_transition_materialization_v1'
+          - sci_oran_prompt12_single.transition_label == 'T2'
+          - sci_oran_prompt12_single.transition_index == 2
+          - sci_oran_prompt12_single.executed_transition_ordinal == 1
+          - sci_oran_prompt12_single.expected_timeline_event_count == 3
+          - not sci_oran_prompt12_single.synthetic_prior_transition_events
+          - not sci_oran_prompt12_single.skipped_transition_bindings_consumed
+          - not sci_oran_prompt12_single.t3_handoff_present
+          - not sci_oran_prompt12_single.t3_trigger_present
+          - not sci_oran_prompt12_single.command_executed
+          - not sci_oran_prompt12_single.control_executed
+          - not sci_oran_prompt12_single.traffic_executed
+        fail_msg: PROMPT12_T2_ONLY_INVARIANT_FAILED
+
+    - name: End safely after offline validation
+      ansible.builtin.meta: end_play
+      when: sci_oran_prompt12_mode | default('offline-validate') == 'offline-validate'
+
+    - name: Validate explicit live authorization
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_live_authorization_token is defined
+          - sci_oran_prompt12_live_authorization_token == sci_oran_prompt12_live_authorization_token_expected
+          - sci_oran_prompt12_authoritative_readback_argv is defined
+          - sci_oran_prompt12_authoritative_readback_argv is sequence
+          - sci_oran_prompt12_authoritative_readback_argv | length > 0
+        fail_msg: PROMPT12_LIVE_AUTHORIZATION_INVALID
+
+    - name: Start bounded scientific traffic asynchronously
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.traffic_command }}"
+      environment:
+        SCI_ORAN_PROMPT12_LIVE_TRAFFIC_ENABLE: "YES"
+      async: 240
+      poll: 0
+      register: sci_oran_prompt12_traffic_job
+      changed_when: true
+
+    - name: Execute resumed T2 initial precontrol
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.initial_precontrol_command }}"
+      register: sci_oran_prompt12_initial_precontrol
+      changed_when: true
+
+    - name: Execute T2 ratio binding
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.ratio_bind_command }}"
+      register: sci_oran_prompt12_ratio_bind
+      changed_when: true
+
+    - name: Require T2 ratio binding admission
+      ansible.builtin.assert:
+        that:
+          - "'RATIO_BOUND=PASS' in sci_oran_prompt12_ratio_bind.stdout_lines"
+        fail_msg: PROMPT12_T2_RATIO_BIND_FAILED
+
+    - name: Execute exactly-once T2 scientific trigger
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.trigger_command }}"
+      register: sci_oran_prompt12_trigger
+      changed_when: true
+
+    - name: Obtain authoritative applied PRB readback
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_authoritative_readback_argv }}"
+      register: sci_oran_prompt12_applied_readback
+      changed_when: false
+
+    - name: Execute pure resumed T2 post-step stationarity
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.post_stationarity_command }}"
+      register: sci_oran_prompt12_post_stationarity
+      changed_when: true
+
+    - name: Decode T2 post-step stationarity result
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_post_report: >-
+          {{
+            sci_oran_prompt12_post_stationarity.stdout
+            | from_json
+          }}
+
+    - name: Require T2 post-step stationarity
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_post_report.output_stationarity_gate == 'PASS'
+          - sci_oran_prompt12_post_report.minimum_phase_duration_gate == 'PASS'
+        fail_msg: PROMPT12_T2_POST_STATIONARITY_FAILED
+
+    - name: Wait for bounded traffic session natural completion
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_status
+      until: sci_oran_prompt12_traffic_status.finished
+      retries: 240
+      delay: 1
+      changed_when: false
+
+    - name: Require bounded traffic session success
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_traffic_status.rc == 0
+        fail_msg: PROMPT12_BOUNDED_TRAFFIC_SESSION_FAILED
+
+    - name: Execute resumed T2 finalization
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.finalization_command }}"
+      register: sci_oran_prompt12_finalization
+      changed_when: true
+
+    - name: Report successful bounded T2 orchestration
+      ansible.builtin.debug:
+        msg:
+          - PROMPT12_RESUMED_SINGLE_TRANSITION_GATE=PASS
+          - FIRST_SCIENTIFIC_TRANSITION=T2
+          - SCIENTIFIC_TRANSITION_INDEX=2
+          - EXECUTED_TRANSITION_ORDINAL=1
+          - EXPECTED_TIMELINE_EVENT_COUNT=3
+          - AUTOMATIC_TRIGGER_REPLAY=NO
+          - T3_HANDOFF=NO
+          - T3_TRIGGER=NO
