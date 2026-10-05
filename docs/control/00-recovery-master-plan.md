@@ -76,9 +76,26 @@ Target future logical inventory naming model:
 
 `tb3-vntu-01`
 
-Future compatible VM:
+Planned second-site logical inventory identity:
 
-`tb3-vntu-02`
+`tb3-ireland-01`
+
+Planned second site:
+
+`Ireland`
+
+The Ireland VM is intended to have the same allocated resource profile as the
+current `tb3-dell` VM, including virtual CPU allocation, RAM allocation and
+virtual-disk allocation.
+
+It is also intended to provide the same base software environment, including
+the operating-system family/version, required system utilities and passwordless
+remote access required by the approved Ansible control model.
+
+These properties are planning requirements, not qualification evidence.
+Before scientific admission, exact resource values, software versions and
+management prerequisites must be captured and compared against the qualified
+VNTU reference VM.
 
 The physical hostname must not be renamed merely to satisfy this naming model.
 
@@ -286,8 +303,45 @@ only after controlled promotion and validation on `coll.vntu.org`.
 
 PM-08 — Scalable target identity
 
-Move toward logical inventory identities such as `tb3-vntu-01` and
-`tb3-vntu-02` without requiring immediate physical hostname changes.
+Move toward site-aware logical inventory identities such as `tb3-vntu-01` and
+`tb3-ireland-01` without requiring immediate physical hostname changes.
+
+## 12. R6-K — Multi-site second-VM onboarding and equivalence
+
+R6-K is a planned multi-site platform workstream.
+
+Target logical VM:
+
+`tb3-ireland-01`
+
+Site:
+
+`Ireland`
+
+The target VM is expected to have a resource and base-software configuration
+equivalent to the current VNTU runtime VM.
+
+R6-K must prove this equivalence rather than assume it.
+
+Required qualification includes:
+
+1. capture and compare exact vCPU, RAM and virtual-disk resources;
+2. capture and compare OS and required system-software versions;
+3. verify passwordless controller access through the approved management path;
+4. add the VM through inventory/host configuration, not VM-specific
+   orchestration code;
+5. distribute one approved authoritative repository SHA;
+6. use the same Ansible-managed deployment and lifecycle mechanisms;
+7. qualify platform, network, user-plane and experiment prerequisites;
+8. document any unavoidable site-specific differences;
+9. define scientific comparability requirements before cross-site datasets are
+   treated as equivalent.
+
+R6_K_STATUS=NONBLOCKING_PLANNED_WORKSTREAM
+R6_K_CURRENT_T2_CRITICAL_PATH=NO
+
+The Ireland VM must not delay the current VNTU T2 critical path unless a later
+explicit master-plan decision changes that priority.
 
 <!-- R6_ADAPTIVE_WORKING_REGULATION_V1_END -->
 

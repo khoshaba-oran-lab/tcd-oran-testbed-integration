@@ -47,6 +47,24 @@ Target future logical inventory identity:
 
 `tb3-vntu-01`
 
+Planned second-site logical inventory identity:
+
+`tb3-ireland-01`
+
+Second site:
+
+`Ireland`
+
+The Ireland VM belongs to planned R6-K. Its intended resource and base-software
+equivalence with the current VNTU VM must be independently qualified before
+scientific admission.
+
+R6_K_STATUS=NONBLOCKING_PLANNED_WORKSTREAM
+R6_K_CURRENT_T2_CRITICAL_PATH=NO
+
+It must not redirect the current VNTU T2 critical path unless the authoritative
+master plan is explicitly revised.
+
 No alias migration is authorised by this checkpoint.
 
 ## Next planned action

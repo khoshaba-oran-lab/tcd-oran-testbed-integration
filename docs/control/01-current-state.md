@@ -135,9 +135,20 @@ Planned logical inventory identity:
 
 `tb3-vntu-01`
 
-Planned second compatible target:
+Planned second-site logical inventory identity:
 
-`tb3-vntu-02`
+`tb3-ireland-01`
+
+Planned second site:
+
+`Ireland`
+
+SECOND_VM_RESOURCE_PROFILE=PLANNED_IDENTICAL_TO_CURRENT_TB3_DELL
+SECOND_VM_BASE_SOFTWARE_PROFILE=PLANNED_IDENTICAL_TO_CURRENT_TB3_DELL
+SECOND_VM_PASSWORDLESS_MANAGEMENT_ACCESS=PLANNED
+SECOND_VM_EQUIVALENCE_QUALIFIED=NO
+SECOND_VM_ONBOARDING_STATUS=PLANNED_NOT_STARTED
+SECOND_VM_CURRENT_T2_CRITICAL_PATH=NO
 
 No inventory alias migration has yet been executed.
 
