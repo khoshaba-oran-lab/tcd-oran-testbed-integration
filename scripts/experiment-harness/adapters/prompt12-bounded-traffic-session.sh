@@ -135,9 +135,16 @@ prepare_outputs()
     local timestamp_output="$2"
     local stderr_output="$3"
     local path
+    local session_attempt_id
 
-    SESSION_CONTROL_STDOUT="${raw_output}.session.stdout.log"
-    SESSION_CONTROL_STDERR="${raw_output}.session.stderr.log"
+    session_attempt_id="$(date -u '+%s%N')-$$" ||
+        return 70
+
+    [[ "$session_attempt_id" =~ ^[0-9]+-[0-9]+$ ]] ||
+        return 70
+
+    SESSION_CONTROL_STDOUT="${raw_output}.session.${session_attempt_id}.stdout.log"
+    SESSION_CONTROL_STDERR="${raw_output}.session.${session_attempt_id}.stderr.log"
 
     for path in \
         "$raw_output" \
