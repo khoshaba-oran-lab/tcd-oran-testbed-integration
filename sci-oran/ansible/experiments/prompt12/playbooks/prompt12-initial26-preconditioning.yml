@@ -1,0 +1,439 @@
+---
+- name: Prompt12 initial26 evidence-gated preconditioning
+  hosts: all
+  gather_facts: false
+
+  vars:
+    sci_oran_prompt12_repo: >-
+      /home/khoshaba/project/tcd-oran-testbed-integration
+
+    sci_oran_prompt12_initial26_wrapper: >-
+      /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-production-actuator-wrapper.py
+
+    sci_oran_prompt12_initial26_wrapper_sha256: >-
+      82acab967a1459a1f2da36e96d5e3b99aa08971c1941be1de14919a3266494bb
+
+    sci_oran_prompt12_authoritative_readback: >-
+      /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-authoritative-prb-readback.py
+
+    sci_oran_prompt12_authoritative_readback_sha256: >-
+      7ea3180d68093a628ce7f0f988062619e496ee9fb1909f4e18a4f0ce346b94e1
+
+    sci_oran_prompt12_gnb_container: base05_srsran_gnb
+
+    sci_oran_prompt12_initial26_ratio: "50"
+
+    sci_oran_prompt12_initial26_expected_min_prbs: 0
+    sci_oran_prompt12_initial26_expected_startup_max_prbs: 275
+    sci_oran_prompt12_initial26_expected_final_max_prbs: 26
+
+    sci_oran_prompt12_initial26_live_authorization_expected: >-
+      AUTHORISE_PROMPT12_INITIAL26_PRECONDITIONING_LIVE
+
+    sci_oran_prompt12_evidence_base: >-
+      /home/khoshaba/sci-oran-evidence/prompt12/t2-26to39
+
+  tasks:
+    - name: Validate explicit initial26 operation contract
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_operation_id is defined
+          - sci_oran_prompt12_initial26_operation_id | length > 0
+          - sci_oran_prompt12_initial26_operation_id is match('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')
+          - sci_oran_prompt12_experiment_id is defined
+          - sci_oran_prompt12_experiment_id | length > 0
+          - sci_oran_prompt12_experiment_id is match('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')
+          - sci_oran_prompt12_run_id is defined
+          - sci_oran_prompt12_run_id | length > 0
+          - sci_oran_prompt12_run_id is match('^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$')
+          - sci_oran_prompt12_expected_repository_sha is defined
+          - sci_oran_prompt12_expected_repository_sha | length == 40
+          - sci_oran_prompt12_expected_gnb_image_id is defined
+          - sci_oran_prompt12_expected_gnb_image_id | length > 0
+          - sci_oran_prompt12_expected_gnb_started_at is defined
+          - sci_oran_prompt12_expected_gnb_started_at | length > 0
+          - sci_oran_prompt12_initial26_live_authorization_token is defined
+          - sci_oran_prompt12_initial26_live_authorization_token == sci_oran_prompt12_initial26_live_authorization_expected
+        fail_msg: PROMPT12_INITIAL26_OPERATION_CONTRACT_INVALID
+
+    - name: Read physical runtime hostname
+      ansible.builtin.command:
+        argv:
+          - /bin/hostname
+      register: sci_oran_prompt12_initial26_hostname
+      changed_when: false
+
+    - name: Require physical Tb3 runtime host
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_hostname.stdout | trim == 'tb3-dell'
+        fail_msg: PROMPT12_INITIAL26_RUNTIME_HOST_INVALID
+
+    - name: Read target repository HEAD
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/git
+          - -C
+          - "{{ sci_oran_prompt12_repo }}"
+          - rev-parse
+          - HEAD
+      register: sci_oran_prompt12_initial26_repo_head
+      changed_when: false
+
+    - name: Read target repository worktree state
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/git
+          - -C
+          - "{{ sci_oran_prompt12_repo }}"
+          - status
+          - --porcelain
+          - --untracked-files=all
+      register: sci_oran_prompt12_initial26_repo_status
+      changed_when: false
+
+    - name: Require qualified clean repository identity
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_repo_head.stdout | trim == sci_oran_prompt12_expected_repository_sha
+          - sci_oran_prompt12_initial26_repo_status.stdout | trim == ''
+        fail_msg: PROMPT12_INITIAL26_REPOSITORY_GATE_FAILED
+
+    - name: Inspect production actuator wrapper
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_initial26_wrapper }}"
+        checksum_algorithm: sha256
+      register: sci_oran_prompt12_initial26_wrapper_stat
+
+    - name: Inspect authoritative readback collector
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_authoritative_readback }}"
+        checksum_algorithm: sha256
+      register: sci_oran_prompt12_initial26_readback_stat
+
+    - name: Require qualified leaf-tool identities
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_wrapper_stat.stat.exists
+          - sci_oran_prompt12_initial26_wrapper_stat.stat.isreg
+          - sci_oran_prompt12_initial26_wrapper_stat.stat.checksum == sci_oran_prompt12_initial26_wrapper_sha256
+          - sci_oran_prompt12_initial26_readback_stat.stat.exists
+          - sci_oran_prompt12_initial26_readback_stat.stat.isreg
+          - sci_oran_prompt12_initial26_readback_stat.stat.checksum == sci_oran_prompt12_authoritative_readback_sha256
+        fail_msg: PROMPT12_INITIAL26_LEAF_TOOL_IDENTITY_FAILED
+
+    - name: Inspect current gNB incarnation
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/docker
+          - inspect
+          - "{{ sci_oran_prompt12_gnb_container }}"
+      register: sci_oran_prompt12_initial26_gnb_inspect_raw
+      changed_when: false
+
+    - name: Decode current gNB incarnation
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_initial26_gnb_inspect: >-
+          {{
+            (sci_oran_prompt12_initial26_gnb_inspect_raw.stdout | from_json)[0]
+          }}
+
+    - name: Require exact qualified gNB incarnation
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_gnb_inspect.State.Running | bool
+          - sci_oran_prompt12_initial26_gnb_inspect.Image == sci_oran_prompt12_expected_gnb_image_id
+          - sci_oran_prompt12_initial26_gnb_inspect.State.StartedAt == sci_oran_prompt12_expected_gnb_started_at
+        fail_msg: PROMPT12_INITIAL26_GNB_INCARNATION_GATE_FAILED
+
+    - name: Require authoritative gNB log
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/docker
+          - exec
+          - "{{ sci_oran_prompt12_gnb_container }}"
+          - test
+          - -f
+          - /tmp/gnb.log
+      changed_when: false
+
+    - name: Build initial26 evidence paths
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_initial26_run_root: >-
+          {{ sci_oran_prompt12_evidence_base }}/{{ sci_oran_prompt12_experiment_id }}/{{ sci_oran_prompt12_run_id }}
+        sci_oran_prompt12_initial26_operation_dir: >-
+          {{ sci_oran_prompt12_evidence_base }}/{{ sci_oran_prompt12_experiment_id }}/{{ sci_oran_prompt12_run_id }}/initial26/{{ sci_oran_prompt12_initial26_operation_id }}
+
+    - name: Inspect initial26 exactly-once evidence boundary
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_initial26_operation_dir }}"
+      register: sci_oran_prompt12_initial26_operation_dir_stat
+
+    - name: Require fresh initial26 operation identity
+      ansible.builtin.assert:
+        that:
+          - not sci_oran_prompt12_initial26_operation_dir_stat.stat.exists
+        fail_msg: PROMPT12_INITIAL26_OPERATION_ALREADY_EXISTS
+
+    - name: Create fresh initial26 operation evidence directory
+      ansible.builtin.file:
+        path: "{{ sci_oran_prompt12_initial26_operation_dir }}"
+        state: directory
+        mode: "0750"
+
+    - name: Record prepared initial26 operation contract
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/operation.env"
+        mode: "0640"
+        content: |
+          ACTION=RECOVERY.R6.SPRINT01-INITIAL26-PRECONDITIONING
+          OPERATION_ID={{ sci_oran_prompt12_initial26_operation_id }}
+          EXPERIMENT_ID={{ sci_oran_prompt12_experiment_id }}
+          RUN_ID={{ sci_oran_prompt12_run_id }}
+          REPOSITORY_SHA={{ sci_oran_prompt12_expected_repository_sha }}
+          GNB_IMAGE_ID={{ sci_oran_prompt12_expected_gnb_image_id }}
+          GNB_STARTED_AT={{ sci_oran_prompt12_expected_gnb_started_at }}
+          REQUESTED_RATIO_PCT=50
+          EXPECTED_PRE_APPLIED_MIN_PRBS=0
+          EXPECTED_PRE_APPLIED_MAX_PRBS=275
+          EXPECTED_POST_APPLIED_MIN_PRBS=0
+          EXPECTED_POST_APPLIED_MAX_PRBS=26
+          EXACT_CONTROL_ATTEMPT_LIMIT=1
+          AUTOMATIC_RETRY=NO
+          SCIENTIFIC_TRAFFIC_AUTHORISED=NO
+          FIFO_TRIGGER_AUTHORISED=NO
+          T2_AUTHORISED=NO
+
+    - name: Normalize gNB incarnation start timestamp
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - -d
+          - "{{ sci_oran_prompt12_expected_gnb_started_at }}"
+          - +%Y-%m-%dT%H:%M:%SZ
+      register: sci_oran_prompt12_initial26_incarnation_window_start
+      changed_when: false
+
+    - name: Capture preconditioning readback window end
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%Y-%m-%dT%H:%M:%SZ
+      register: sci_oran_prompt12_initial26_pre_window_end
+      changed_when: false
+
+    - name: Prove authoritative startup state 275 PRB
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - "{{ sci_oran_prompt12_authoritative_readback }}"
+          - --container
+          - "{{ sci_oran_prompt12_gnb_container }}"
+          - --operation-id
+          - "{{ sci_oran_prompt12_initial26_operation_id }}-pre275"
+          - --expected-image-id
+          - "{{ sci_oran_prompt12_expected_gnb_image_id }}"
+          - --expected-started-at
+          - "{{ sci_oran_prompt12_expected_gnb_started_at }}"
+          - --window-start
+          - "{{ sci_oran_prompt12_initial26_incarnation_window_start.stdout | trim }}"
+          - --window-end
+          - "{{ sci_oran_prompt12_initial26_pre_window_end.stdout | trim }}"
+          - --expected-min-prbs
+          - "0"
+          - --expected-max-prbs
+          - "275"
+      register: sci_oran_prompt12_initial26_pre_readback
+      changed_when: false
+      failed_when: false
+
+    - name: Preserve startup-state readback evidence
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/pre275-readback.json"
+        mode: "0640"
+        content: "{{ sci_oran_prompt12_initial26_pre_readback.stdout }}\n"
+
+    - name: Require parseable startup-state readback
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_pre_readback.stdout | trim | length > 0
+          - sci_oran_prompt12_initial26_pre_readback.stdout | trim is match('^\{')
+        fail_msg: PROMPT12_INITIAL26_PRE275_READBACK_NOT_PARSEABLE
+
+    - name: Decode startup-state readback
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_initial26_pre_report: >-
+          {{
+            sci_oran_prompt12_initial26_pre_readback.stdout | from_json
+          }}
+
+    - name: Require authoritative startup state 275 PRB before control
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_pre_readback.rc == 0
+          - sci_oran_prompt12_initial26_pre_report.schema == 'sci_oran_prompt12_authoritative_prb_readback_v1'
+          - sci_oran_prompt12_initial26_pre_report.authoritative_source == 'CONTAINER:/tmp/gnb.log'
+          - not sci_oran_prompt12_initial26_pre_report.docker_logs_is_authoritative
+          - sci_oran_prompt12_initial26_pre_report.u_applied_readback_gate == 'PASS'
+          - sci_oran_prompt12_initial26_pre_report.selected.applied_min_prbs == 0
+          - sci_oran_prompt12_initial26_pre_report.selected.applied_max_prbs == 275
+        fail_msg: PROMPT12_INITIAL26_PRE275_GATE_FAILED
+
+    - name: Capture exactly-once control window start
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%Y-%m-%dT%H:%M:%SZ
+      register: sci_oran_prompt12_initial26_control_window_start
+      changed_when: false
+
+    - name: Execute initial26 production actuator exactly once
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - "{{ sci_oran_prompt12_initial26_wrapper }}"
+      environment:
+        SCI_ORAN_MAX_PRB_RATIO: "{{ sci_oran_prompt12_initial26_ratio }}"
+      register: sci_oran_prompt12_initial26_wrapper_result
+      changed_when: true
+      failed_when: false
+
+    - name: Capture exactly-once control window end
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%Y-%m-%dT%H:%M:%SZ
+      register: sci_oran_prompt12_initial26_control_window_end
+      changed_when: false
+
+    - name: Preserve actuator wrapper stdout
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/wrapper-stdout.json"
+        mode: "0640"
+        content: "{{ sci_oran_prompt12_initial26_wrapper_result.stdout }}\n"
+
+    - name: Preserve actuator wrapper stderr
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/wrapper-stderr.txt"
+        mode: "0640"
+        content: "{{ sci_oran_prompt12_initial26_wrapper_result.stderr }}\n"
+
+    - name: Obtain authoritative post-control state 26 PRB
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - "{{ sci_oran_prompt12_authoritative_readback }}"
+          - --container
+          - "{{ sci_oran_prompt12_gnb_container }}"
+          - --operation-id
+          - "{{ sci_oran_prompt12_initial26_operation_id }}-post26"
+          - --expected-image-id
+          - "{{ sci_oran_prompt12_expected_gnb_image_id }}"
+          - --expected-started-at
+          - "{{ sci_oran_prompt12_expected_gnb_started_at }}"
+          - --window-start
+          - "{{ sci_oran_prompt12_initial26_control_window_start.stdout | trim }}"
+          - --window-end
+          - "{{ sci_oran_prompt12_initial26_control_window_end.stdout | trim }}"
+          - --expected-min-prbs
+          - "0"
+          - --expected-max-prbs
+          - "26"
+      register: sci_oran_prompt12_initial26_post_readback
+      changed_when: false
+      failed_when: false
+
+    - name: Preserve post-control readback evidence
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/post26-readback.json"
+        mode: "0640"
+        content: "{{ sci_oran_prompt12_initial26_post_readback.stdout }}\n"
+
+    - name: Require parseable actuator and readback evidence
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_wrapper_result.stdout | trim | length > 0
+          - sci_oran_prompt12_initial26_wrapper_result.stdout | trim is match('^\{')
+          - sci_oran_prompt12_initial26_post_readback.stdout | trim | length > 0
+          - sci_oran_prompt12_initial26_post_readback.stdout | trim is match('^\{')
+        fail_msg: PROMPT12_INITIAL26_OPERATION_EVIDENCE_NOT_PARSEABLE
+
+    - name: Decode initial26 control evidence
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_initial26_wrapper_report: >-
+          {{
+            sci_oran_prompt12_initial26_wrapper_result.stdout | from_json
+          }}
+        sci_oran_prompt12_initial26_post_report: >-
+          {{
+            sci_oran_prompt12_initial26_post_readback.stdout | from_json
+          }}
+
+    - name: Require U CMD and U ACK gates
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_wrapper_result.rc == 0
+          - sci_oran_prompt12_initial26_wrapper_report.schema == 'sci_oran_prompt12_v2_production_actuator_wrapper_evidence_v1'
+          - sci_oran_prompt12_initial26_wrapper_report.gate == 'PASS'
+          - sci_oran_prompt12_initial26_wrapper_report.requested_ratio_pct == 50
+          - sci_oran_prompt12_initial26_wrapper_report.docker_execution_attempt_count == 1
+          - not sci_oran_prompt12_initial26_wrapper_report.automatic_retry
+          - sci_oran_prompt12_initial26_wrapper_report.control_request_expected_count == 1
+          - sci_oran_prompt12_initial26_wrapper_report.docker_returncode == 0
+        fail_msg: PROMPT12_INITIAL26_U_CMD_OR_U_ACK_GATE_FAILED
+
+    - name: Require authoritative U APPLIED readback 26 PRB
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial26_post_readback.rc == 0
+          - sci_oran_prompt12_initial26_post_report.schema == 'sci_oran_prompt12_authoritative_prb_readback_v1'
+          - sci_oran_prompt12_initial26_post_report.authoritative_source == 'CONTAINER:/tmp/gnb.log'
+          - not sci_oran_prompt12_initial26_post_report.docker_logs_is_authoritative
+          - sci_oran_prompt12_initial26_post_report.expected_min_prbs == 0
+          - sci_oran_prompt12_initial26_post_report.expected_max_prbs == 26
+          - sci_oran_prompt12_initial26_post_report.u_applied_readback_gate == 'PASS'
+          - sci_oran_prompt12_initial26_post_report.selected.applied_min_prbs == 0
+          - sci_oran_prompt12_initial26_post_report.selected.applied_max_prbs == 26
+        fail_msg: PROMPT12_INITIAL26_U_APPLIED_READBACK_GATE_FAILED
+
+    - name: Record successful initial26 result
+      ansible.builtin.copy:
+        dest: "{{ sci_oran_prompt12_initial26_operation_dir }}/result.env"
+        mode: "0640"
+        content: |
+          ACTION=RECOVERY.R6.SPRINT01-INITIAL26-PRECONDITIONING
+          OPERATION_ID={{ sci_oran_prompt12_initial26_operation_id }}
+          OPERATION_CONSUMED=YES
+          REQUESTED_RATIO_PCT=50
+          PRECONTROL_APPLIED_PRB_STATE=0:275
+          POSTCONTROL_APPLIED_PRB_STATE=0:26
+          WRAPPER_EXECUTION_ATTEMPT_COUNT=1
+          CONTROL_RETRY_EXECUTED=NO
+          U_CMD_GATE=PASS
+          U_ACK_GATE=PASS
+          U_APPLIED_READBACK_GATE=PASS
+          AUTHORITATIVE_PRB_READBACK_SOURCE=CONTAINER:/tmp/gnb.log
+          SCIENTIFIC_TRAFFIC_EXECUTED=NO
+          FIFO_TRIGGER_EXECUTED=NO
+          T2_26_TO_39_TRANSITION=NOT_EXECUTED
+
+    - name: Report successful initial26 preconditioning
+      ansible.builtin.debug:
+        msg:
+          - "INITIAL26_PRECONDITIONING_GATE=PASS"
+          - "INITIAL26_OPERATION_ID={{ sci_oran_prompt12_initial26_operation_id }}"
+          - "PRECONTROL_APPLIED_PRB_STATE=0:275"
+          - "POSTCONTROL_APPLIED_PRB_STATE=0:26"
+          - "U_CMD_GATE=PASS"
+          - "U_ACK_GATE=PASS"
+          - "U_APPLIED_READBACK_GATE=PASS"
+          - "SCIENTIFIC_TRAFFIC_EXECUTED=NO"
+          - "FIFO_TRIGGER_EXECUTED=NO"
+          - "T2_26_TO_39_TRANSITION=NOT_EXECUTED"
