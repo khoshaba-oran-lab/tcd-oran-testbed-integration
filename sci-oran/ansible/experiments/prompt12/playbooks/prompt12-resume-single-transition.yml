@@ -195,11 +195,153 @@
       register: sci_oran_prompt12_traffic_job
       changed_when: true
 
+    - name: Validate bounded traffic evidence argv contract
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_single.traffic_command | length == 7
+          - sci_oran_prompt12_single.traffic_command[4] | length > 0
+          - sci_oran_prompt12_single.traffic_command[5] | length > 0
+          - sci_oran_prompt12_single.traffic_command[4] is match('^/')
+          - sci_oran_prompt12_single.traffic_command[5] is match('^/')
+        fail_msg: PROMPT12_TRAFFIC_EVIDENCE_ARGV_INVALID
+
+    - name: Read bounded traffic status after launch
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_postlaunch
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic active after launch
+      ansible.builtin.assert:
+        that:
+          - not (sci_oran_prompt12_traffic_postlaunch.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_postlaunch.finished is defined
+          - not (sci_oran_prompt12_traffic_postlaunch.finished | bool)
+        fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_AFTER_LAUNCH
+
+    - name: Wait for bounded traffic raw evidence file
+      ansible.builtin.wait_for:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+        state: present
+        timeout: 15
+
+    - name: Wait for bounded traffic timestamp evidence file
+      ansible.builtin.wait_for:
+        path: "{{ sci_oran_prompt12_single.traffic_command[5] }}"
+        state: present
+        timeout: 15
+
+    - name: Wait for bounded traffic raw evidence to become nonempty
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+        follow: true
+      register: sci_oran_prompt12_raw_prephase
+      until:
+        - sci_oran_prompt12_raw_prephase.stat.exists | default(false)
+        - sci_oran_prompt12_raw_prephase.stat.isreg | default(false)
+        - (sci_oran_prompt12_raw_prephase.stat.size | default(0) | int) > 0
+      retries: 15
+      delay: 1
+      changed_when: false
+
+    - name: Wait for bounded traffic timestamp evidence to become nonempty
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[5] }}"
+        follow: true
+      register: sci_oran_prompt12_timestamp_prephase
+      until:
+        - sci_oran_prompt12_timestamp_prephase.stat.exists | default(false)
+        - sci_oran_prompt12_timestamp_prephase.stat.isreg | default(false)
+        - (sci_oran_prompt12_timestamp_prephase.stat.size | default(0) | int) > 0
+      retries: 15
+      delay: 1
+      changed_when: false
+
+    - name: Capture Prompt12 pre-phase readiness time
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%s%N
+      register: sci_oran_prompt12_prephase_start_ns
+      changed_when: false
+
+    - name: Accumulate minimum Prompt12 pre-phase
+      ansible.builtin.pause:
+        seconds: 11
+
+    - name: Read bounded traffic status after minimum pre-phase
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_after_prephase
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic active after minimum pre-phase
+      ansible.builtin.assert:
+        that:
+          - not (sci_oran_prompt12_traffic_after_prephase.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_after_prephase.finished is defined
+          - not (sci_oran_prompt12_traffic_after_prephase.finished | bool)
+        fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_AFTER_PREPHASE
+
+    - name: Read bounded traffic raw evidence after minimum pre-phase
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+        follow: true
+      register: sci_oran_prompt12_raw_postphase
+      changed_when: false
+
+    - name: Read bounded traffic timestamp evidence after minimum pre-phase
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[5] }}"
+        follow: true
+      register: sci_oran_prompt12_timestamp_postphase
+      changed_when: false
+
+    - name: Capture Prompt12 pre-phase completion time
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%s%N
+      register: sci_oran_prompt12_prephase_end_ns
+      changed_when: false
+
+    - name: Require bounded traffic evidence growth
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_raw_postphase.stat.exists | default(false)
+          - sci_oran_prompt12_raw_postphase.stat.isreg | default(false)
+          - sci_oran_prompt12_timestamp_postphase.stat.exists | default(false)
+          - sci_oran_prompt12_timestamp_postphase.stat.isreg | default(false)
+          - (sci_oran_prompt12_raw_postphase.stat.size | int) > (sci_oran_prompt12_raw_prephase.stat.size | int)
+          - (sci_oran_prompt12_timestamp_postphase.stat.size | int) > (sci_oran_prompt12_timestamp_prephase.stat.size | int)
+          - ((sci_oran_prompt12_prephase_end_ns.stdout | int) - (sci_oran_prompt12_prephase_start_ns.stdout | int)) >= 11000000000
+        fail_msg: PROMPT12_TRAFFIC_PREPHASE_EVIDENCE_GATE_FAILED
+
     - name: Execute resumed T2 initial precontrol
       ansible.builtin.command:
         argv: "{{ sci_oran_prompt12_single.initial_precontrol_command }}"
       register: sci_oran_prompt12_initial_precontrol
       changed_when: true
+
+    - name: Decode resumed T2 initial precontrol stationarity report
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_initial_pre_report: >-
+          {{
+            sci_oran_prompt12_initial_precontrol.stdout
+            | from_json
+          }}
+
+    - name: Require resumed T2 initial precontrol stationarity
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_initial_pre_report.output_stationarity_gate == 'PASS'
+          - sci_oran_prompt12_initial_pre_report.minimum_phase_duration_gate == 'PASS'
+          - sci_oran_prompt12_initial_pre_report.statistical_phase_candidate == 'PASS'
+        fail_msg: PROMPT12_T2_INITIAL_PRECONTROL_NOT_STATIONARY
 
     - name: Execute T2 ratio binding
       ansible.builtin.command:
