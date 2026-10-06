@@ -398,6 +398,52 @@
       register: sci_oran_prompt12_trigger
       changed_when: true
 
+
+    - name: Capture T2 post-phase start
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%s%N
+      register: sci_oran_prompt12_postphase_start_ns
+      changed_when: false
+
+    - name: Read bounded traffic status immediately after T2 trigger
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_posttrigger
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic active immediately after T2 trigger
+      ansible.builtin.assert:
+        that:
+          - not (sci_oran_prompt12_traffic_posttrigger.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_posttrigger.finished is defined
+          - not (sci_oran_prompt12_traffic_posttrigger.finished | bool)
+        fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_AFTER_T2_TRIGGER
+
+    - name: Read bounded traffic raw evidence size at T2 post-phase start
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+      register: sci_oran_prompt12_postphase_raw_before
+
+    - name: Read bounded traffic timestamp evidence size at T2 post-phase start
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[5] }}"
+      register: sci_oran_prompt12_postphase_timestamps_before
+
+    - name: Require bounded traffic evidence present at T2 post-phase start
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_postphase_raw_before.stat.exists
+          - sci_oran_prompt12_postphase_raw_before.stat.isreg
+          - (sci_oran_prompt12_postphase_raw_before.stat.size | int) > 0
+          - sci_oran_prompt12_postphase_timestamps_before.stat.exists
+          - sci_oran_prompt12_postphase_timestamps_before.stat.isreg
+          - (sci_oran_prompt12_postphase_timestamps_before.stat.size | int) > 0
+        fail_msg: PROMPT12_TRAFFIC_POSTPHASE_INITIAL_EVIDENCE_MISSING
+
     - name: Capture authoritative T2 readback window end
       ansible.builtin.command:
         argv:
@@ -459,6 +505,68 @@
           - sci_oran_prompt12_applied_readback_report.selected.applied_min_prbs == 0
           - sci_oran_prompt12_applied_readback_report.selected.applied_max_prbs == 39
         fail_msg: PROMPT12_T2_AUTHORITATIVE_APPLIED_READBACK_FAILED
+
+
+    - name: Accumulate minimum T2 post-phase
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Read bounded traffic status after minimum T2 post-phase
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_postphase
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic active after minimum T2 post-phase
+      ansible.builtin.assert:
+        that:
+          - not (sci_oran_prompt12_traffic_postphase.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_postphase.finished is defined
+          - not (sci_oran_prompt12_traffic_postphase.finished | bool)
+        fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_AFTER_POSTPHASE
+
+    - name: Read bounded traffic raw evidence after minimum T2 post-phase
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+      register: sci_oran_prompt12_postphase_raw_after
+
+    - name: Read bounded traffic timestamp evidence after minimum T2 post-phase
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[5] }}"
+      register: sci_oran_prompt12_postphase_timestamps_after
+
+    - name: Capture T2 post-phase end
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%s%N
+      register: sci_oran_prompt12_postphase_end_ns
+      changed_when: false
+
+    - name: Require bounded traffic post-phase evidence growth
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_postphase_raw_after.stat.exists
+          - sci_oran_prompt12_postphase_raw_after.stat.isreg
+          - sci_oran_prompt12_postphase_timestamps_after.stat.exists
+          - sci_oran_prompt12_postphase_timestamps_after.stat.isreg
+          - >-
+            (sci_oran_prompt12_postphase_raw_after.stat.size | int)
+            >
+            (sci_oran_prompt12_postphase_raw_before.stat.size | int)
+          - >-
+            (sci_oran_prompt12_postphase_timestamps_after.stat.size | int)
+            >
+            (sci_oran_prompt12_postphase_timestamps_before.stat.size | int)
+          - >-
+            (
+              (sci_oran_prompt12_postphase_end_ns.stdout | int)
+              -
+              (sci_oran_prompt12_postphase_start_ns.stdout | int)
+            ) >= 10000000000
+        fail_msg: PROMPT12_TRAFFIC_POSTPHASE_EVIDENCE_GATE_FAILED
 
     - name: Execute pure resumed T2 post-step stationarity
       ansible.builtin.command:
