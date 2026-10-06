@@ -11,6 +11,8 @@
       scripts/experiment-harness/prompt12-resume-single-transition-materializer.py
     sci_oran_prompt12_live_authorization_token_expected: >-
       AUTHORISE_PROMPT12_RESUMED_T2_26_TO_39_LIVE
+    sci_oran_prompt12_readback_window_end_placeholder: >-
+      @PROMPT12_READBACK_WINDOW_END@
 
   pre_tasks:
     - name: Validate orchestration mode
@@ -156,6 +158,21 @@
           - sci_oran_prompt12_authoritative_readback_argv is defined
           - sci_oran_prompt12_authoritative_readback_argv is sequence
           - sci_oran_prompt12_authoritative_readback_argv | length > 0
+          - (sci_oran_prompt12_authoritative_readback_argv | select('equalto', '--window-start') | list | length) == 1
+          - (sci_oran_prompt12_authoritative_readback_argv | select('equalto', '--window-end') | list | length) == 1
+          - (sci_oran_prompt12_authoritative_readback_argv | select('equalto', sci_oran_prompt12_readback_window_end_placeholder) | list | length) == 1
+          - >-
+            (
+              (sci_oran_prompt12_authoritative_readback_argv | select('equalto', '--window-end') | list | length) == 1
+              and
+              (
+                sci_oran_prompt12_authoritative_readback_argv.index('--window-end') + 1
+              ) < (sci_oran_prompt12_authoritative_readback_argv | length)
+              and
+              sci_oran_prompt12_authoritative_readback_argv[
+                sci_oran_prompt12_authoritative_readback_argv.index('--window-end') + 1
+              ] == sci_oran_prompt12_readback_window_end_placeholder
+            )
         fail_msg: PROMPT12_LIVE_AUTHORIZATION_INVALID
 
     - name: Require explicit T2 control authorization before traffic
@@ -239,9 +256,43 @@
       register: sci_oran_prompt12_trigger
       changed_when: true
 
+    - name: Capture authoritative T2 readback window end
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%Y-%m-%dT%H:%M:%SZ
+      register: sci_oran_prompt12_readback_window_end
+      changed_when: false
+
+    - name: Late-bind authoritative T2 readback window end
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_effective_authoritative_readback_argv: >-
+          {{
+            sci_oran_prompt12_authoritative_readback_argv
+            | map(
+                'regex_replace',
+                '^@PROMPT12_READBACK_WINDOW_END@$',
+                sci_oran_prompt12_readback_window_end.stdout | trim
+              )
+            | list
+          }}
+
+    - name: Require effective authoritative T2 readback window end binding
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_prompt12_effective_authoritative_readback_argv | length) == (sci_oran_prompt12_authoritative_readback_argv | length)
+          - (sci_oran_prompt12_effective_authoritative_readback_argv | select('equalto', sci_oran_prompt12_readback_window_end_placeholder) | list | length) == 0
+          - (sci_oran_prompt12_effective_authoritative_readback_argv | select('equalto', '--window-end') | list | length) == 1
+          - >-
+            sci_oran_prompt12_effective_authoritative_readback_argv[
+              sci_oran_prompt12_effective_authoritative_readback_argv.index('--window-end') + 1
+            ] == (sci_oran_prompt12_readback_window_end.stdout | trim)
+        fail_msg: PROMPT12_T2_READBACK_WINDOW_END_LATE_BIND_FAILED
+
     - name: Obtain authoritative applied PRB readback
       ansible.builtin.command:
-        argv: "{{ sci_oran_prompt12_authoritative_readback_argv }}"
+        argv: "{{ sci_oran_prompt12_effective_authoritative_readback_argv }}"
       register: sci_oran_prompt12_applied_readback
       changed_when: false
 
