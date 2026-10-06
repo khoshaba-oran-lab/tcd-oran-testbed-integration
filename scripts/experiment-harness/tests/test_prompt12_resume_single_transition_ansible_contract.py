@@ -157,5 +157,25 @@ class ResumeSingleTransitionAnsibleContractTest(
         self.assertLess(end_play, trigger)
 
 
+    def test_dynamic_readback_window_end_uses_microsecond_precision(self):
+        start = self.text.index(
+            "Capture authoritative T2 readback window end"
+        )
+        end = self.text.index(
+            "Late-bind authoritative T2 readback window end"
+        )
+        block = self.text[start:end]
+
+        self.assertIn(
+            "+%Y-%m-%dT%H:%M:%S.%6NZ",
+            block,
+        )
+        self.assertNotIn(
+            "+%Y-%m-%dT%H:%M:%SZ",
+            block,
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()

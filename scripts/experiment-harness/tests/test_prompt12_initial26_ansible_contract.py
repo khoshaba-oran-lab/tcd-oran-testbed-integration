@@ -123,5 +123,75 @@ class Initial26AnsibleContractTest(unittest.TestCase):
         )
 
 
+    def test_readback_window_end_precision_is_microsecond(self):
+        pre_end_start = self.text.index(
+            "Capture preconditioning readback window end"
+        )
+        pre_end_stop = self.text.index(
+            "Prove authoritative startup state 275 PRB"
+        )
+        pre_end_block = self.text[
+            pre_end_start:pre_end_stop
+        ]
+
+        control_end_start = self.text.index(
+            "Capture exactly-once control window end"
+        )
+        control_end_stop = self.text.index(
+            "Preserve actuator wrapper stdout"
+        )
+        control_end_block = self.text[
+            control_end_start:control_end_stop
+        ]
+
+        for block in (
+            pre_end_block,
+            control_end_block,
+        ):
+            self.assertIn(
+                "+%Y-%m-%dT%H:%M:%S.%6NZ",
+                block,
+            )
+            self.assertNotIn(
+                "+%Y-%m-%dT%H:%M:%SZ",
+                block,
+            )
+
+    def test_readback_window_start_precision_remains_unchanged(self):
+        incarnation_start = self.text.index(
+            "Normalize gNB incarnation start timestamp"
+        )
+        incarnation_stop = self.text.index(
+            "Capture preconditioning readback window end"
+        )
+        incarnation_block = self.text[
+            incarnation_start:incarnation_stop
+        ]
+
+        control_start = self.text.index(
+            "Capture exactly-once control window start"
+        )
+        control_stop = self.text.index(
+            "Execute initial26 production actuator exactly once"
+        )
+        control_block = self.text[
+            control_start:control_stop
+        ]
+
+        for block in (
+            incarnation_block,
+            control_block,
+        ):
+            self.assertIn(
+                "+%Y-%m-%dT%H:%M:%SZ",
+                block,
+            )
+            self.assertNotIn(
+                "+%Y-%m-%dT%H:%M:%S.%6NZ",
+                block,
+            )
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -220,7 +220,7 @@
         argv:
           - /bin/date
           - -u
-          - +%Y-%m-%dT%H:%M:%SZ
+          - +%Y-%m-%dT%H:%M:%S.%6NZ
       register: sci_oran_prompt12_initial26_pre_window_end
       changed_when: false
 
@@ -308,7 +308,7 @@
         argv:
           - /bin/date
           - -u
-          - +%Y-%m-%dT%H:%M:%SZ
+          - +%Y-%m-%dT%H:%M:%S.%6NZ
       register: sci_oran_prompt12_initial26_control_window_end
       changed_when: false
 

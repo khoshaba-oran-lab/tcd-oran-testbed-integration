@@ -162,5 +162,65 @@ class AuthoritativePrbReadbackTest(
         )
 
 
+    def test_same_second_fractional_window_end_regression(self):
+        text = (
+            "2026-10-06T12:00:01.644785 "
+            "PRB_ACTUATOR_APPLIED "
+            "applied_min_prbs=0 "
+            "applied_max_prbs=39"
+        )
+
+        markers = module.parse_markers(text)
+
+        old_result = module.evaluate_markers(
+            markers,
+            module.parse_time(
+                "2026-10-06T12:00:00"
+            ),
+            module.parse_time(
+                "2026-10-06T12:00:01"
+            ),
+            0,
+            39,
+        )
+
+        corrected_result = module.evaluate_markers(
+            markers,
+            module.parse_time(
+                "2026-10-06T12:00:00"
+            ),
+            module.parse_time(
+                "2026-10-06T12:00:01.900000"
+            ),
+            0,
+            39,
+        )
+
+        self.assertEqual(
+            old_result["gate"],
+            "FAIL_NOT_FOUND",
+        )
+        self.assertEqual(
+            old_result["expected_marker_count"],
+            0,
+        )
+
+        self.assertEqual(
+            corrected_result["gate"],
+            "PASS",
+        )
+        self.assertEqual(
+            corrected_result["expected_marker_count"],
+            1,
+        )
+        self.assertEqual(
+            corrected_result["selected"][
+                "applied_max_prbs"
+            ],
+            39,
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()
