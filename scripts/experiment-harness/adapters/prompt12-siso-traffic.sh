@@ -19,7 +19,15 @@ PROMPT12_RECEIVER_READY_TIMEOUT_MS="5000"
 PROMPT12_RECEIVER_READY_POLL_S="0.02"
 PROMPT12_RECEIVER_READY_MARKER="Server listening on 5201"
 
-PROMPT12_CAPTURE_SCRIPT="scripts/experiment-harness/capture-iperf-receiver.py"
+PROMPT12_ADAPTER_DIR="$(
+    cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &&
+    pwd
+)"
+PROMPT12_HARNESS_DIR="$(
+    cd -- "${PROMPT12_ADAPTER_DIR}/.." &&
+    pwd
+)"
+PROMPT12_CAPTURE_SCRIPT="${PROMPT12_HARNESS_DIR}/capture-iperf-receiver.py"
 
 usage()
 {
