@@ -220,11 +220,43 @@
           - not (sci_oran_prompt12_traffic_postlaunch.finished | bool)
         fail_msg: PROMPT12_TRAFFIC_NOT_ACTIVE_AFTER_LAUNCH
 
-    - name: Wait for bounded traffic raw evidence file
+    - name: Wait briefly for bounded traffic raw evidence file
       ansible.builtin.wait_for:
         path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
         state: present
         timeout: 15
+      register: sci_oran_prompt12_raw_evidence_wait
+      changed_when: false
+      failed_when: false
+
+    - name: Inspect bounded traffic raw evidence after readiness wait
+      ansible.builtin.stat:
+        path: "{{ sci_oran_prompt12_single.traffic_command[4] }}"
+      register: sci_oran_prompt12_raw_evidence_stat
+      changed_when: false
+
+    - name: Read bounded traffic status at evidence readiness barrier
+      ansible.builtin.async_status:
+        jid: "{{ sci_oran_prompt12_traffic_job.ansible_job_id }}"
+      register: sci_oran_prompt12_traffic_readiness
+      changed_when: false
+      failed_when: false
+
+    - name: Require bounded traffic evidence readiness or expose early exit
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_raw_evidence_stat.stat.exists
+          - not (sci_oran_prompt12_traffic_readiness.failed | default(false) | bool)
+          - sci_oran_prompt12_traffic_readiness.finished is defined
+          - not (sci_oran_prompt12_traffic_readiness.finished | bool)
+        fail_msg: >-
+          PROMPT12_TRAFFIC_EVIDENCE_READINESS_FAILED
+          raw_exists={{ sci_oran_prompt12_raw_evidence_stat.stat.exists | default(false) }}
+          async_failed={{ sci_oran_prompt12_traffic_readiness.failed | default(false) }}
+          async_finished={{ sci_oran_prompt12_traffic_readiness.finished | default('UNAVAILABLE') }}
+          async_rc={{ sci_oran_prompt12_traffic_readiness.rc | default('UNAVAILABLE') }}
+          async_stdout={{ sci_oran_prompt12_traffic_readiness.stdout | default('') | to_json }}
+          async_stderr={{ sci_oran_prompt12_traffic_readiness.stderr | default('') | to_json }}
 
     - name: Wait for bounded traffic timestamp evidence file
       ansible.builtin.wait_for:
