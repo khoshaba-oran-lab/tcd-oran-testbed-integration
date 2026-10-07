@@ -392,6 +392,37 @@
           - (sci_oran_prompt12_effective_trigger_command | select('equalto', '--control-authorization-token') | list | length) == 1
         fail_msg: PROMPT12_T2_CONTROL_AUTHORIZATION_LATE_BIND_FAILED
 
+    - name: Capture authoritative T2 readback window start
+      ansible.builtin.command:
+        argv:
+          - /bin/date
+          - -u
+          - +%Y-%m-%dT%H:%M:%S.%6NZ
+      register: sci_oran_prompt12_readback_window_start
+      changed_when: false
+
+    - name: Bind authoritative T2 readback window start
+      ansible.builtin.set_fact:
+        sci_oran_prompt12_authoritative_readback_argv: >-
+          {{
+            sci_oran_prompt12_authoritative_readback_argv[
+              :sci_oran_prompt12_authoritative_readback_argv.index(
+                '--window-start'
+              ) + 1
+            ]
+            +
+            [
+              sci_oran_prompt12_readback_window_start.stdout
+              | trim
+            ]
+            +
+            sci_oran_prompt12_authoritative_readback_argv[
+              sci_oran_prompt12_authoritative_readback_argv.index(
+                '--window-start'
+              ) + 2:
+            ]
+          }}
+
     - name: Execute exactly-once T2 scientific trigger
       ansible.builtin.command:
         argv: "{{ sci_oran_prompt12_effective_trigger_command }}"
