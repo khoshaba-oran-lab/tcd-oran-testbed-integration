@@ -5,7 +5,7 @@
   "timeline_readiness_poll_ms": 100,
   "timeline_readiness_timeout_ms": 5000,
   "tool_paths": {
-    "canonicalizer": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/canonicalize-iperf-receiver-t2.py",
+    "canonicalizer": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/canonicalize-iperf-receiver.py",
     "finalization_adapter": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-bounded-finalization-command.py",
     "freshness_evaluator": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-precontrol-freshness.py",
     "freshness_policy": "/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/contracts/prompt12-precontrol-freshness-v1.env",

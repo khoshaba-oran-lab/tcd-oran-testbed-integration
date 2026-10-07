@@ -57,7 +57,7 @@ EXPECTED_TOOL_RELATIVE = {
         "parse-iperf-receiver.py",
     "canonicalizer":
         "scripts/experiment-harness/"
-        "canonicalize-iperf-receiver-t2.py",
+        "canonicalize-iperf-receiver.py",
     "stationarity_evaluator":
         "scripts/experiment-harness/"
         "evaluate-output-stationarity.py",
@@ -216,6 +216,74 @@ class ProductionFrozenConfigTests(unittest.TestCase):
             self.assertIs(report["command_executed"], False)
             self.assertIs(report["control_executed"], False)
 
+
+
+class Prompt12ProductionCanonicalizerIdentityRegressionTests(
+    unittest.TestCase
+):
+    def test_production_canonicalizer_accepts_bounded_sequence_identity(
+        self,
+    ):
+        import json as _json
+        import pathlib as _pathlib
+        import re as _re
+
+        repo = _pathlib.Path(__file__).resolve().parents[3]
+
+        frozen = (
+            repo
+            / "experiments"
+            / "manifests"
+            / "prompt12-bounded-sequence-production-frozen-config-v1.json"
+        )
+
+        value = _json.loads(
+            frozen.read_text(encoding="utf-8")
+        )
+
+        expected = (
+            repo
+            / "scripts"
+            / "experiment-harness"
+            / "canonicalize-iperf-receiver.py"
+        )
+
+        actual = _pathlib.Path(
+            value["tool_paths"]["canonicalizer"]
+        )
+
+        self.assertEqual(actual, expected)
+
+        self.assertNotEqual(
+            actual.name,
+            "canonicalize-iperf-receiver-t2.py",
+        )
+
+        source = actual.read_text(encoding="utf-8")
+
+        match = _re.search(
+            r'EXPERIMENT_RE\s*=\s*re\.compile\(\s*r"([^"]+)"\s*\)',
+            source,
+            flags=_re.MULTILINE,
+        )
+
+        self.assertIsNotNone(match)
+
+        experiment_pattern = match.group(1)
+
+        self.assertIsNotNone(
+            _re.fullmatch(
+                experiment_pattern,
+                "EXP-20261003-DL-18000K-R01",
+            )
+        )
+
+        self.assertIsNone(
+            _re.fullmatch(
+                experiment_pattern,
+                "EXP-20261003-T2-26TO39-DL-18000K-R01",
+            )
+        )
 
 if __name__ == "__main__":
     unittest.main()
