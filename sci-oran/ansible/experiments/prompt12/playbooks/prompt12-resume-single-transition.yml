@@ -301,7 +301,7 @@
 
     - name: Accumulate minimum Prompt12 pre-phase
       ansible.builtin.pause:
-        seconds: 11
+        seconds: 26
 
     - name: Read bounded traffic status after minimum pre-phase
       ansible.builtin.async_status:

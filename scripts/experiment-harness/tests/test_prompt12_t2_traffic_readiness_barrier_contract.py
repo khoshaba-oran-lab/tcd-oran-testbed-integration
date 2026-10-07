@@ -77,14 +77,52 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
         )
 
     def test_prephase_is_at_least_eleven_seconds(self):
-        self.assertIn(
-            "- name: Accumulate minimum Prompt12 pre-phase",
-            self.source,
+        marker = (
+            "- name: Accumulate minimum "
+            "Prompt12 pre-phase"
         )
-        self.assertIn(
-            "seconds: 11",
-            self.source,
+
+        self.assertEqual(
+            self.source.count(marker),
+            1,
         )
+
+        start = self.source.index(marker)
+
+        end = self.source.find(
+            "\n    - name:",
+            start + len(marker),
+        )
+
+        self.assertNotEqual(
+            end,
+            -1,
+        )
+
+        block = self.source[start:end]
+
+        seconds_lines = [
+            line.strip()
+            for line in block.splitlines()
+            if line.strip().startswith("seconds:")
+        ]
+
+        self.assertEqual(
+            len(seconds_lines),
+            1,
+        )
+
+        seconds = int(
+            seconds_lines[0]
+            .split(":", 1)[1]
+            .strip()
+        )
+
+        self.assertGreaterEqual(
+            seconds,
+            11,
+        )
+
         self.assertIn(
             ">= 11000000000",
             self.source,
