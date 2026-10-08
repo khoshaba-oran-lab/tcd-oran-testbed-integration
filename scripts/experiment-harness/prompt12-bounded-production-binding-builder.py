@@ -148,7 +148,7 @@ def validate_profile(root):
     )
     experiment_id = require_string(root["experiment_id"], "EXPERIMENT_ID")
     run_id = require_string(root["run_id"], "RUN_ID")
-    if not re.fullmatch(r"EXP-\d{8}-DL-\d+K-R0[1-4]", experiment_id):
+    if not re.fullmatch(r"EXP-\d{8}-DL-\d+K-R(?:0[1-9]|[1-9][0-9])", experiment_id):
         raise BuilderError("EXPERIMENT_ID_FORMAT_INVALID")
     if not re.fullmatch(r"RUN-\d{8}T\d{6}Z-\d{3}", run_id):
         raise BuilderError("RUN_ID_FORMAT_INVALID")
