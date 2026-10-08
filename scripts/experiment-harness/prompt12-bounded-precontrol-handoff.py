@@ -257,6 +257,7 @@ def resolve_freshness_command(
     stationarity_path,
     candidate_path,
     decision_utc_ns,
+    freshness_stationarity_path=None,
 ):
     replacements = {
         STATIONARITY_JSON_TOKEN: str(stationarity_path),
@@ -264,10 +265,18 @@ def resolve_freshness_command(
         DECISION_UTC_NS_TOKEN: str(decision_utc_ns),
     }
 
-    return [
-        replacements.get(value, value)
-        for value in template
-    ]
+    resolved = []
+    for index, value in enumerate(template):
+        if (
+            value == STATIONARITY_JSON_TOKEN
+            and index > 0
+            and template[index - 1] == "--stationarity-output"
+            and freshness_stationarity_path is not None
+        ):
+            resolved.append(str(freshness_stationarity_path))
+        else:
+            resolved.append(replacements.get(value, value))
+    return resolved
 
 
 def validate_precontrol(path):
@@ -471,7 +480,7 @@ def execute(
     )
 
     stationarity_path = (
-        attempt / "stationarity.json"
+        attempt / "stationarity.precheck.json"
     )
     write_text_exclusive(
         stationarity_path,
@@ -495,11 +504,16 @@ def execute(
         canonical_snapshot,
     )
 
+    freshness_stationarity_path = (
+        attempt / "stationarity.json"
+    )
+
     freshness_command = resolve_freshness_command(
         bound_template,
         stationarity_path,
         candidate_path,
         decision_utc_ns,
+        freshness_stationarity_path=freshness_stationarity_path,
     )
 
     write_json_exclusive(
