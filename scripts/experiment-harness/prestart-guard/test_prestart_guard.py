@@ -79,17 +79,24 @@ class GuardTests(unittest.TestCase):
                 if label in ('DOCKER_INSPECT','DOCKER_ALL_CONTAINERS'): return ''
                 if label=='PROVIDER_IDENTITY_DRY_RUN': return json.dumps({'provider_identity':'prompt12-provider-aabbcc'})
                 if label=='PROFILE_DRY_RUN':
+                    supplied_fifo=pathlib.Path(argv[argv.index('--actuator-fifo-path')+1])
+                    self.assertTrue(supplied_fifo.is_fifo())
+                    self.assertNotEqual(supplied_fifo, fifo)
                     idx=argv.index('--evidence-root')
                     sandbox=pathlib.Path(argv[idx+1])
                     rt=sandbox/'EXP-VALID'/'RUN-VALID'/'runtime'; rt.mkdir(parents=True)
                     (rt/'allocation.json').write_text('{}')
-                    profile={'experiment_id':'EXP-VALID','run_id':'RUN-VALID','actuator_fifo_path':str(fifo),'traffic_duration_s':180,'max_age_ms':800,'ratio_binding_paths':[str(rt/'ratio-bindings'/f'T{i}.binding.json') for i in range(1,7)]}
+                    profile={'experiment_id':'EXP-VALID','run_id':'RUN-VALID','actuator_fifo_path':str(supplied_fifo),'traffic_duration_s':180,'max_age_ms':800,'ratio_binding_paths':[str(rt/'ratio-bindings'/f'T{i}.binding.json') for i in range(1,7)]}
                     (rt/'runtime-profile.json').write_text(json.dumps(profile))
                     return '{}'
                 if label=='BINDINGS_DRY_RUN': pathlib.Path(argv[argv.index('--output')+1]).write_text('{}');return '{}'
                 if label=='RESUME_DRY_RUN': pathlib.Path(argv[argv.index('--output')+1]).write_text('{}');return '{}'
                 if label=='T2_DRY_RUN': pathlib.Path(argv[argv.index('--output')+1]).write_text(json.dumps({'first_scientific_transition':'T2','command_executed':False,'control_executed':False,'traffic_executed':False,'t3_handoff_present':False,'t3_trigger_present':False}));return '{}'
-                if label=='PROVIDER_LAUNCH_DRY_RUN':return json.dumps(['/usr/bin/python3','tool'])
+                if label=='PROVIDER_LAUNCH_DRY_RUN':
+                    launch_fifo=pathlib.Path(argv[argv.index('--fifo-path')+1])
+                    self.assertTrue(launch_fifo.is_fifo())
+                    self.assertNotEqual(launch_fifo, fifo)
+                    return json.dumps(['/usr/bin/python3','tool'])
                 raise AssertionError(label)
             original_is_dir = pathlib.Path.is_dir
             def mock_is_dir(path):

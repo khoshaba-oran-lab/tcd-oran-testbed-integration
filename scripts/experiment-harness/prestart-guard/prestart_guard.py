@@ -180,6 +180,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix="sci-oran-prestart-") as scratch:
         sandbox = Path(scratch) / "evidence"
         sandbox.mkdir(mode=0o700)
+        offline_fifo = Path(scratch) / 'actuator.fifo'
+        os.mkfifo(offline_fifo, mode=0o600)
         py = "/usr/bin/python3"
         run([
             py, "-B", tools["PROFILE"],
@@ -188,7 +190,7 @@ def main():
             "--run-id", args.run_id,
             "--frozen-config", frozen,
             "--portable-runtime-admission", portable,
-            "--actuator-fifo-path", fifo,
+            "--actuator-fifo-path", offline_fifo,
             "--max-age-ms", "800",
         ], "PROFILE_DRY_RUN")
         run_dir = sandbox / args.experiment_id / args.run_id
@@ -197,7 +199,7 @@ def main():
         profile = load_json(profile_path, "PROFILE_OUTPUT_MISSING")
         require(profile.get("experiment_id") == args.experiment_id, "PROFILE_EXP_MISMATCH")
         require(profile.get("run_id") == args.run_id, "PROFILE_RUN_MISMATCH")
-        require(profile.get("actuator_fifo_path") == str(fifo), "PROFILE_FIFO_MISMATCH")
+        require(profile.get("actuator_fifo_path") == str(offline_fifo), "PROFILE_FIFO_MISMATCH")
         require(profile.get("traffic_duration_s") == 180, "DURATION_MISMATCH")
         require(profile.get("max_age_ms") == 800, "FRESHNESS_POLICY_MISMATCH")
         ratio = profile.get("ratio_binding_paths")
@@ -220,7 +222,7 @@ def main():
             py, "-B", tools["PROVIDER_LAUNCH"],
             "--experiment-id", args.experiment_id,
             "--run-id", args.run_id,
-            "--fifo-path", fifo,
+            "--fifo-path", offline_fifo,
             "--ratio-binding-paths-json", json.dumps(ratio, separators=(",", ":")),
             "--initial-transition-index", "2",
         ], "PROVIDER_LAUNCH_DRY_RUN")
