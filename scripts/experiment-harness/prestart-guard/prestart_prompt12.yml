@@ -1,0 +1,56 @@
+---
+# Run from coll.vntu.org BEFORE canonical day-start.
+# The helper is copied to tb3-dell by the Ansible script module temporarily.
+- name: Sci O-RAN Prompt12 offline pre-start admission
+  hosts: tb3-dell
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    sci_repo: /home/khoshaba/project/tcd-oran-testbed-integration
+    evidence_root: /home/khoshaba/sci-oran-evidence/prompt12/t2-26to39
+    portable_admission: "{{ evidence_root }}/portable-runtime-admission-20261008-a41.json"
+    approved_head: 2a49c164d9c9c8d407a2869074faec04ce520545
+    frozen_config: "{{ sci_repo }}/experiments/manifests/prompt12-bounded-sequence-production-frozen-config-v1.json"
+  tasks:
+    - name: Require explicit candidate identity
+      ansible.builtin.assert:
+        that:
+          - experiment_id is defined
+          - run_id is defined
+          - experiment_id | length > 0
+          - run_id | length > 0
+        fail_msg: "Supply experiment_id and run_id via --extra-vars"
+
+    - name: Execute isolated, offline materializer admission
+      ansible.builtin.script:
+        cmd: >-
+          {{ playbook_dir }}/prestart_guard.py
+          --repo {{ sci_repo | quote }}
+          --approved-head {{ approved_head | quote }}
+          --evidence-root {{ evidence_root | quote }}
+          --experiment-id {{ experiment_id | quote }}
+          --run-id {{ run_id | quote }}
+          --portable-admission {{ portable_admission | quote }}
+          --frozen-config {{ frozen_config | quote }}
+        executable: /usr/bin/python3
+      register: sci_prestart
+      changed_when: false
+      failed_when: false
+
+    - name: Show pre-start result
+      ansible.builtin.debug:
+        msg:
+          - "rc={{ sci_prestart.rc }}"
+          - "stdout={{ sci_prestart.stdout | trim }}"
+          - "stderr={{ sci_prestart.stderr | trim }}"
+
+    - name: Fail closed if admission was not successful
+      ansible.builtin.assert:
+        that:
+          - sci_prestart.rc == 0
+          - (sci_prestart.stdout | from_json).PRESTART_GATE == 'PASS'
+        fail_msg: "Pre-start admission BLOCKED. Do not execute day-start or scientific T2."
+
+    - name: Report eligibility without starting Tb3
+      ansible.builtin.debug:
+        msg: PRESTART_GATE=PASS; DAY_START_EXECUTED=NO; LIVE_T2_AUTHORISED=NO

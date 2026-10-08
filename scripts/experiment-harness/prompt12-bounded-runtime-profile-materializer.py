@@ -85,7 +85,7 @@ PROFILE_KEYS = {
 }
 
 EXPERIMENT_RE = re.compile(
-    r"^EXP-(\d{8})-DL-18000K-(R0[1-4])$"
+    r"^EXP-(\d{8})-DL-18000K-(R(?:0[1-9]|[1-9][0-9]))$"
 )
 RUN_RE = re.compile(
     r"^RUN-(\d{8})T(\d{6})Z-(\d{3})$"
