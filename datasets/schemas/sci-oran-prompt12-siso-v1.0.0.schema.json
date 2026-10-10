@@ -144,7 +144,7 @@
   "$defs": {
     "prompt12ExperimentId": {
       "type": "string",
-      "pattern": "^EXP-[0-9]{8}-DL-18000K-R0[1-4]$"
+      "pattern": "^EXP-[0-9]{8}-DL-18000K-R(?:0[1-9]|[1-9][0-9])$"
     },
     "runId": {
       "type": "string",

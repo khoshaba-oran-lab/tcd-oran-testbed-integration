@@ -14,7 +14,7 @@ from jsonschema.exceptions import ValidationError
 STAGING_SCHEMA = "sci_oran_iperf_receiver_interval_parse_v1"
 
 EXPERIMENT_RE = re.compile(
-    r"^EXP-[0-9]{8}-DL-18000K-R0[1-4]$"
+    r"^EXP-[0-9]{8}-DL-18000K-R(?:0[1-9]|[1-9][0-9])$"
 )
 
 RUN_RE = re.compile(
