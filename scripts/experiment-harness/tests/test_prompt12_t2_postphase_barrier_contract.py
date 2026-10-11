@@ -26,7 +26,7 @@ class Prompt12T2PostphaseBarrierContractTest(
 
     def test_postphase_barrier_order(self):
         markers = [
-            "Execute exactly-once T2 scientific trigger",
+            "Execute resumed T2 initial precontrol and exactly-once scientific trigger",
             "Capture T2 post-phase start",
             "Require bounded traffic active immediately after T2 trigger",
             "Capture authoritative T2 readback window end",
@@ -121,13 +121,13 @@ class Prompt12T2PostphaseBarrierContractTest(
     def test_repair_does_not_add_second_t2_trigger(self):
         self.assertEqual(
             self.text.count(
-                "Execute exactly-once T2 scientific trigger"
+                "Execute resumed T2 initial precontrol and exactly-once scientific trigger"
             ),
             1,
         )
 
         trigger = self.text.index(
-            "Execute exactly-once T2 scientific trigger"
+            "Execute resumed T2 initial precontrol and exactly-once scientific trigger"
         )
         stationarity = self.text.index(
             "Execute pure resumed T2 post-step stationarity"

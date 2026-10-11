@@ -1,4 +1,5 @@
 import pathlib
+import re
 import unittest
 
 
@@ -59,9 +60,6 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
         precontrol_gate = self.position(
             "- name: Require resumed T2 initial precontrol stationarity"
         )
-        ratio = self.position(
-            "- name: Execute T2 ratio binding"
-        )
 
         self.assertTrue(
             start
@@ -73,10 +71,9 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
             < growth
             < precontrol
             < precontrol_gate
-            < ratio
         )
 
-    def test_prephase_is_at_least_eleven_seconds(self):
+    def test_prephase_is_at_least_twenty_six_seconds(self):
         marker = (
             "- name: Accumulate minimum "
             "Prompt12 pre-phase"
@@ -89,16 +86,9 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
 
         start = self.source.index(marker)
 
-        end = self.source.find(
-            "\n    - name:",
-            start + len(marker),
-        )
-
-        self.assertNotEqual(
-            end,
-            -1,
-        )
-
+        next_task = re.search(r"\n\s+- name:", self.source[start + len(marker):])
+        self.assertIsNotNone(next_task)
+        end = start + len(marker) + next_task.start()
         block = self.source[start:end]
 
         seconds_lines = [
@@ -120,11 +110,11 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
 
         self.assertGreaterEqual(
             seconds,
-            11,
+            26,
         )
 
         self.assertIn(
-            ">= 11000000000",
+            ">= 26000000000",
             self.source,
         )
 
@@ -166,28 +156,19 @@ class Prompt12T2TrafficReadinessBarrierContractTests(
             self.source,
         )
 
-    def test_initial_precontrol_must_pass_before_ratio_binding(self):
-        gate = self.position(
-            "- name: Require resumed T2 initial precontrol stationarity"
+    def test_critical_section_handles_stationarity_ratio_and_trigger_locally(self):
+        critical = self.position(
+            "Execute resumed T2 initial precontrol and exactly-once scientific trigger"
         )
-        ratio = self.position(
-            "- name: Execute T2 ratio binding"
-        )
-
-        self.assertLess(gate, ratio)
-
-        self.assertIn(
-            "output_stationarity_gate == 'PASS'",
-            self.source,
-        )
-        self.assertIn(
-            "minimum_phase_duration_gate == 'PASS'",
-            self.source,
-        )
-        self.assertIn(
-            "statistical_phase_candidate == 'PASS'",
-            self.source,
-        )
+        prephase = self.position("Require bounded traffic evidence growth")
+        postphase = self.position("Capture T2 post-phase start")
+        self.assertLess(prephase, critical)
+        self.assertLess(critical, postphase)
+        self.assertIn("prompt12-t2-critical-section.py", self.source)
+        self.assertNotIn("- name: Execute T2 ratio binding", self.source)
+        self.assertIn("output_stationarity_gate == 'PASS'", self.source)
+        self.assertIn("minimum_phase_duration_gate == 'PASS'", self.source)
+        self.assertIn("statistical_phase_candidate == 'PASS'", self.source)
 
     def test_no_new_shell_or_live_control_is_added(self):
         barrier_start = self.position(

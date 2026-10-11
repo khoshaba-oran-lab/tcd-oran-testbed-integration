@@ -42,16 +42,9 @@ class Prompt12T2Prephase26sContractTest(
 
         start = self.text.index(marker)
 
-        end = self.text.find(
-            "\n    - name:",
-            start + len(marker),
-        )
-
-        self.assertNotEqual(
-            end,
-            -1,
-        )
-
+        next_task = re.search(r"\n\s+- name:", self.text[start + len(marker):])
+        self.assertIsNotNone(next_task)
+        end = start + len(marker) + next_task.start()
         return self.text[start:end]
 
     def test_prephase_is_exactly_26_seconds(self):
@@ -65,6 +58,16 @@ class Prompt12T2Prephase26sContractTest(
         self.assertEqual(
             values,
             ["26"],
+        )
+
+    def test_elapsed_prephase_gate_requires_26_seconds(self):
+        self.assertIn(
+            "((sci_oran_prompt12_prephase_end_ns.stdout | int) - (sci_oran_prompt12_prephase_start_ns.stdout | int)) >= 26000000000",
+            self.text,
+        )
+        self.assertNotIn(
+            ">= 11000000000",
+            self.text,
         )
 
     def test_old_11_second_value_is_absent_from_prephase(self):
@@ -140,18 +143,17 @@ class Prompt12T2Prephase26sContractTest(
             block,
         )
 
-    def test_exactly_once_trigger_remains_after_initial_precontrol(self):
-        precontrol = self.text.index(
-            "Execute resumed T2 initial precontrol"
+    def test_combined_critical_section_remains_after_prephase(self):
+        pause = self.text.index("Accumulate minimum Prompt12 pre-phase")
+        critical = self.text.index(
+            "Execute resumed T2 initial precontrol and exactly-once scientific trigger"
         )
-
-        trigger = self.text.index(
-            "Execute exactly-once T2 scientific trigger"
-        )
-
-        self.assertLess(
-            precontrol,
-            trigger,
+        self.assertLess(pause, critical)
+        self.assertEqual(
+            self.text.count(
+                "Execute resumed T2 initial precontrol and exactly-once scientific trigger"
+            ),
+            1,
         )
 
 
