@@ -8,8 +8,6 @@
   vars:
     sci_repo: /home/khoshaba/project/tcd-oran-testbed-integration
     evidence_root: /home/khoshaba/sci-oran-evidence/prompt12/t2-26to39
-    portable_admission: "{{ evidence_root }}/portable-runtime-admission-20261008-a41.json"
-    approved_head: 2a49c164d9c9c8d407a2869074faec04ce520545
     frozen_config: "{{ sci_repo }}/experiments/manifests/prompt12-bounded-sequence-production-frozen-config-v1.json"
   tasks:
     - name: Require explicit candidate identity
@@ -19,7 +17,11 @@
           - run_id is defined
           - experiment_id | length > 0
           - run_id | length > 0
-        fail_msg: "Supply experiment_id and run_id via --extra-vars"
+          - approved_head is defined
+          - approved_head is match('^[0-9a-f]{40}$')
+          - portable_admission is defined
+          - portable_admission is match('^/')
+        fail_msg: "Supply experiment_id, run_id, approved_head and portable_admission via --extra-vars"
 
     - name: Execute isolated, offline materializer admission
       ansible.builtin.script:

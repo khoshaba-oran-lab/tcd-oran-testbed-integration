@@ -504,6 +504,27 @@
             argv: "{{ sci_oran_prompt12_effective_authoritative_readback_argv }}"
           register: sci_oran_prompt12_applied_readback
           changed_when: false
+          failed_when: false
+
+        - name: Preserve authoritative applied readback stdout even on failure
+          ansible.builtin.copy:
+            dest: "{{ sci_oran_prompt12_single_transition_output }}.applied-readback.json"
+            content: "{{ sci_oran_prompt12_applied_readback.stdout }}\n"
+            mode: '0600'
+            force: false
+
+        - name: Preserve authoritative applied readback stderr even on failure
+          ansible.builtin.copy:
+            dest: "{{ sci_oran_prompt12_single_transition_output }}.applied-readback.stderr.txt"
+            content: "{{ sci_oran_prompt12_applied_readback.stderr }}\n"
+            mode: '0600'
+            force: false
+
+        - name: Require authoritative readback command success before decoding
+          ansible.builtin.assert:
+            that:
+              - sci_oran_prompt12_applied_readback.rc == 0
+            fail_msg: PROMPT12_T2_READBACK_COMMAND_FAILED_EVIDENCE_PRESERVED
 
         - name: Decode authoritative applied PRB readback
           ansible.builtin.set_fact:
@@ -594,6 +615,20 @@
             argv: "{{ sci_oran_prompt12_single.post_stationarity_command }}"
           register: sci_oran_prompt12_post_stationarity
           changed_when: true
+          failed_when: false
+
+        - name: Preserve post-step stationarity stdout for independent adjudication
+          ansible.builtin.copy:
+            dest: "{{ sci_oran_prompt12_single_transition_output }}.post-stationarity.json"
+            content: "{{ sci_oran_prompt12_post_stationarity.stdout }}\n"
+            mode: '0600'
+            force: false
+
+        - name: Require post-step stationarity command success
+          ansible.builtin.assert:
+            that:
+              - sci_oran_prompt12_post_stationarity.rc == 0
+            fail_msg: PROMPT12_T2_POST_STATIONARITY_COMMAND_FAILED_EVIDENCE_PRESERVED
 
         - name: Decode T2 post-step stationarity result
           ansible.builtin.set_fact:

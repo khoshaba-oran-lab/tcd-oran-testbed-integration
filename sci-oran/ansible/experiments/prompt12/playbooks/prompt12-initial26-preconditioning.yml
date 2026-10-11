@@ -1,6 +1,6 @@
 ---
 - name: Prompt12 initial26 evidence-gated preconditioning
-  hosts: all
+  hosts: "{{ sci_oran_prompt12_inventory_target | default('tb3-dell') }}"
   gather_facts: false
 
   vars:

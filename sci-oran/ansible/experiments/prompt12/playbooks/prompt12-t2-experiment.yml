@@ -1,0 +1,404 @@
+---
+# Source-only Phase F candidate. The sole live EXPERIMENT entrypoint is the
+# controller wrapper; no lifecycle operation is imported or invoked here.
+# Exactly one diagnostic smoke, Doctor, provider admission, initial26 and T2.
+- name: Prompt12 T2 experiment admission and input production
+  hosts: tb3-dell
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    sci_oran_t2_repo: /home/khoshaba/project/tcd-oran-testbed-integration
+    sci_oran_t2_base: /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness
+    sci_oran_t2_evidence: /home/khoshaba/sci-oran-evidence/prompt12/t2-26to39
+    sci_oran_t2_frozen: /home/khoshaba/project/tcd-oran-testbed-integration/experiments/manifests/prompt12-bounded-sequence-production-frozen-config-v1.json
+  tasks:
+    - name: Require exact scientific-operation contract
+      ansible.builtin.assert:
+        that:
+          - sci_oran_prompt12_experiment_id is defined
+          - sci_oran_prompt12_experiment_id is match('^EXP-[0-9]{8}-DL-18000K-R[0-9]{2}$')
+          - sci_oran_prompt12_run_id is defined
+          - sci_oran_prompt12_run_id is match('^RUN-[0-9]{8}T[0-9]{6}Z-[0-9]{3}$')
+          - sci_oran_prompt12_approved_head is defined
+          - sci_oran_prompt12_approved_head is match('^[0-9a-f]{40}$')
+          - sci_oran_prompt12_macro_authorization is defined
+          - sci_oran_prompt12_macro_authorization == 'AUTHORISE_ONE_PROMPT12_T2_MACRO'
+        fail_msg: EXPERIMENT_INPUT_OR_AUTHORIZATION_INVALID
+
+    - name: Identify runtime host
+      ansible.builtin.command:
+        argv: [/bin/hostname, -s]
+      register: sci_oran_t2_host
+      changed_when: false
+
+    - name: Verify runtime host and deployed commit
+      ansible.builtin.command:
+        argv: [/usr/bin/git, -C, '{{ sci_oran_t2_repo }}', rev-parse, HEAD]
+      register: sci_oran_t2_head
+      changed_when: false
+
+    - name: Read runtime repository status
+      ansible.builtin.command:
+        argv: [/usr/bin/git, -C, '{{ sci_oran_t2_repo }}', status, --porcelain]
+      register: sci_oran_t2_status
+      changed_when: false
+
+    - name: Require exact clean runtime source
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_host.stdout | trim == 'tb3-dell'
+          - sci_oran_t2_head.stdout | trim == sci_oran_prompt12_approved_head
+          - sci_oran_t2_status.stdout | trim == ''
+        fail_msg: EXPERIMENT_RUNTIME_IDENTITY_INVALID
+
+    - name: Observe four canonical RAN containers without mutation
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/docker
+          - inspect
+          - base05_open5gs_5gc
+          - action11_202_flexric_ric_safe
+          - base05_srsran_gnb
+          - base05_srsran_srsue
+      register: sci_oran_t2_containers_raw
+      changed_when: false
+
+    - name: Bind exact current gNB incarnation
+      ansible.builtin.set_fact:
+        sci_oran_t2_containers: '{{ sci_oran_t2_containers_raw.stdout | from_json }}'
+
+    - name: Require four running containers and healthy 5GC
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_containers | length == 4
+          - sci_oran_t2_containers | selectattr('State.Running', 'equalto', true) | list | length == 4
+          - sci_oran_t2_containers[0].Name == '/base05_open5gs_5gc'
+          - sci_oran_t2_containers[0].State.Health.Status == 'healthy'
+          - sci_oran_t2_containers[2].Name == '/base05_srsran_gnb'
+          - sci_oran_t2_containers[3].Name == '/base05_srsran_srsue'
+        fail_msg: EXPERIMENT_RAN_CONTAINER_ADMISSION_FAILED
+
+    - name: Wait only for observed UE PDU-interface readiness
+      ansible.builtin.command:
+        argv: [/usr/bin/docker, exec, base05_srsran_srsue, ip, -4, addr, show, dev, tun_srsue]
+      register: sci_oran_t2_ue_tun
+      changed_when: false
+      failed_when: false
+      until:
+        - sci_oran_t2_ue_tun.rc == 0
+        - "'10.45.1.2' in sci_oran_t2_ue_tun.stdout"
+      delay: 2
+      retries: 45
+
+    - name: Require corrected diagnostic TTL in deployed policy
+      ansible.builtin.command:
+        argv:
+          - /bin/grep
+          - -Fx
+          - SMOKE_EVIDENCE_MAX_AGE_SECONDS=1800
+          - '{{ sci_oran_t2_repo }}/deploy/phase-2-flexric/tb3-runtime/locks/user-plane-readiness.policy'
+      changed_when: false
+
+    - name: Create run-independent readiness evidence directory
+      ansible.builtin.file:
+        path: '{{ sci_oran_t2_evidence }}/readiness-admissions'
+        state: directory
+        mode: '0700'
+
+    - name: Run one user-plane smoke immediately before one Doctor
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/prompt12-t2-readiness-sequence.py'
+          - --mode
+          - live
+          - --repo
+          - '{{ sci_oran_t2_repo }}'
+          - --expected-head
+          - '{{ sci_oran_prompt12_approved_head }}'
+          - --operation-id
+          - '{{ sci_oran_prompt12_run_id }}-readiness'
+          - --evidence-base
+          - '{{ sci_oran_t2_evidence }}/readiness-admissions'
+          - --authorization-token
+          - AUTHORISE_PROMPT12_T2_ONE_SMOKE_AND_DOCTOR
+      environment:
+        SCI_ORAN_PROMPT12_T2_READINESS_ENABLE: 'YES'
+      register: sci_oran_t2_readiness
+      changed_when: true
+
+    - name: Require independent Doctor PASS before provider preparation
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_t2_readiness.stdout | from_json).readiness_handoff_gate == 'PASS'
+          - (sci_oran_t2_readiness.stdout | from_json).one_smoke_one_doctor | bool
+          - (sci_oran_t2_readiness.stdout | from_json).control_executed == false
+        fail_msg: EXPERIMENT_READINESS_NOT_ADMITTED
+
+    - name: Produce exclusive deterministic provider plan before RUN allocation
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/prompt12-t2-prearm-plan.py'
+          - --mode
+          - prepare
+          - --repo
+          - '{{ sci_oran_t2_repo }}'
+          - --approved-head
+          - '{{ sci_oran_prompt12_approved_head }}'
+          - --evidence-root
+          - '{{ sci_oran_t2_evidence }}'
+          - --experiment-id
+          - '{{ sci_oran_prompt12_experiment_id }}'
+          - --run-id
+          - '{{ sci_oran_prompt12_run_id }}'
+          - --authorization-token
+          - AUTHORISE_PROMPT12_T2_PROVIDER_PLAN
+      environment:
+        SCI_ORAN_PROMPT12_T2_PROVIDER_PLAN_ENABLE: 'YES'
+      register: sci_oran_t2_prearm_raw
+      changed_when: true
+
+    - name: Decode deterministic provider plan
+      ansible.builtin.set_fact:
+        sci_oran_t2_prearm: '{{ sci_oran_t2_prearm_raw.stdout | from_json }}'
+
+    - name: Require provider intent is unconsumed and control-free
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_prearm.provider_plan_gate == 'PASS'
+          - not sci_oran_t2_prearm.provider_started
+          - not sci_oran_t2_prearm.control_executed
+          - not sci_oran_t2_prearm.traffic_executed
+        fail_msg: EXPERIMENT_PROVIDER_PLAN_NOT_SAFE
+
+    - name: Materialize fresh portable runtime admission
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/r6-f-portable-runtime-preflight.py'
+          - --python-executable
+          - /usr/bin/python3
+          - --require-jsonschema
+          - 'yes'
+          - --output
+          - '{{ sci_oran_t2_prearm.portable_admission }}'
+      changed_when: true
+
+    - name: Start and prove one persistent prearmed provider
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/prompt12-production-provider-manager-launcher.py'
+          - run
+          - --allocation-json
+          - '{{ sci_oran_t2_prearm.allocation_json }}'
+          - --provider-launch-json
+          - '{{ sci_oran_t2_prearm.provider_launch_json }}'
+          - --frozen-config
+          - '{{ sci_oran_t2_frozen }}'
+          - --provider-source
+          - '{{ sci_oran_t2_base }}/prompt12-persistent-prearmed-actuator-provider.py'
+          - --launcher-record
+          - '{{ sci_oran_t2_prearm.provider_launcher_record }}'
+      register: sci_oran_t2_provider_result
+      changed_when: true
+
+    - name: Require provider admission and no scientific side effects
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_t2_provider_result.stdout | from_json).reader_readiness_gate == 'PASS'
+          - (sci_oran_t2_provider_result.stdout | from_json).trigger_write_attempt_count == 0
+          - not (sci_oran_t2_provider_result.stdout | from_json).control_executed
+        fail_msg: EXPERIMENT_PROVIDER_NOT_ADMITTED
+
+    - name: Assemble new RUN using existing production materializers
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/prompt12-t2-input-assembler.py'
+          - --mode
+          - prepare
+          - --repo
+          - '{{ sci_oran_t2_repo }}'
+          - --approved-head
+          - '{{ sci_oran_prompt12_approved_head }}'
+          - --evidence-root
+          - '{{ sci_oran_t2_evidence }}'
+          - --experiment-id
+          - '{{ sci_oran_prompt12_experiment_id }}'
+          - --run-id
+          - '{{ sci_oran_prompt12_run_id }}'
+          - --frozen-config
+          - '{{ sci_oran_t2_frozen }}'
+          - --portable-admission
+          - '{{ sci_oran_t2_prearm.portable_admission }}'
+          - --fifo-path
+          - '{{ sci_oran_t2_prearm.fifo_path }}'
+          - --preparation-token
+          - AUTHORISE_PROMPT12_T2_INPUT_PREPARATION
+      environment:
+        SCI_ORAN_PROMPT12_T2_INPUT_PREP_ENABLE: 'YES'
+      register: sci_oran_t2_assembly_raw
+      changed_when: true
+
+    - name: Bind materialized RUN and authoritative gNB incarnation
+      ansible.builtin.set_fact:
+        sci_oran_t2_assembly: '{{ sci_oran_t2_assembly_raw.stdout | from_json }}'
+        sci_oran_prompt12_expected_repository_sha: '{{ sci_oran_prompt12_approved_head }}'
+        sci_oran_prompt12_expected_repo_sha: '{{ sci_oran_prompt12_approved_head }}'
+        sci_oran_prompt12_expected_gnb_image_id: '{{ sci_oran_t2_containers[2].Image }}'
+        sci_oran_prompt12_expected_gnb_started_at: '{{ sci_oran_t2_containers[2].State.StartedAt }}'
+        sci_oran_prompt12_initial26_operation_id: 'initial26-{{ sci_oran_prompt12_run_id }}'
+        sci_oran_prompt12_initial26_live_authorization_token: AUTHORISE_PROMPT12_INITIAL26_PRECONDITIONING_LIVE
+        sci_oran_prompt12_binding_manifest: '{{ (sci_oran_t2_assembly_raw.stdout | from_json).binding_manifest }}'
+        sci_oran_prompt12_resume_materialization: '{{ (sci_oran_t2_assembly_raw.stdout | from_json).resume_materialization }}'
+        sci_oran_prompt12_single_transition_output: '{{ (sci_oran_t2_assembly_raw.stdout | from_json).single_transition_output }}'
+        sci_oran_prompt12_mode: live
+        sci_oran_prompt12_live_authorization_token: AUTHORISE_PROMPT12_RESUMED_T2_26_TO_39_LIVE
+        sci_oran_prompt12_control_authorization_token: PROMPT12_T2_EXPLICIT_FIFO_CONTROL
+        sci_oran_prompt12_authoritative_readback_argv:
+          - /usr/bin/python3
+          - -B
+          - '{{ sci_oran_t2_base }}/prompt12-authoritative-prb-readback.py'
+          - --container
+          - base05_srsran_gnb
+          - --operation-id
+          - 'T2-{{ sci_oran_prompt12_run_id }}-readback39'
+          - --expected-image-id
+          - '{{ sci_oran_t2_containers[2].Image }}'
+          - --expected-started-at
+          - '{{ sci_oran_t2_containers[2].State.StartedAt }}'
+          - --window-start
+          - '@PROMPT12_READBACK_WINDOW_START@'
+          - --window-end
+          - '@PROMPT12_READBACK_WINDOW_END@'
+          - --expected-min-prbs
+          - '0'
+          - --expected-max-prbs
+          - '39'
+
+    - name: Prove provider's precomputed binding filenames match real profile
+      ansible.builtin.slurp:
+        src: '{{ sci_oran_t2_assembly.runtime_profile }}'
+      register: sci_oran_t2_profile_raw
+
+    - name: Bind host-qualified Python from validated runtime profile
+      ansible.builtin.set_fact:
+        sci_oran_t2_admitted_python: '{{ (sci_oran_t2_profile_raw.content | b64decode | from_json).python_executable }}'
+
+    - name: Require exact current RUN, ratio bindings and frozen control limits
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_assembly.assembly_gate == 'PASS'
+          - (sci_oran_t2_profile_raw.content | b64decode | from_json).ratio_binding_paths == sci_oran_t2_prearm.ratio_binding_paths
+          - sci_oran_t2_admitted_python == '/usr/bin/python3'
+          - (sci_oran_t2_profile_raw.content | b64decode | from_json).max_age_ms == 800
+          - (sci_oran_t2_profile_raw.content | b64decode | from_json).traffic_duration_s == 180
+          - sci_oran_t2_assembly.initial26_applied_gate == 'NOT_EXECUTED'
+        fail_msg: EXPERIMENT_PRODUCTION_INPUTS_NOT_PROVEN
+
+# This is the ONLY non-scientific PRB preconditioning; it has its own
+# run-scoped, exactly-once operation, U_CMD/U_ACK and 26-PRB readback gates.
+- import_playbook: prompt12-initial26-preconditioning.yml
+
+# A read-only just-in-time gate after initial26: it does NOT re-run the smoke
+# or Doctor. The sole smoke evidence must still belong to the present session.
+- name: Prompt12 T2 final just-in-time admission after initial26
+  hosts: tb3-dell
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - name: Stat existing smoke evidence without generating traffic
+      ansible.builtin.stat:
+        path: /tmp/sci-oran/user-plane-smoke/latest.env
+      register: sci_oran_t2_latest_smoke
+
+    - name: Read current UTC epoch from runtime host
+      ansible.builtin.command:
+        argv: [/bin/date, -u, +%s]
+      register: sci_oran_t2_freshness_now
+      changed_when: false
+
+    - name: Observe gNB incarnation immediately before scientific T2
+      ansible.builtin.command:
+        argv: [/usr/bin/docker, inspect, base05_srsran_gnb]
+      register: sci_oran_t2_live_gnb_raw
+      changed_when: false
+
+    - name: Reject expired evidence or changed gNB without scientific trigger
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_latest_smoke.stat.exists | default(false)
+          - sci_oran_t2_latest_smoke.stat.isreg | default(false)
+          - ((sci_oran_t2_freshness_now.stdout | int) - (sci_oran_t2_latest_smoke.stat.mtime | int)) >= 0
+          - ((sci_oran_t2_freshness_now.stdout | int) - (sci_oran_t2_latest_smoke.stat.mtime | int)) < 1770
+          - (sci_oran_t2_live_gnb_raw.stdout | from_json)[0].Image == sci_oran_prompt12_expected_gnb_image_id
+          - (sci_oran_t2_live_gnb_raw.stdout | from_json)[0].State.StartedAt == sci_oran_prompt12_expected_gnb_started_at
+          - (sci_oran_t2_live_gnb_raw.stdout | from_json)[0].State.Running | bool
+        fail_msg: T2_JUST_IN_TIME_READINESS_EXPIRED_OR_GNB_CHANGED
+
+# The T2 playbook owns the single 26->39 scientific FIFO trigger and raw
+# evidence. No T1/T3-T6 operation or automatic retry is imported.
+- import_playbook: prompt12-resume-single-transition.yml
+
+- name: Prompt12 T2 post-experiment independent evidence adjudication
+  hosts: tb3-dell
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    sci_oran_t2_validator: /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-t2-evidence-adjudicator.py
+  tasks:
+    - name: Independently classify one scientific T2 evidence bundle
+      ansible.builtin.command:
+        argv:
+          - '{{ sci_oran_t2_admitted_python }}'
+          - -B
+          - '{{ sci_oran_t2_validator }}'
+          - --materialization
+          - '{{ sci_oran_prompt12_single_transition_output }}'
+          - --initial26-operation-id
+          - '{{ sci_oran_prompt12_initial26_operation_id }}'
+      register: sci_oran_t2_adjudication
+      changed_when: true
+
+    - name: Require evidence-backed scientific PASS
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_t2_adjudication.stdout | from_json).scientific_t2_gate == 'PASS'
+          - (sci_oran_t2_adjudication.stdout | from_json).applied_prbs == 39
+          - (sci_oran_t2_adjudication.stdout | from_json).trigger_write_attempt_count == 1
+        fail_msg: SCIENTIFIC_T2_EVIDENCE_NOT_VALID
+
+    - name: Clean up exact admitted persistent provider after scientific evidence PASS
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -B
+          - /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-production-cleanup.py
+          - --runtime-root
+          - '{{ sci_oran_t2_prearm.runtime_root }}'
+      register: sci_oran_t2_provider_cleanup
+      changed_when: true
+
+    - name: Require source-authoritative provider cleanup evidence
+      ansible.builtin.assert:
+        that:
+          - (sci_oran_t2_provider_cleanup.stdout | from_json).evidence_preserved | bool
+          - (sci_oran_t2_provider_cleanup.stdout | from_json).runtime_root_preserved | bool
+          - (sci_oran_t2_provider_cleanup.stdout | from_json).fifo_preserved | bool
+        fail_msg: T2_PROVIDER_CLEANUP_NOT_CONFIRMED
+
+    - name: Report complete EXPERIMENT result without lifecycle mutation
+      ansible.builtin.debug:
+        msg:
+          - SCI_ORAN_EXPERIMENT_GATE=PASS
+          - SCIENTIFIC_T2_GATE=PASS
+          - '{{ sci_oran_prompt12_experiment_id }}'
+          - '{{ sci_oran_prompt12_run_id }}'
+          - DAY_STOP_EXECUTED=NO

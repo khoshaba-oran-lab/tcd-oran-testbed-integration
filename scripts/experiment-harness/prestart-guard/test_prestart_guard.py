@@ -14,6 +14,15 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 class GuardTests(unittest.TestCase):
+    def test_playbook_requires_explicit_head_and_portable_admission(self):
+        text = pathlib.Path(__file__).with_name('prestart_prompt12.yml').read_text()
+        self.assertIn('approved_head is defined', text)
+        self.assertIn('portable_admission is defined', text)
+        self.assertNotIn('approved_head: 2a49c164d9c9c8d407a2869074faec04ce520545', text)
+        self.assertNotIn('portable-runtime-admission-20261008-a41.json', text)
+        self.assertIn('prestart_guard.py', text)
+        self.assertNotIn('tb3-lifecycle.sh', text)
+
     def test_materializer_failure_exposes_exact_reason(self):
         class Result:
             returncode = 65
