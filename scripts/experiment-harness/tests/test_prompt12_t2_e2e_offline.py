@@ -113,6 +113,10 @@ class T2E2EOffline(unittest.TestCase):
             self.evidence, EXP, RUN, self.frozen, self.admission, self.fifo,
             BASE, offline=False)
         self.run_dir = self.evidence / EXP / RUN
+        self.assertTrue((self.run_dir / "precontrol").is_dir())
+        self.assertTrue((self.run_dir / "control").is_dir())
+        self.assertFalse((self.run_dir / "precontrol" / "T2.json").exists())
+        self.assertFalse((self.run_dir / "control" / "T2.executor.json").exists())
         self.assertEqual(json.loads(Path(self.assembly["runtime_profile"]).read_text())
                          ["ratio_binding_paths"], self.plan["ratio_binding_paths"])
 
@@ -162,8 +166,9 @@ class T2E2EOffline(unittest.TestCase):
 
     def build_synthetic_scientific_evidence(self):
         r = self.run_dir
-        (r / "precontrol").mkdir()
-        (r / "control").mkdir()
+        # These parents must come from the REAL assembler, not the fixture.
+        self.assertTrue((r / "precontrol").is_dir())
+        self.assertTrue((r / "control").is_dir())
         (r / "precontrol" / "T2.json").write_text(json.dumps({
             "output_stationarity_gate": "PASS", "freshness_gate": "PASS",
             "precontrol_admission_gate": "PASS",
@@ -342,6 +347,18 @@ class T2E2EOffline(unittest.TestCase):
         self.assertIn("- '{{ sci_oran_t2_admitted_python }}'", adjudication)
         self.assertNotIn("sci_oran_t2_frozen_values.python_executable", source)
         self.assertIn("- sci_oran_t2_admitted_python == '/usr/bin/python3'", source)
+
+    def test_macro_rejects_missing_control_evidence_before_initial26(self):
+        path = REPO / "sci-oran/ansible/experiments/prompt12/playbooks/prompt12-t2-experiment.yml"
+        source = path.read_text(encoding="utf-8")
+        assembly = source.index("    - name: Assemble new RUN using existing production materializers")
+        admission = source.index("    - name: Inspect T2 evidence output parents before initial26")
+        reject = source.index("    - name: Require T2 output parents and unused trigger evidence")
+        initial26 = source.index("- import_playbook: prompt12-initial26-preconditioning.yml")
+        self.assertLess(assembly, admission)
+        self.assertLess(admission, reject)
+        self.assertLess(reject, initial26)
+        self.assertIn("EXPERIMENT_T2_OUTPUT_PARENTS_OR_REPLAY_GUARD_FAILED", source)
 
     def test_macro_yml_strict_order_and_unique_scientific_import(self):
         # This structural contract must work in the pinned jsonschema venv,

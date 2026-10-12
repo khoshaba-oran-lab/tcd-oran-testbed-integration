@@ -303,6 +303,31 @@
           - sci_oran_t2_assembly.initial26_applied_gate == 'NOT_EXECUTED'
         fail_msg: EXPERIMENT_PRODUCTION_INPUTS_NOT_PROVEN
 
+    - name: Inspect T2 evidence output parents before initial26
+      ansible.builtin.stat:
+        path: '{{ sci_oran_t2_assembly.single_transition_output | dirname | dirname }}/{{ item }}'
+        follow: false
+      loop:
+        - precontrol
+        - control
+        - control/T2.executor.json
+        - control/T2.trigger-intent.json
+        - control/T2.critical-outcome.json
+      register: sci_oran_t2_output_parent_stats
+
+    - name: Require T2 output parents and unused trigger evidence
+      ansible.builtin.assert:
+        that:
+          - sci_oran_t2_output_parent_stats.results | length == 5
+          - sci_oran_t2_output_parent_stats.results[0].stat.isdir | default(false)
+          - not (sci_oran_t2_output_parent_stats.results[0].stat.islnk | default(false))
+          - sci_oran_t2_output_parent_stats.results[1].stat.isdir | default(false)
+          - not (sci_oran_t2_output_parent_stats.results[1].stat.islnk | default(false))
+          - not (sci_oran_t2_output_parent_stats.results[2].stat.exists | default(false))
+          - not (sci_oran_t2_output_parent_stats.results[3].stat.exists | default(false))
+          - not (sci_oran_t2_output_parent_stats.results[4].stat.exists | default(false))
+        fail_msg: EXPERIMENT_T2_OUTPUT_PARENTS_OR_REPLAY_GUARD_FAILED
+
 # This is the ONLY non-scientific PRB preconditioning; it has its own
 # run-scoped, exactly-once operation, U_CMD/U_ACK and 26-PRB readback gates.
 - import_playbook: prompt12-initial26-preconditioning.yml

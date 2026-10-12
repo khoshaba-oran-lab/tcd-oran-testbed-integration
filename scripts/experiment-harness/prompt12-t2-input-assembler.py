@@ -116,6 +116,37 @@ def check_repo(repo, expected_head, require_clean):
     return base
 
 
+def prepare_scientific_evidence_parents(run_dir, resume, binding):
+    """Pre-create exactly the T2 output parents before traffic or control.
+
+    Both paths must be derived from the actual production command vectors.
+    A new RUN is consumed on any discrepancy; never repair existing RUNs.
+    """
+    required = (
+        ("PRECONTROL", resume.get("command"), "--precontrol-output",
+         run_dir / "precontrol" / "T2.json"),
+        ("CONTROL", binding["transitions"][1].get("trigger_command"),
+         "--output", run_dir / "control" / "T2.executor.json"),
+    )
+    for label, argv, option, expected in required:
+        require(isinstance(argv, list) and argv.count(option) == 1,
+                label + "_OUTPUT_ARG_INVALID")
+        index = argv.index(option)
+        require(index + 1 < len(argv) and argv[index + 1] == str(expected),
+                label + "_OUTPUT_PATH_MISMATCH")
+        parent = expected.parent
+        require(not os.path.lexists(parent),
+                label + "_OUTPUT_PARENT_ALREADY_EXISTS")
+        try:
+            parent.mkdir(mode=0o750)
+        except OSError as exc:
+            raise AssemblyError(label + "_OUTPUT_PARENT_CREATE_FAILED") from exc
+        require(parent.is_dir() and not parent.is_symlink(),
+                label + "_OUTPUT_PARENT_INVALID")
+        require(not os.path.lexists(expected),
+                label + "_OUTPUT_PREEXISTS")
+
+
 def prepare_inputs(evidence, experiment_id, run_id, frozen, portable, fifo, tools, offline=False):
     require(evidence.is_absolute() and evidence.is_dir() and not evidence.is_symlink(), "EVIDENCE_ROOT_INVALID")
     experiment_dir = evidence / experiment_id
@@ -159,6 +190,7 @@ def prepare_inputs(evidence, experiment_id, run_id, frozen, portable, fifo, tool
         require(resume_value.get("first_scientific_transition") == "T2", "RESUME_NOT_T2")
         require(resume_value.get("control_executed") is False, "RESUME_CONTROL_ALREADY_EXECUTED")
         require(resume_value.get("traffic_executed") is False, "RESUME_TRAFFIC_ALREADY_EXECUTED")
+        prepare_scientific_evidence_parents(run_dir, resume_value, binding_value)
         if offline:
             run([
                 sys.executable, "-B", tools / TOOL_NAMES[3],

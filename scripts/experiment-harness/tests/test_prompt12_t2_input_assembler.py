@@ -150,6 +150,40 @@ class T2InputAssemblerTests(unittest.TestCase):
             MODULE.prepare_inputs(self.evidence, EXP, RUN, self.frozen_file,
                                   self.admission_file, self.fifo, HARNESS, offline=False)
 
+    def test_real_prepare_precreates_control_parents_before_any_traffic(self):
+        output = MODULE.prepare_inputs(
+            self.evidence, EXP, RUN, self.frozen_file,
+            self.admission_file, self.fifo, HARNESS, offline=False,
+        )
+        run_dir = self.evidence / EXP / RUN
+        manifest = json.loads(Path(output["binding_manifest"]).read_text())
+        resume = json.loads(Path(output["resume_materialization"]).read_text())
+        trigger = manifest["transitions"][1]["trigger_command"]
+        pre = resume["command"]
+        trigger_path = Path(trigger[trigger.index("--output") + 1])
+        pre_path = Path(pre[pre.index("--precontrol-output") + 1])
+        self.assertEqual(trigger_path, run_dir / "control" / "T2.executor.json")
+        self.assertEqual(pre_path, run_dir / "precontrol" / "T2.json")
+        self.assertTrue(trigger_path.parent.is_dir())
+        self.assertTrue(pre_path.parent.is_dir())
+        self.assertFalse(trigger_path.exists())
+        self.assertFalse(pre_path.exists())
+        for name in ("T2.trigger-intent.json", "T2.critical-outcome.json"):
+            self.assertFalse((trigger_path.parent / name).exists())
+        self.assertFalse(output["control_executed"])
+        self.assertFalse(output["traffic_executed"])
+
+    def test_misbound_t2_output_cannot_escape_run_evidence_root(self):
+        run_dir = self.root / "fake-run"
+        run_dir.mkdir()
+        resume = {"command": ["python3", "--precontrol-output",
+                              str(run_dir / "precontrol" / "T2.json")]}
+        binding = {"transitions": [{}, {"trigger_command": [
+            "python3", "--output", str(self.root / "escaped" / "T2.executor.json")]}]}
+        with self.assertRaisesRegex(MODULE.AssemblyError, "CONTROL_OUTPUT_PATH_MISMATCH"):
+            MODULE.prepare_scientific_evidence_parents(run_dir, resume, binding)
+        self.assertFalse((self.root / "escaped").exists())
+
     def test_post_allocation_failure_retains_consumed_run_evidence(self):
         self.frozen["traffic_duration_s"] = 120
         self.frozen_file.write_text(json.dumps(self.frozen), encoding="utf-8")
