@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 MACRO_TOKEN = "AUTHORISE_ONE_PROMPT12_T2_MACRO"
+POSTVAL_MACRO_TOKEN = "AUTHORISE_ONE_PROMPT12_T2_POSTVAL_MACRO"
 LIVE_ENV = "SCI_ORAN_PROMPT12_T2_EXPERIMENT_ENABLE"
 EXP = re.compile(r"^EXP-\d{8}-DL-18000K-R(?:0[1-9]|[1-9]\d)$")
 RUN = re.compile(r"^RUN-\d{8}T\d{6}Z-\d{3}$")
@@ -77,7 +78,8 @@ def validate(args):
             socket.getfqdn() == "coll.vntu.org", "LIVE_CONTROLLER_HOST_INVALID")
     require(args.target == "tb3-dell" and args.confirm,
             "EXPLICIT_TARGET_AND_CONFIRM_REQUIRED")
-    require(args.authorization_token == MACRO_TOKEN and
+    required_token = POSTVAL_MACRO_TOKEN if args.protocol == "postval-v1" else MACRO_TOKEN
+    require(args.authorization_token == required_token and
             os.environ.get(LIVE_ENV) == "YES", "LIVE_MACRO_AUTHORIZATION_MISSING")
     require(git(args.repo, "branch", "--show-current") == "main" and
             not git(args.repo, "status", "--porcelain"), "LIVE_REPOSITORY_NOT_CLEAN_MAIN")
@@ -131,6 +133,7 @@ def live(args, playbook):
         "approved_head": args.approved_head,
         "exact_run_limit": 1,
         "automatic_retry": False,
+        "protocol": args.protocol,
         "day_start_authorized": False,
         "day_stop_authorized": False,
         "replay_decision": "NEVER_AUTOMATICALLY_REPLAY",
@@ -141,10 +144,11 @@ def live(args, playbook):
         "ansible-playbook", "-i", str(inventory), str(playbook),
         "--limit", "tb3-dell",
         "--extra-vars", json.dumps({
+            "sci_oran_t2_protocol": args.protocol,
             "sci_oran_prompt12_experiment_id": args.experiment_id,
             "sci_oran_prompt12_run_id": args.run_id,
             "sci_oran_prompt12_approved_head": args.approved_head,
-            "sci_oran_prompt12_macro_authorization": MACRO_TOKEN,
+            "sci_oran_prompt12_macro_authorization": (POSTVAL_MACRO_TOKEN if args.protocol == "postval-v1" else MACRO_TOKEN),
             "sci_oran_prompt12_inventory_target": "tb3-dell",
         }, separators=(",", ":")),
     ]
@@ -164,7 +168,9 @@ def live(args, playbook):
                 print(line, end="", flush=True)
                 if "SCI_ORAN_EXPERIMENT_GATE=PASS" in line:
                     observed.add("macro")
-                if "SCIENTIFIC_T2_GATE=PASS" in line:
+                expected_scientific = ("T2_POSTVAL_VALIDATED=PASS" if args.protocol == "postval-v1"
+                                       else "SCIENTIFIC_T2_GATE=PASS")
+                if expected_scientific in line:
                     observed.add("scientific")
             rc = process.wait()
         require(rc == 0 and observed == {"macro", "scientific"},
@@ -174,7 +180,9 @@ def live(args, playbook):
                    "run_id": args.run_id,
                    "approved_head": args.approved_head,
                    "ansible_returncode": rc,
-                   "scientific_t2_gate": "PASS",
+                   "scientific_t2_gate": "PASS" if args.protocol == "legacy" else "NOT_APPLICABLE_POSTVAL",
+                   "t2_postval_validated": "PASS" if args.protocol == "postval-v1" else "NOT_APPLICABLE_LEGACY",
+                   "protocol": args.protocol,
                    "controller_gate": "PASS",
                    "day_stop_executed": False,
                    "automatic_retry": False}
@@ -201,6 +209,7 @@ def live(args, playbook):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     ap.add_argument("--mode", required=True, choices=("offline-qualify", "live"))
+    ap.add_argument("--protocol", choices=("legacy", "postval-v1"), default="legacy")
     ap.add_argument("--repo", required=True, type=Path)
     ap.add_argument("--approved-head", required=True)
     ap.add_argument("--experiment-id", required=True)

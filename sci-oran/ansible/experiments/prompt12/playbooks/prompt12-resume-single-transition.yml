@@ -157,6 +157,7 @@
           - inspect
       register: sci_oran_prompt12_critical_inspection
       changed_when: false
+      when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
     - name: Require local T2 critical-section contract ready
       ansible.builtin.assert:
@@ -164,6 +165,28 @@
           - "'PROMPT12_T2_CRITICAL_INSPECTION=PASS' in sci_oran_prompt12_critical_inspection.stdout_lines"
           - "'CONTROL_EXECUTED=NO' in sci_oran_prompt12_critical_inspection.stdout_lines"
         fail_msg: PROMPT12_T2_CRITICAL_INSPECTION_FAILED
+      when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
+
+    - name: Inspect POSTVAL source/control binding without execution
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ sci_oran_prompt12_repo_root }}/scripts/experiment-harness/prompt12-t2-postval-fast-trigger.py"
+          - --materialization
+          - "{{ sci_oran_prompt12_single_transition_output }}"
+          - --mode
+          - inspect
+      register: sci_oran_postval_inspect
+      changed_when: false
+      when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+
+    - name: Require POSTVAL inspect to prove no control was executed
+      ansible.builtin.assert:
+        that:
+          - "'T2_POSTVAL_INSPECTION=PASS' in sci_oran_postval_inspect.stdout_lines"
+          - "'CONTROL_EXECUTED=NO' in sci_oran_postval_inspect.stdout_lines"
+        fail_msg: T2_POSTVAL_INSPECTION_FAILED
+      when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
 
     - name: End safely after offline validation
       ansible.builtin.meta: end_play
@@ -213,6 +236,20 @@
           - sci_oran_prompt12_single.traffic_command[4] is match('^/')
           - sci_oran_prompt12_single.traffic_command[5] is match('^/')
         fail_msg: PROMPT12_TRAFFIC_EVIDENCE_ARGV_INVALID
+
+    - name: Pre-bind static ratio before scientific traffic for POSTVAL
+      ansible.builtin.command:
+        argv: "{{ sci_oran_prompt12_single.ratio_bind_command }}"
+      register: sci_oran_postval_ratio_bind
+      changed_when: true
+      when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+
+    - name: Require POSTVAL static ratio binding
+      ansible.builtin.assert:
+        that:
+          - "'RATIO_BOUND=PASS' in sci_oran_postval_ratio_bind.stdout_lines"
+        fail_msg: T2_POSTVAL_RATIO_BIND_FAILED
+      when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
 
     - name: Run one bounded T2 experiment with evidence-preserving failure handling
       block:
@@ -391,11 +428,52 @@
             SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE: "YES"
           register: sci_oran_prompt12_initial_precontrol
           changed_when: true
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
+
+        - name: Execute POSTVAL one-shot at bounded 90s sample (one FIFO write)
+          ansible.builtin.command:
+            argv:
+              - python3
+              - -B
+              - "{{ sci_oran_prompt12_repo_root }}/scripts/experiment-harness/prompt12-t2-postval-fast-trigger.py"
+              - --materialization
+              - "{{ sci_oran_prompt12_single_transition_output }}"
+              - --mode
+              - live
+              - --live-authorization-token
+              - "{{ sci_oran_prompt12_live_authorization_token }}"
+              - --control-authorization-token
+              - "{{ sci_oran_prompt12_control_authorization_token }}"
+          environment:
+            SCI_ORAN_PROMPT12_LIVE_CONTROL_ENABLE: "YES"
+            SCI_ORAN_T2_POSTVAL_V1_ENABLE: "YES"
+          register: sci_oran_postval_trigger
+          changed_when: true
+          when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+
+        - name: Decode POSTVAL one-shot report
+          ansible.builtin.set_fact:
+            sci_oran_prompt12_initial_pre_report: >-
+              {{ sci_oran_postval_trigger.stdout | from_json }}
+          when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+
+        - name: Require POSTVAL trigger confirmation and pending readback
+          ansible.builtin.assert:
+            that:
+              - sci_oran_prompt12_initial_pre_report.GATE == 'PASS_PENDING_READBACK_AND_POSTVAL'
+              - sci_oran_prompt12_initial_pre_report.protocol == 'T2_POSTVAL_V1'
+              - sci_oran_prompt12_initial_pre_report.TRIGGER_WRITE_ATTEMPT_COUNT == 1
+              - sci_oran_prompt12_initial_pre_report.TRIGGER_WRITE_SUCCESS_COUNT == 1
+              - sci_oran_prompt12_initial_pre_report.FRESH_AT_WRITE_COMPLETION | bool
+              - sci_oran_prompt12_initial_pre_report.readback_window_start_utc is defined
+            fail_msg: T2_POSTVAL_ONE_SHOT_NOT_CONFIRMED
+          when: (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
 
         - name: Decode resumed T2 initial precontrol and trigger report
           ansible.builtin.set_fact:
             sci_oran_prompt12_initial_pre_report: >-
               {{ sci_oran_prompt12_initial_precontrol.stdout | from_json }}
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Require resumed T2 initial precontrol stationarity and trigger
           ansible.builtin.assert:
@@ -406,6 +484,7 @@
               - sci_oran_prompt12_initial_pre_report.readback_window_start_utc is defined
               - sci_oran_prompt12_initial_pre_report.readback_window_start_utc is match('^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$')
             fail_msg: PROMPT12_T2_CRITICAL_SECTION_NOT_CONFIRMED
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Bind authoritative T2 readback window start from critical section
           ansible.builtin.set_fact:
@@ -616,6 +695,7 @@
           register: sci_oran_prompt12_post_stationarity
           changed_when: true
           failed_when: false
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Preserve post-step stationarity stdout for independent adjudication
           ansible.builtin.copy:
@@ -623,12 +703,14 @@
             content: "{{ sci_oran_prompt12_post_stationarity.stdout }}\n"
             mode: '0600'
             force: false
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Require post-step stationarity command success
           ansible.builtin.assert:
             that:
               - sci_oran_prompt12_post_stationarity.rc == 0
             fail_msg: PROMPT12_T2_POST_STATIONARITY_COMMAND_FAILED_EVIDENCE_PRESERVED
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Decode T2 post-step stationarity result
           ansible.builtin.set_fact:
@@ -637,6 +719,7 @@
                 sci_oran_prompt12_post_stationarity.stdout
                 | from_json
               }}
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Require T2 post-step stationarity
           ansible.builtin.assert:
@@ -644,6 +727,7 @@
               - sci_oran_prompt12_post_report.output_stationarity_gate == 'PASS'
               - sci_oran_prompt12_post_report.minimum_phase_duration_gate == 'PASS'
             fail_msg: PROMPT12_T2_POST_STATIONARITY_FAILED
+          when: (sci_oran_t2_protocol | default('legacy')) == 'legacy'
 
         - name: Wait for bounded traffic session natural completion
           ansible.builtin.async_status:

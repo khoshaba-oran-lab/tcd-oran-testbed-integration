@@ -22,7 +22,12 @@
           - sci_oran_prompt12_approved_head is defined
           - sci_oran_prompt12_approved_head is match('^[0-9a-f]{40}$')
           - sci_oran_prompt12_macro_authorization is defined
-          - sci_oran_prompt12_macro_authorization == 'AUTHORISE_ONE_PROMPT12_T2_MACRO'
+          - (sci_oran_t2_protocol | default('legacy')) in ['legacy', 'postval-v1']
+          - >-
+            sci_oran_prompt12_macro_authorization ==
+            ('AUTHORISE_ONE_PROMPT12_T2_POSTVAL_MACRO'
+             if (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+             else 'AUTHORISE_ONE_PROMPT12_T2_MACRO')
         fail_msg: EXPERIMENT_INPUT_OR_AUTHORIZATION_INVALID
 
     - name: Identify runtime host
@@ -377,7 +382,10 @@
   gather_facts: false
   any_errors_fatal: true
   vars:
-    sci_oran_t2_validator: /home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-t2-evidence-adjudicator.py
+    sci_oran_t2_validator: >-
+      {{ '/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-t2-postval-evidence-adjudicator.py'
+         if (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+         else '/home/khoshaba/project/tcd-oran-testbed-integration/scripts/experiment-harness/prompt12-t2-evidence-adjudicator.py' }}
   tasks:
     - name: Independently classify one scientific T2 evidence bundle
       ansible.builtin.command:
@@ -395,7 +403,10 @@
     - name: Require evidence-backed scientific PASS
       ansible.builtin.assert:
         that:
-          - (sci_oran_t2_adjudication.stdout | from_json).scientific_t2_gate == 'PASS'
+          - >-
+            ((sci_oran_t2_adjudication.stdout | from_json).t2_postval_validated == 'PASS')
+            if (sci_oran_t2_protocol | default('legacy')) == 'postval-v1'
+            else ((sci_oran_t2_adjudication.stdout | from_json).scientific_t2_gate == 'PASS')
           - (sci_oran_t2_adjudication.stdout | from_json).applied_prbs == 39
           - (sci_oran_t2_adjudication.stdout | from_json).trigger_write_attempt_count == 1
         fail_msg: SCIENTIFIC_T2_EVIDENCE_NOT_VALID
@@ -423,7 +434,7 @@
       ansible.builtin.debug:
         msg:
           - SCI_ORAN_EXPERIMENT_GATE=PASS
-          - SCIENTIFIC_T2_GATE=PASS
+          - "{{ 'T2_POSTVAL_VALIDATED=PASS' if (sci_oran_t2_protocol | default('legacy')) == 'postval-v1' else 'SCIENTIFIC_T2_GATE=PASS' }}"
           - '{{ sci_oran_prompt12_experiment_id }}'
           - '{{ sci_oran_prompt12_run_id }}'
           - DAY_STOP_EXECUTED=NO
