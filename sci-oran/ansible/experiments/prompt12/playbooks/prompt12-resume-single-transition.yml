@@ -544,6 +544,10 @@
               - (sci_oran_prompt12_postphase_timestamps_before.stat.size | int) > 0
             fail_msg: PROMPT12_TRAFFIC_POSTPHASE_INITIAL_EVIDENCE_MISSING
 
+        - name: Allow bounded PRB application settling
+          ansible.builtin.wait_for:
+            timeout: 3
+
         - name: Capture authoritative T2 readback window end
           ansible.builtin.command:
             argv:
