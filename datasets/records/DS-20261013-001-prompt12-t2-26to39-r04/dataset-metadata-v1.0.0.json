@@ -1,0 +1,69 @@
+{
+  "created_time_utc": "2026-10-14T08:50:13Z",
+  "dataset_id": "DS-20261013-001-prompt12-t2-26to39-r04",
+  "dataset_version": "v1.0.0",
+  "evidence_status": {
+    "data_captured": "PASS",
+    "external_primary_gnb_log": "NOT_INCLUDED_IN_THIS_C3_PAYLOAD",
+    "fifo_trigger": "PASS_REPORTED",
+    "postval": "BLOCKED_EVIDENCE_GAP",
+    "t2_validated": "NOT_ESTABLISHED",
+    "u_ack": "NOT_OBSERVED",
+    "u_applied_readback": "PASS_REPORTED",
+    "u_cmd": "NOT_PROVEN"
+  },
+  "experiment_id": "EXP-20261013-DL-18000K-R04",
+  "known_scope_limits": [
+    "Primary gNB log is not included in this retained RUN payload.",
+    "Independent scientific U_CMD/U_ACK evidence is not established.",
+    "The dataset is not an independently validated SISO transition.",
+    "No mathematical model identification is asserted by this record."
+  ],
+  "measurement": {
+    "complete_interval_integrity": "NOT_VERIFIED",
+    "primary_output": "receiver throughput_kbit_s",
+    "reported_duration_s": 184.59,
+    "reported_mean_goodput_mbit_s": 10.2,
+    "reported_udp_loss_percent": 42
+  },
+  "record_type": "raw_acquisition_archival_record",
+  "repository_provenance": {
+    "acquisition_commit_status": "NOT_INDEPENDENTLY_VERIFIED",
+    "acquisition_software_commit": null,
+    "registration_base_commit": "f98b18d3c796da7e5b11180702c0ee49b1b6badd"
+  },
+  "retention": {
+    "archive_host": "coll.vntu.org",
+    "archive_operation_id": "prompt12-t2-r04-retain-20261014-v1",
+    "archive_payload_root": "/home/khoshaba/sci-oran/retained-evidence/prompt12-t2-r04-retain-20261014-v1/payload",
+    "archive_root": "/home/khoshaba/sci-oran/retained-evidence/prompt12-t2-r04-retain-20261014-v1",
+    "destination_manifest_sha256": "458a3006ad2b249cc9b89ad6ebd4036389af5404dc505d18ca06bc85b13195d7",
+    "promotion_gate": "PASS",
+    "regular_file_count": 33,
+    "source_deletion_performed": false,
+    "source_host": "tb3-dell",
+    "source_manifest_sha256": "458a3006ad2b249cc9b89ad6ebd4036389af5404dc505d18ca06bc85b13195d7",
+    "source_root": "/home/khoshaba/sci-oran-evidence/prompt12/t2-26to39/EXP-20261013-DL-18000K-R04/RUN-20261013T152106Z-001",
+    "total_regular_file_bytes": 1139801,
+    "verification_gate": "PASS"
+  },
+  "run_id": "RUN-20261013T152106Z-001",
+  "schema_version": "1.0.0",
+  "scientific_status": "RAW_CAPTURE_ARCHIVED_NOT_SCIENTIFICALLY_VALIDATED",
+  "transition": {
+    "applied_state_evidence": "PASS_REPORTED",
+    "initial_state_independent_verification": "NOT_ESTABLISHED",
+    "transition_id": "T2",
+    "u_after_prb": 39,
+    "u_before_prb": 26
+  },
+  "workload": {
+    "direction": "DL",
+    "protocol": "UDP",
+    "target_rate_kbit_s": 18000
+  },
+  "zenodo": {
+    "doi": null,
+    "publication_status": "NOT_PUBLISHED"
+  }
+}
